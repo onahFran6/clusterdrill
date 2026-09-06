@@ -1,0 +1,110 @@
+{
+  "architecture": {
+    "title": "Topic primer: configuration",
+    "description": "ConfigMap/Secret reach a Container via envFrom / volumeMount / configMapKeyRef; LimitRange and ResourceQuota shape the requests/limits set directly on the Container.",
+    "nodes": [
+      {
+        "id": "ConfigMap",
+        "label": "ConfigMap",
+        "type": "resource"
+      },
+      {
+        "id": "Secret",
+        "label": "Secret",
+        "type": "resource"
+      },
+      {
+        "id": "Vol",
+        "label": "Pod volume",
+        "type": "storage",
+        "sub": "spec.volumes: configMap / secret"
+      },
+      {
+        "id": "Container",
+        "label": "Container",
+        "type": "pod"
+      },
+      {
+        "id": "QoS",
+        "label": "QoS class",
+        "type": "external",
+        "sub": "Guaranteed / Burstable / BestEffort"
+      },
+      {
+        "id": "LimitRange",
+        "label": "LimitRange",
+        "type": "policy",
+        "sub": "namespace default requests/limits"
+      },
+      {
+        "id": "ResourceQuota",
+        "label": "ResourceQuota",
+        "type": "policy",
+        "sub": "namespace aggregate cap"
+      }
+    ],
+    "edges": [
+      {
+        "from": "ConfigMap",
+        "to": "Container",
+        "label": "envFrom.configMapRef",
+        "animated": true
+      },
+      {
+        "from": "ConfigMap",
+        "to": "Container",
+        "label": "env.valueFrom.configMapKeyRef",
+        "animated": true
+      },
+      {
+        "from": "ConfigMap",
+        "to": "Vol",
+        "label": "volumes.configMap",
+        "animated": true
+      },
+      {
+        "from": "Secret",
+        "to": "Container",
+        "label": "envFrom.secretRef",
+        "animated": true
+      },
+      {
+        "from": "Secret",
+        "to": "Container",
+        "label": "env.valueFrom.secretKeyRef",
+        "animated": true
+      },
+      {
+        "from": "Secret",
+        "to": "Vol",
+        "label": "volumes.secret",
+        "animated": true
+      },
+      {
+        "from": "Vol",
+        "to": "Container",
+        "label": "volumeMounts",
+        "animated": true,
+        "command": "+ optional subPath"
+      },
+      {
+        "from": "LimitRange",
+        "to": "Container",
+        "label": "defaults injected if unset",
+        "animated": false
+      },
+      {
+        "from": "ResourceQuota",
+        "to": "Container",
+        "label": "enforced at namespace level",
+        "animated": false
+      },
+      {
+        "from": "Container",
+        "to": "QoS",
+        "label": "resources.requests / resources.limits",
+        "animated": true
+      }
+    ]
+  }
+}

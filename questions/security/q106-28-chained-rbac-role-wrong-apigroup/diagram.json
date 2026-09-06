@@ -1,0 +1,225 @@
+{
+  "architecture": {
+    "title": "q106-28-chained-rbac-role-wrong-apigroup: ServiceAccount, Role, RoleBinding, Deployment",
+    "description": "Resources involved: ServiceAccount, Role, RoleBinding, Deployment",
+    "nodes": [
+      {
+        "id": "RoleBinding",
+        "label": "RoleBinding",
+        "type": "policy"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      },
+      {
+        "id": "Role",
+        "label": "Role",
+        "type": "policy"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "ReplicaSet",
+        "label": "ReplicaSet",
+        "type": "controller"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      }
+    ],
+    "edges": [
+      {
+        "from": "RoleBinding",
+        "to": "ServiceAccount",
+        "label": "binds",
+        "animated": true,
+        "command": "roleRef + subjects[].kind: ServiceAccount"
+      },
+      {
+        "from": "Role",
+        "to": "RoleBinding",
+        "label": "granted by",
+        "animated": true,
+        "command": "kubectl create role ...; kubectl create rolebinding ..."
+      },
+      {
+        "from": "Deployment",
+        "to": "ReplicaSet",
+        "label": "owns",
+        "animated": true,
+        "command": "controller creates on template change"
+      },
+      {
+        "from": "ReplicaSet",
+        "to": "Pod",
+        "label": "owns",
+        "animated": true,
+        "command": "created to match spec.replicas"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q106-28-chained-rbac-role-wrong-apigroup: ServiceAccount, Role, RoleBinding, Deployment",
+    "description": "Resources involved: ServiceAccount, Role, RoleBinding, Deployment",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "RoleBinding",
+        "label": "RoleBinding",
+        "type": "policy"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      },
+      {
+        "id": "Role",
+        "label": "Role",
+        "type": "policy"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "ReplicaSet",
+        "label": "ReplicaSet",
+        "type": "controller"
+      },
+      {
+        "id": "Deployment controller",
+        "label": "Deployment controller",
+        "type": "controller"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "ReplicaSet controller",
+        "label": "ReplicaSet controller",
+        "type": "controller"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates RoleBinding"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "ServiceAccount",
+        "label": "binds (enforced at request time)"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create role ...; kubectl create rolebinding ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "RoleBinding",
+        "label": "granted by (enforced at request time)"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create deployment ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "Deployment controller",
+        "to": "API Server",
+        "label": "watches Deployment objects"
+      },
+      {
+        "from": "Deployment controller",
+        "to": "API Server",
+        "label": "owns ReplicaSet (controller creates on template change)"
+      },
+      {
+        "from": "ReplicaSet controller",
+        "to": "API Server",
+        "label": "watches ReplicaSet objects"
+      },
+      {
+        "from": "ReplicaSet controller",
+        "to": "API Server",
+        "label": "owns Pod (created to match spec.replicas)"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}

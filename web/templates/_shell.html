@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ClusterDrill{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- "Terminal Ops" identity, unchanged since the original design. -->
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <!-- Read by static/app.js's idle-lifecycle block and sent as the
+       X-CSRF-Token header on its mutating fetch() calls - see auth.py's
+       CSRF section. Empty when there's no session yet (pre-login) or the
+       password gate is off (local dev); harmless either way, since
+       require_csrf_form()/the middleware check are themselves no-ops in
+       both of those cases. -->
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+  <div class="hub-shell">
+    <!-- The persistent left nav - only these four "return
+         to this dashboard" pages get it; the question/practice page stays
+         chrome-less by design, to keep that page focused on the task at
+         hand. -->
+    <aside class="sidebar">
+      <a class="sidebar-brand" href="/topics"><span class="wheel" aria-hidden="true">&#9096;</span> ClusterDrill</a>
+      <nav class="sidebar-nav" aria-label="Main navigation">
+        <a class="sidebar-nav-item {{ 'active' if active_nav == 'topics' else '' }}" href="/topics">Topics</a>
+        <a class="sidebar-nav-item {{ 'active' if active_nav == 'practice-tests' else '' }}" href="/practice-tests">Practice Tests</a>
+        <a class="sidebar-nav-item {{ 'active' if active_nav == 'progress' else '' }}" href="/progress">Progress</a>
+        <a class="sidebar-nav-item {{ 'active' if active_nav == 'mock-exam' else '' }}" href="/mock-exam">Mock Exam</a>
+        {% if is_admin_hint %}
+          <!-- is_admin_hint is a display-only cache from login time - the /admin routes themselves re-check live via
+               auth.require_admin, so a stale hint here can only ever hide
+               the link too eagerly, never grant access it shouldn't. -->
+          <a class="sidebar-nav-item {{ 'active' if active_nav == 'admin' else '' }}" href="/admin">Admin</a>
+        {% endif %}
+      </nav>
+      {% if csrf_token %}
+        <!-- Only rendered once actually logged in (csrf_token is only
+             non-empty post-login, see auth.attempt_login) - no point
+             showing a logout control when there's no session to log out
+             of (password gate off, or not yet authenticated). Grouped in
+             one footer div (rather than two loose siblings) so the single
+             margin-top:auto on .sidebar-footer pushes both the username and
+             the logout button to the bottom together. -->
+        <div class="sidebar-footer">
+          {% if username %}
+            <div class="sidebar-user">{{ username }}</div>
+          {% endif %}
+          <form class="sidebar-logout" method="post" action="/logout">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="sidebar-nav-item sidebar-logout-btn">Log out</button>
+          </form>
+        </div>
+      {% endif %}
+      <!-- Trademark disclaimer - always rendered,
+           independent of login state, since it's about the product's own
+           brand claim, not something conditional on a session existing. -->
+      <p class="sidebar-disclaimer">Not affiliated with, endorsed by, or sponsored by the Linux
+        Foundation or the Cloud Native Computing Foundation. "Certified Kubernetes Application
+        Developer" and "CKAD" are trademarks of the Linux Foundation.</p>
+    </aside>
+    <main class="hub-content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

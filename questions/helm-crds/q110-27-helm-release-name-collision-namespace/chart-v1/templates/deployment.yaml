@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-engine
+  labels:
+    app: engine
+    clusterdrill-question: q110-27-helm-release-name-collision-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: engine
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: engine
+        release: {{ .Release.Name }}
+        clusterdrill-question: q110-27-helm-release-name-collision-namespace
+    spec:
+      containers:
+        - name: engine
+          image: "{{ .Values.image }}"
+          ports:
+            - containerPort: 80

@@ -1,0 +1,445 @@
+{% import "_macros.html" as m %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ question.id }} - ClusterDrill</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- "Terminal Ops" identity: IBM Plex Mono for headings/labels/status
+       bar/code, IBM Plex Sans for body copy - a deliberate pairing (both
+       from the same type family, designed to work together) tied to the
+       actual subject matter (kubectl/YAML/terminal work), not a generic
+       system-ui/Inter default. Loaded via CDN link tag, same no-build-step
+       posture as the Mermaid <script> below. -->
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <!-- Read by static/app.js's idle-lifecycle block and sent as the
+       X-CSRF-Token header on its mutating fetch() calls - see auth.py's
+       CSRF section. -->
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <!-- Mermaid.js from a CDN - no SPA
+       framework, no build step; a <script> tag is the same "light
+       vanilla JS" posture already used throughout this app, not a new
+       bundler/dependency to manage. Pinned to a specific stable major
+       version (10.x) rather than an unpinned "latest" tag so a diagram
+       that renders correctly today doesn't silently break on a future
+       breaking release. Loaded eagerly (not lazily like the ttyd iframe)
+       since it's a small, cacheable script and every question has a
+       Diagram tab whether or not it's the one currently shown. -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+<body class="question-view {{ 'has-terminal-view' if terminal_available else '' }}"
+      data-question-id="{{ question.id }}" data-tab="{{ tab }}"
+      data-in-session="{{ 'true' if in_active_session else 'false' }}"
+      data-is-exam="{{ 'true' if is_exam_session else 'false' }}"
+      {% if timer_enabled %}data-timer-deadline="{{ timer_deadline }}"{% endif %}>
+  <header class="topbar">
+    <div class="topbar-row">
+      <h1><a class="home-link" href="/topics"><span class="wheel" aria-hidden="true">&#9096;</span> ClusterDrill</a></h1>
+      <div class="topbar-badges">
+        {% if timer_enabled %}
+          <!-- Every session is timed automatically now (see sessions.py's
+               revision note) - the number shown is computed client-side in
+               app.js purely for the live tick, but the deadline it counts
+               down to (data-timer-deadline above) is server-authoritative -
+               stamped once on ActiveSession at session-start and unchanged
+               by navigation or refresh. When it reaches zero this pill
+               switches to a "time's up" state AND app.js auto-ends the
+               session (POST /sessions/end), mirroring a real timed lab
+               shutting down when the clock runs out. This is informational/
+               lifecycle only: it never calls /check or /reset, and grading
+               never reads it. -->
+          <div id="timer-badge" class="topic-badge timer-badge" role="timer" aria-live="off">
+            <span id="timer-value">--:--</span>
+          </div>
+        {% endif %}
+        {% if session_mode %}
+          <div class="topic-badge session-badge">
+            <span class="live-dot" aria-hidden="true"></span>
+            {{ session_mode }}{% if session_topic %} &middot; {{ session_topic }}{% else %} &middot; all topics{% endif %}
+          </div>
+        {% else %}
+          <div class="topic-badge session-badge session-badge-none" title="This question isn't part of a Fixed/Randomized/Mixed practice session (progress tracking only) - opened directly. Unrelated to whether the terminal below has a live connection to the cluster.">
+            no practice session
+          </div>
+        {% endif %}
+        <div class="topic-badge">{{ question.topic }}</div>
+        {% if question.topic == "community" %}
+          <div class="topic-badge pill-community" title="Ported from GPL-3.0 sources - see questions/community/README.md">
+            GPL-3.0
+          </div>
+        {% endif %}
+        <!-- Personal-best time for this exact question and the
+             session's current combo count - both purely informational
+             (never fed back into grading, same invariant as everywhere
+             else here), live-updated in place after each Check by
+             app.js's updateProgressBadges(). -->
+        {% if profile_snapshot.bestTimeMs %}
+          <div class="topic-badge" id="pb-time-badge" title="Your fastest passing Check on this question">
+            <span id="pb-time-value">PB: {{ (profile_snapshot.bestTimeMs / 1000) | round(1) }}s</span>
+          </div>
+        {% endif %}
+        {% if profile_snapshot.bestSpeedTier %}
+          <div class="topic-badge" id="speed-tier-badge" title="Your best-ever speed tier on this question">
+            <span id="speed-tier-value">{{ profile_snapshot.bestSpeedTier | capitalize }}</span>
+          </div>
+        {% endif %}
+        {% if in_active_session and combo > 0 %}
+          <div class="topic-badge" style="color: var(--signature); border-color: var(--signature);" id="combo-badge"
+               title="Consecutive first-try-correct Checks this session">
+            <span id="combo-value">combo: {{ combo }}</span>
+          </div>
+        {% endif %}
+        {% if terminal_available %}
+          <button id="terminal-toggle" type="button" class="btn btn-secondary btn-terminal-toggle" aria-expanded="true" aria-controls="terminal-panel">
+            Hide terminal
+          </button>
+        {% else %}
+          <span class="topic-badge session-badge-none" title="ttyd isn't running - install it with `brew install ttyd` and restart the app.">
+            terminal unavailable
+          </span>
+        {% endif %}
+        <!-- A genuine new-tab link, not an embedded pane. This mirrors the real
+             exam's "one extra browser tab" model on purpose, so it opens
+             the generic docs landing page (a search entry point), never a
+             page tailored to the current question - the Hint tab already
+             teaches *what* to search for; this button only
+             gets you to *where* you'd search. -->
+        <a
+          class="btn btn-secondary btn-docs"
+          href="https://kubernetes.io/docs/home/"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Opens kubernetes.io in a new tab - only kubernetes.io/docs, kubernetes.io/blog, and github.com/kubernetes (and their subdomains) are allowed during the real exam.">
+          Open docs &#8599;
+        </a>
+      </div>
+    </div>
+    <div class="progress-bar" title="Question {{ position }} of {{ total }}">
+      <div class="progress-bar-fill" style="width: {{ progress_pct }}%"></div>
+    </div>
+    <div class="progress-label">Question {{ position }} of {{ total }}</div>
+    <!-- Question navigator: jump directly to any
+         question in the active session, not just adjacent Previous/Skip.
+         Empty (and hidden) outside a real session - see question_view.py's
+         question_context() docstring for the session-of-one fallback this
+         mirrors everywhere else on this page. -->
+    {% if palette %}
+      <div class="question-navigator" role="navigation" aria-label="Jump to question">
+        {% for p in palette %}
+          <a class="question-navigator-item status-{{ p.status }} {{ 'current' if p.current else '' }}"
+             href="/questions/{{ p.id }}"
+             title="{{ p.id }} ({{ p.status }})"
+             aria-current="{{ 'true' if p.current else 'false' }}">{{ p.position }}</a>
+        {% endfor %}
+      </div>
+    {% endif %}
+    <!-- Boss mini-exam HP bar - only present in a boss session
+         (is_boss_session, see services/question_view.py). Takes damage from
+         a wrong or slow-but-correct Check; live-updated in place by
+         app.js's updateProgressBadges() the same way the PB-time/combo
+         badges already are. -->
+    {% if is_boss_session %}
+      <div class="boss-hp-bar" title="Boss HP - takes damage from a wrong or slow Check" role="meter"
+           aria-valuemin="0" aria-valuemax="{{ boss_max_hp }}" aria-valuenow="{{ boss_hp }}">
+        <div class="boss-hp-bar-fill {{ 'boss-hp-low' if boss_hp <= boss_max_hp * 0.3 else '' }}" id="boss-hp-fill"
+             style="width: {{ (boss_hp / boss_max_hp * 100) | round }}%"></div>
+      </div>
+      <div class="progress-label" id="boss-hp-label">Boss HP: {{ boss_hp }}/{{ boss_max_hp }}</div>
+    {% endif %}
+    <p class="docs-allowlist-note">
+      Real exam rule: only <code>kubernetes.io/docs</code>, <code>kubernetes.io/blog</code>, and
+      <code>github.com/kubernetes</code> (and their subdomains) are allowed as the one extra tab - practice sticking to those.
+    </p>
+  </header>
+
+  <!-- Idle-kill warning: distinct from the "no practice session" badge above
+       - this reflects real cluster/terminal access (idle.py + app.py's
+       /heartbeat + /idle-status), not question-tracking bookkeeping. Hidden
+       by default; static/app.js shows it once the server reports the idle
+       clock has crossed the warn threshold, and redirects to /login itself
+       once the kill threshold is actually hit server-side. Not rendered at
+       all when the password gate is off (local dev / SSH tunnel) - app.js
+       checks that itself via idle-status's "enabled" field rather than a
+       server-side conditional here, so the exact same markup works whether
+       or not CLUSTERDRILL_PASSWORD happens to be set for this run. -->
+  {% call m.alert('warning', id='idle-warning', hidden=True, dismiss_id='idle-dismiss-btn', dismiss_label='Still here') %}
+    No activity detected - ending this session and logging out in
+    <span id="idle-countdown">--:--</span> unless you interact.
+  {% endcall %}
+
+  <!-- Resizable 3-pane workspace ("Terminal Ops" direction): each .resizer
+       is a drag handle between two grid columns. app.js reads/writes
+       .layout's grid-template-columns directly and persists the chosen
+       widths to localStorage, so a resize sticks across page loads the
+       same way the terminal show/hide toggle already does for visibility.
+       Min-widths live in style.css so no amount of dragging can crush a
+       panel to unusable. -->
+  <main class="layout {{ 'has-terminal' if terminal_available else '' }}">
+    <section class="panel question-panel">
+      <div class="question-meta">
+        <span class="question-title">{{ question.id }}</span>
+        {% if question.domain %}{{ m.pill(question.domain) }}{% endif %}
+        {% if question.difficulty %}{{ m.pill(question.difficulty, question.difficulty) }}{% endif %}
+        {% if question.points %}{{ m.pill(question.points ~ ' pts') }}{% endif %}
+      </div>
+
+      {% if provision_error %}
+        <!-- services/question_view.py's provision_error: this view's own
+             auto-provision run just failed (setup.sh), so the namespace this
+             question expects may be missing/half-built - surfaced instead of
+             only logging server-side, per issue #95. Reset re-runs setup.sh. -->
+        {% call m.alert('warning', id='provision-error') %}
+          Setup didn't finish for this question ({{ provision_error }}) - Check may fail until you click <strong>Reset</strong> below to retry.
+        {% endcall %}
+      {% endif %}
+
+      <!-- Task/Hint/Solution/Diagram switch client-side only (app.js) - all
+           four panels below render server-side up front (same "hidden
+           content stays mounted" pattern as the terminal sub-tabs further
+           down), JS just toggles which one is visible. This used to be a
+           plain <a href> full-page nav; fixed because that blew away the
+           live terminal iframe (a fresh ttyd connection every switch) and
+           the just-run grading checklist (pure client-side JS state) on
+           every single tab click. The href/data-tab attributes stay so a
+           direct link or a no-JS fallback still lands on the right tab via
+           the server-side {{ tab }} value below. -->
+      <nav class="tabs" id="content-tabs">
+        <a class="tab {{ 'active' if tab == 'task' else '' }}" data-tab="task" href="/questions/{{ question.id }}?tab=task">Task</a>
+        <a class="tab {{ 'active' if tab == 'hint' else '' }}" data-tab="hint" href="/questions/{{ question.id }}?tab=hint">Hint</a>
+        {% if not is_exam_session %}
+          <a class="tab {{ 'active' if tab == 'solution' else '' }}" data-tab="solution" href="/questions/{{ question.id }}?tab=solution">Solution</a>
+        {% endif %}
+        <a class="tab {{ 'active' if tab == 'diagram' else '' }}" data-tab="diagram" href="/questions/{{ question.id }}?tab=diagram">Diagram</a>
+      </nav>
+
+      <div class="tab-content">
+        <div class="tab-panel {{ 'active' if tab == 'task' else '' }}" data-tab-panel="task">
+          {{ task_html | safe }}
+        </div>
+        <div class="tab-panel {{ 'active' if tab == 'hint' else '' }}" data-tab-panel="hint">
+          {% if hint_html %}
+            {{ hint_html | safe }}
+          {% else %}
+            <p><em>No hint section found in QUESTION.md.</em></p>
+          {% endif %}
+        </div>
+        <div class="tab-panel {{ 'active' if tab == 'solution' else '' }}" data-tab-panel="solution">
+          {% if discovery_path_html %}
+            <!-- Discovery Path/Exact Solution toggle - generated from this
+                 question's own diagram.json sequence + Hint text (see
+                 app.py's build_discovery_path_html()), not hand-authored,
+                 so it's available for every question rather than only the
+                 ones someone got around to writing narrative content for.
+                 Same client-side show/hide pattern as every other tab in
+                 this file, scoped to #solution-subtabs so its .tab clicks
+                 don't collide with the outer Task/Hint/Solution/Diagram
+                 #content-tabs listener. -->
+            <div class="solution-subtabs" id="solution-subtabs">
+              <button type="button" class="solution-subtab active" data-solution-subtab="discovery">Discovery Path</button>
+              <button type="button" class="solution-subtab" data-solution-subtab="exact">Exact Solution</button>
+            </div>
+            <div class="solution-subtab-panel active" data-solution-subtab-panel="discovery">
+              <div class="diagram-label" style="display:inline-block; margin-right:8px;">how to think through it</div>
+              {{ discovery_path_html | safe }}
+            </div>
+            <div class="solution-subtab-panel" data-solution-subtab-panel="exact">
+              {{ answer_html | safe }}
+            </div>
+          {% else %}
+            {{ answer_html | safe }}
+          {% endif %}
+        </div>
+        <div class="tab-panel {{ 'active' if tab == 'diagram' else '' }}" data-tab-panel="diagram">
+          <!-- diagram_label distinguishes "topic primer" from "this
+               question's own diagram" so it's obvious which one is
+               showing, matching the ticket's "on session start ... per
+               question" split - see app.py's question_context() for the
+               resolution logic. -->
+          <p class="diagram-label">{{ diagram_label }}</p>
+          {% if diagram_mixed_session_start %}
+            <p class="diagram-note">
+              This is a Mixed session, which spans every topic - there's no single
+              topic primer to show here, so this is this question's own diagram instead.
+            </p>
+          {% endif %}
+          {% if diagram_arch %}
+            <!-- Diagram tab rebuild: Architecture/Sequence sub-tabs, same
+                 client-side show/hide pattern as the outer Task/Hint/
+                 Solution/Diagram tabs (#content-tabs above) - both panels
+                 render server-side, app.js toggles visibility and lazily
+                 calls into static/diagram.js the first time each is shown.
+                 diagram_arch/diagram_seq are embedded as JSON (Starlette's
+                 Jinja2 environment registers `tojson`, already used by
+                 progress.html's #radar-data) rather than passed as Python
+                 objects to a JS scope - this file has no other way to hand
+                 data to a separately-loaded <script src> file. -->
+            <nav class="tabs diagram-subtabs" id="diagram-subtabs">
+              <a class="tab active" data-subtab="arch" href="#">Architecture</a>
+              <a class="tab" data-subtab="seq" href="#">Sequence</a>
+            </nav>
+            <div class="diagram-subtab-content">
+              <div class="diagram-subtab-panel active" data-subtab-panel="arch" id="diagram-arch-mount"></div>
+              <div class="diagram-subtab-panel" data-subtab-panel="seq" id="diagram-seq-mount"></div>
+            </div>
+            <script type="application/json" id="diagram-arch-data">{{ diagram_arch | tojson }}</script>
+            <script type="application/json" id="diagram-seq-data">{{ diagram_seq | tojson }}</script>
+          {% elif diagram_mmd %}
+            <!-- Fallback path, kept deliberately: a question whose
+                 diagram.json is missing or failed to parse (shouldn't
+                 happen after generate_diagram.py --all --write, but is a
+                 real state during rollout) still gets a diagram instead of
+                 nothing, via the pre-existing Mermaid.js render - see the
+                 CDN <script> in <head> and app.js's renderMermaidIfNeeded(). -->
+            <div class="mermaid">{{ diagram_mmd }}</div>
+          {% else %}
+            <p><em>{{ diagram_fallback }}</em></p>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <div class="resizer" data-resize-index="1" role="separator" aria-orientation="horizontal" aria-label="Resize task and checklist panels" tabindex="0"></div>
+
+    <section class="panel checklist-panel">
+      <div class="checklist-header">
+        <h2>Grading checklist</h2>
+        <div class="actions">
+          {% if can_reset %}
+            <button id="reset-btn" type="button" class="btn btn-secondary">Reset</button>
+          {% endif %}
+          {% if not is_exam_session %}
+            <button id="check-btn" type="button" class="btn btn-primary">Check</button>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if is_exam_session %}
+        <!-- Deferred grading: a real exam gives no
+             interim feedback at all - no Check button, no live checklist,
+             not even a hidden/disabled one (see app.js's isQuestionPage
+             gate for why the rest of the page - terminal, timer - stays
+             fully functional regardless). Every question is graded at
+             once on submit instead, not one at a time here. -->
+        {% call m.alert('info') %}
+          No live feedback during an exam - every question is graded at once when you submit.
+        {% endcall %}
+      {% else %}
+        <div id="check-status" class="alert alert-compact alert-idle" role="status" aria-live="polite"></div>
+
+        <!-- Signature element: a live terminal-readout checklist, not a
+             generic checkbox list - bracket markers ([ ] / [✓] / [✗]) in
+             Plex Mono, styled like CI/test-runner output (pytest/kubectl
+             get pods' STATUS column), because that's the actual vocabulary
+             of the audience this tool is for. app.js's renderCriteria()
+             renders each row with a small staggered reveal on Check
+             (disabled under prefers-reduced-motion, see style.css).
+             aria-live of its own (issue #116) - previously only
+             #check-status's one-line summary was announced, not the
+             individual per-criterion rows underneath it. -->
+        <ul id="criteria-list" class="criteria-list" aria-live="polite">
+          <li class="criteria-empty">[&nbsp;] click <strong>Check</strong> to grade your work</li>
+        </ul>
+
+        <div id="score-line" class="score-line"></div>
+      {% endif %}
+    </section>
+
+    {% if terminal_available %}
+      <div class="resizer" data-resize-index="0" role="separator" aria-orientation="vertical" aria-label="Resize workspace and terminal panels" tabindex="0"></div>
+
+      <!-- A real grid column beside Task/Checklist,
+           visible by default (see style.css's .layout.has-terminal) -
+           no click required to see it. The toggle button still lets you
+           collapse it back to the wider two-column layout if you want the
+           space, but the default is "on". Loaded eagerly (src set here
+           directly, not a lazy data-src swap) since "visible by default"
+           means paying for the ttyd handshake up front is the whole
+           point - a candidate opens a question expecting a terminal, not
+           an extra click to get one. -->
+      <section id="terminal-panel" class="terminal-panel" aria-hidden="false">
+        <div class="terminal-panel-header">
+          <div id="terminal-tabs" class="terminal-tabs" role="tablist" aria-label="Terminal tabs"
+               data-max-tabs="{{ terminal_max_tabs }}">
+            <button type="button" role="tab" class="terminal-tab active" data-tab="1"
+                    aria-selected="true" aria-controls="terminal-frame-1" id="terminal-tab-1">
+              Terminal 1
+            </button>
+            <button type="button" id="terminal-tab-add" class="terminal-tab-add"
+                    aria-label="New terminal tab" title="New terminal">+</button>
+            {% if worker_nodes %}
+              <!-- issue #122 (M7): only rendered at all when the live
+                   cluster topology (node_topology.py) actually has a
+                   worker node - on today's single-node Minikube default,
+                   this whole element is absent, not disabled/greyed-out,
+                   per that ticket's explicit requirement. Read by app.js's
+                   terminal-tab-add handler at click time, not on page
+                   load, so the "+" button's own behavior is unaffected
+                   when this isn't rendered. -->
+              <select id="terminal-node-picker" class="terminal-node-picker"
+                      aria-label="Node for the next new terminal tab"
+                      title="Which node the next + tab connects to">
+                <option value="control-plane" selected>Control-plane</option>
+                {% for node in worker_nodes %}
+                  <option value="{{ node }}">Worker: {{ node }}</option>
+                {% endfor %}
+              </select>
+            {% endif %}
+          </div>
+          {% if workdir %}
+            <span class="terminal-workdir-label" title="Every open terminal tab moves here on connect - scrollback is kept, so you can still scroll up to your work on the previous question.">{{ workdir }}</span>
+          {% endif %}
+        </div>
+        <div class="terminal-frame-wrap" id="terminal-frames">
+          <iframe
+            id="terminal-frame-1"
+            class="terminal-frame active"
+            data-tab="1"
+            src="{{ terminal_url }}"
+            title="Embedded terminal 1 (ttyd)"
+            allow="clipboard-read; clipboard-write">
+          </iframe>
+        </div>
+      </section>
+    {% endif %}
+  </main>
+
+  <!-- Status-bar footer: a tmux/wezterm-style segmented bar (prev · current
+       question · End session · next) instead of a plain two-button footer -
+       the same multiplexer vocabulary this project's own daily toolchain
+       already uses (wezterm/README.md), and a natural home for the
+       explicit "end the session" lifecycle action a real timed lab needs. -->
+  <footer class="status-bar">
+    <div class="status-segment status-segment-nav">
+      {% if prev_id %}
+        <a class="btn btn-nav" href="/questions/{{ prev_id }}">&larr; prev</a>
+      {% else %}
+        <span class="btn btn-nav btn-disabled">&larr; prev</span>
+      {% endif %}
+    </div>
+    <div class="status-segment status-segment-id">{{ question.id }}</div>
+    <div class="status-segment status-segment-end">
+      {% if in_active_session %}
+        <button id="end-session-btn" type="button" class="btn btn-danger-ghost">{{ 'Submit Exam' if is_exam_session else 'End session' }}</button>
+      {% endif %}
+    </div>
+    <div class="status-segment status-segment-nav">
+      {% if next_id %}
+        <a class="btn btn-nav" href="/questions/{{ next_id }}">skip &rarr;</a>
+      {% else %}
+        <span class="btn btn-nav btn-disabled">skip &rarr;</span>
+      {% endif %}
+    </div>
+  </footer>
+
+  {{ m.confirm_dialog() }}
+
+  <!-- Mermaid init moved to static/app.js (2026-08 CSP hardening
+       pass - see app.js's comment at that block for why this can no longer
+       be an inline <script>). -->
+  <script src="/static/diagram.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

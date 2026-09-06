@@ -1,0 +1,20 @@
+apiVersion: v2
+name: clusterdrill
+description: >-
+  A dedicated, disposable CKAD/Kubernetes practice appliance. Installs only
+  into its own single-instance dedicated cluster environment - this is not
+  a generic deployment path for shared, business, classroom, or production
+  clusters (see README.md's "Scope" section before installing).
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/onahFran6/clusterdrill
+sources:
+  - https://github.com/onahFran6/clusterdrill
+keywords:
+  - kubernetes
+  - ckad
+  - practice
+  - learning
+maintainers:
+  - name: onahFran6

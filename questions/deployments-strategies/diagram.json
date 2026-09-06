@@ -1,0 +1,96 @@
+{
+  "architecture": {
+    "title": "Topic primer: deployments-strategies",
+    "description": "A rollout keeps the old ReplicaSet scaled down (not deleted) while scaling up the new one; rollout subcommands act on the Deployment and shift Pods between the two ReplicaSets.",
+    "nodes": [
+      {
+        "id": "Dep",
+        "label": "Deployment",
+        "type": "controller",
+        "sub": "spec.strategy: RollingUpdate"
+      },
+      {
+        "id": "RSOld",
+        "label": "ReplicaSet (old)",
+        "type": "controller",
+        "sub": "scaled to 0 after rollout"
+      },
+      {
+        "id": "RSNew",
+        "label": "ReplicaSet (new)",
+        "type": "controller",
+        "sub": "scaled to spec.replicas"
+      },
+      {
+        "id": "PodOld",
+        "label": "Pod (old image)",
+        "type": "pod"
+      },
+      {
+        "id": "PodNew",
+        "label": "Pod (new image)",
+        "type": "pod"
+      },
+      {
+        "id": "Status",
+        "label": "rollout status/history",
+        "type": "external",
+        "sub": "inspect progress + revisions"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Dep",
+        "to": "RSNew",
+        "label": "creates new revision",
+        "animated": true,
+        "command": "kubectl set image / edit / apply"
+      },
+      {
+        "from": "Dep",
+        "to": "RSOld",
+        "label": "owns (revision history)",
+        "animated": true
+      },
+      {
+        "from": "RSOld",
+        "to": "PodOld",
+        "label": "was creating",
+        "animated": false
+      },
+      {
+        "from": "RSNew",
+        "to": "PodNew",
+        "label": "creates",
+        "animated": true
+      },
+      {
+        "from": "Dep",
+        "to": "RSNew",
+        "label": "pause rollout",
+        "animated": false,
+        "command": "kubectl rollout pause"
+      },
+      {
+        "from": "Dep",
+        "to": "RSNew",
+        "label": "resume rollout",
+        "animated": false,
+        "command": "kubectl rollout resume"
+      },
+      {
+        "from": "Dep",
+        "to": "RSOld",
+        "label": "undo / --to-revision",
+        "animated": true,
+        "command": "kubectl rollout undo"
+      },
+      {
+        "from": "Dep",
+        "to": "Status",
+        "label": "inspect",
+        "animated": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,192 @@
+{
+  "architecture": {
+    "title": "q110-25-helm-broken-hook-preinstall: Job, Deployment",
+    "description": "Resources involved: Job, Deployment",
+    "nodes": [
+      {
+        "id": "Job",
+        "label": "Job",
+        "type": "controller"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "ReplicaSet",
+        "label": "ReplicaSet",
+        "type": "controller"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Job",
+        "to": "Pod",
+        "label": "owns",
+        "animated": true,
+        "command": "created to satisfy spec.completions/parallelism"
+      },
+      {
+        "from": "Deployment",
+        "to": "ReplicaSet",
+        "label": "owns",
+        "animated": true,
+        "command": "controller creates on template change"
+      },
+      {
+        "from": "ReplicaSet",
+        "to": "Pod",
+        "label": "owns",
+        "animated": true,
+        "command": "created to match spec.replicas"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q110-25-helm-broken-hook-preinstall: Job, Deployment",
+    "description": "Resources involved: Job, Deployment",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Job",
+        "label": "Job",
+        "type": "controller"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Job controller",
+        "label": "Job controller",
+        "type": "controller"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "ReplicaSet",
+        "label": "ReplicaSet",
+        "type": "controller"
+      },
+      {
+        "id": "Deployment controller",
+        "label": "Deployment controller",
+        "type": "controller"
+      },
+      {
+        "id": "ReplicaSet controller",
+        "label": "ReplicaSet controller",
+        "type": "controller"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create job ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "Job controller",
+        "to": "API Server",
+        "label": "watches Job objects"
+      },
+      {
+        "from": "Job controller",
+        "to": "API Server",
+        "label": "owns Pod (created to satisfy spec.completions/parallelism)"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create deployment ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "Deployment controller",
+        "to": "API Server",
+        "label": "watches Deployment objects"
+      },
+      {
+        "from": "Deployment controller",
+        "to": "API Server",
+        "label": "owns ReplicaSet (controller creates on template change)"
+      },
+      {
+        "from": "ReplicaSet controller",
+        "to": "API Server",
+        "label": "watches ReplicaSet objects"
+      },
+      {
+        "from": "ReplicaSet controller",
+        "to": "API Server",
+        "label": "owns Pod (created to match spec.replicas)"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}

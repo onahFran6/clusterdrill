@@ -1,0 +1,91 @@
+{
+  "architecture": {
+    "title": "Topic primer: helm-crds",
+    "description": "A Helm chart becomes a release that templates ordinary k8s objects, independently versioned via install/upgrade/rollback; a CRD defines a new Kind for custom resources.",
+    "nodes": [
+      {
+        "id": "Chart",
+        "label": "Helm chart",
+        "type": "external",
+        "sub": "Chart.yaml + templates/ + values.yaml"
+      },
+      {
+        "id": "Release",
+        "label": "Helm release",
+        "type": "controller",
+        "sub": "helm install / upgrade -f values.yaml"
+      },
+      {
+        "id": "Objs",
+        "label": "Templated k8s objects",
+        "type": "resource",
+        "sub": "Deployment, Service, ConfigMap, ..."
+      },
+      {
+        "id": "History",
+        "label": "Release history",
+        "type": "external",
+        "sub": "helm rollback <name> <revision>"
+      },
+      {
+        "id": "CRD",
+        "label": "CustomResourceDefinition",
+        "type": "external",
+        "sub": "defines spec.names.kind + schema"
+      },
+      {
+        "id": "CR",
+        "label": "Custom resource instance",
+        "type": "resource",
+        "sub": "apiVersion: <group>/<version>"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Chart",
+        "to": "Release",
+        "label": "install",
+        "animated": true,
+        "command": "helm install"
+      },
+      {
+        "from": "Release",
+        "to": "Objs",
+        "label": "renders templates/*.yaml",
+        "animated": true
+      },
+      {
+        "from": "Chart",
+        "to": "Release",
+        "label": "upgrade",
+        "animated": true,
+        "command": "helm upgrade --set / -f values.yaml"
+      },
+      {
+        "from": "Release",
+        "to": "History",
+        "label": "tracked in",
+        "animated": false
+      },
+      {
+        "from": "History",
+        "to": "Release",
+        "label": "rollback",
+        "animated": true,
+        "command": "helm rollback"
+      },
+      {
+        "from": "CRD",
+        "to": "CR",
+        "label": "registers new API type",
+        "animated": true
+      },
+      {
+        "from": "Chart",
+        "to": "CRD",
+        "label": "can bundle a CRD + its instances",
+        "animated": false
+      }
+    ]
+  }
+}

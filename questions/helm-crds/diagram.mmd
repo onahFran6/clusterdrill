@@ -1,0 +1,18 @@
+%% Topic primer: helm-crds
+%% A Helm chart becomes a release that templates ordinary k8s objects, independently
+%% versioned via install/upgrade/rollback; a CRD defines a new Kind for custom resources.
+graph LR
+  Chart["Helm chart\n(Chart.yaml + templates/ + values.yaml)"]
+  Release["Helm release\n(helm install <name> <chart> / helm upgrade -f values.yaml)"]
+  Objs["Templated k8s objects\n(Deployment, Service, ConfigMap, ...)"]
+  History["Release history\n(helm rollback <name> <revision>)"]
+  CRD["CustomResourceDefinition\n(kubectl apply -f crd.yaml, defines spec.names.kind + schema)"]
+  CR["Custom resource instance\n(kubectl apply -f cr.yaml, apiVersion: <group>/<version>)"]
+
+  Chart -- "helm install" --> Release
+  Release -- "renders templates/*.yaml" --> Objs
+  Chart -- "helm upgrade --set / -f values.yaml" --> Release
+  Release -- "tracked in" --> History
+  History -- "helm rollback" --> Release
+  CRD -- "registers new API type" --> CR
+  Chart -. "chart can bundle a CRD + its instances" .-> CRD

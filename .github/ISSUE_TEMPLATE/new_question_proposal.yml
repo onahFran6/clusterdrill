@@ -1,0 +1,72 @@
+name: New question proposal
+description: Propose a new practice question for the bank
+title: "[Question]: "
+labels: ["new-question"]
+body:
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      description: Which topic directory does this belong to?
+      options:
+        - configuration
+        - deployments-strategies
+        - helm-crds
+        - imperative-commands
+        - multi-container-pods
+        - observability
+        - pod-design
+        - security
+        - services-networking
+        - state-persistence
+        - "questions/community/ (GPL-3.0 ported content only)"
+    validations:
+      required: true
+  - type: dropdown
+    id: domain
+    attributes:
+      label: CNCF exam domain
+      description: One of the CKAD curriculum domains, matching domains.fragment.yaml
+      options:
+        - Application Design and Build
+        - Application Deployment
+        - Application Observability and Maintenance
+        - Application Environment, Configuration and Security
+        - Services and Networking
+    validations:
+      required: true
+  - type: dropdown
+    id: difficulty
+    attributes:
+      label: Difficulty
+      options:
+        - easy
+        - medium
+        - hard
+    validations:
+      required: true
+  - type: textarea
+    id: scenario
+    attributes:
+      label: Proposed scenario
+      description: Describe the task the candidate would need to complete.
+    validations:
+      required: true
+  - type: input
+    id: resource-kinds
+    attributes:
+      label: Resource kinds involved
+      placeholder: "e.g. Pod, ConfigMap, Secret, Deployment"
+    validations:
+      required: true
+  - type: checkboxes
+    id: licensing
+    attributes:
+      label: Licensing
+      options:
+        - label: This is original content I'm contributing under this repo's MIT license (or GPL-3.0 if proposing for `questions/community/` specifically).
+          required: true
+        - label: This is not adapted or copied from a paid course, exam dump, or other source I don't have rights to contribute.
+          required: true
+        - label: This is not reconstructed from memory of a real CKAD/CKA/CKS exam attempt (see CONTRIBUTING.md's "one hard content rule").
+          required: true

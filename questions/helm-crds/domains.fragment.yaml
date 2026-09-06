@@ -1,0 +1,352 @@
+topic: helm-crds
+questions:
+  - id: q110-01-helm-install-release
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-02-helm-set-override
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-03-helm-upgrade-values
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-04-helm-rollback-release
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-05-helm-list-uninstall
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-06-helm-get-values
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-07-crd-define-schema
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-08-crd-create-instance
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-09-crd-validation-required
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-10-crd-scope-namespaced
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-11-helm-chart-with-crd
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [CustomResourceDefinition, Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-12-crd-jsonpath-field
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [CustomResourceDefinition, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-13-helm-uninstall-keep-history
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-14-helm-set-numeric-value
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-15-crd-list-shortname
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-16-helm-show-values
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-17-crd-cluster-scoped
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-18-helm-template-dry-run
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-19-helm-upgrade-install-idempotent
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-20-crd-status-subresource
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-21-helm-multiple-value-files
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-22-crd-additional-printer-columns
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-23-helm-lint-fix-chart
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-24-crd-conversion-webhook-none-multi-version
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-25-helm-broken-hook-preinstall
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Job, Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-26-crd-webhook-validation-mismatch-namespace
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-27-helm-release-name-collision-namespace
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-28-crd-finalizer-stuck-deletion
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-29-helm-rollback-values-drift
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-30-crd-crossnamespace-count-and-cleanup
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-31-crd-cel-cross-field-validation
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-32-helm-uninstall-name-reuse
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-33-helm-set-string-flag
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-34-helm-set-list-index-values
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-35-crd-schema-default-value
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-36-crd-categories-field-kubectl-get-all
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-37-helm-set-flag-precedence-order
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-38-crd-instance-label-selector-list
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-39-helm-broken-posthook-fix
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Job, Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-40-helm-chart-local-subchart-dependency
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-41-helm-notes-txt-value-substitution
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-42-crd-scale-subresource-missing
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-43-crd-structural-schema-pruning
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-44-helm-required-function-value
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Secret]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-45-crd-ownerreference-cascade-gc
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [CustomResourceDefinition, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-46-helm-hook-weight-ordering-two-hooks
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Job]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-47-crd-switch-storage-version
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-48-helm-post-delete-hook-cleanup
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Job, Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-49-crd-json-patch-array-append
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [CustomResourceDefinition]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-50-helm-values-schema-json-fix
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1

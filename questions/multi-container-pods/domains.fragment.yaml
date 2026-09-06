@@ -1,0 +1,412 @@
+topic: multi-container-pods
+questions:
+- id: q102-01-sidecar-log-shipper
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-02-init-container-wait-for-service
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-03-ambassador-proxy-port
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q102-04-adapter-log-format-normalizer
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q102-05-shared-emptydir-volume
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-06-init-container-file-handoff
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q102-07-localhost-networking-multi-container
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-08-multiple-init-containers-order
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q102-09-shared-process-namespace-debug
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q102-10-native-sidecar-restart-always
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q102-11-init-container-permission-fix
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q102-12-broken-multicontainer-pod-fix
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 10
+  requirements:
+    min_nodes: 1
+- id: q102-13-init-container-migration-gate
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q102-14-sidecar-distinct-resources
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-15-sidecar-file-puller
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q102-16-adapter-metrics-exporter
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q102-17-init-container-configmap-gate
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  - ConfigMap
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-18-three-way-pipeline-volume
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 10
+  requirements:
+    min_nodes: 1
+- id: q102-19-sidecar-wrong-volume-name-mismatch
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-20-init-container-wrong-image-tag
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-21-sidecar-missing-shared-mountpath
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-22-add-debug-sidecar-to-existing-pod
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-23-adapter-container-wrong-command-format
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-24-restartpolicy-onfailure-sidecar-crashloop
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-25-ambassador-wrong-port-two-services
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-26-poststart-marker-gates-sidecar-start
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-27-native-sidecar-startupprobe-gates-main
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-28-shared-pid-namespace-signal-container
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-30-job-native-sidecar-completion-semantics
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Job
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-31-three-container-pipeline-swapped-subpaths
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-29-limitrange-rebalance-prevent-sidecar-oomkill
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - LimitRange
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-32-sidecar-secret-env-typo
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Secret
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-33-two-container-configmap-volume-two-mounts
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - ConfigMap
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-34-init-container-wrong-workingdir
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-35-two-independent-sidecars-separate-volumes
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-36-adapter-missing-format-env
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-37-sidecar-downward-api-podname-missing
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-38-readiness-probe-wrong-container-port
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-39-ambassador-missing-readiness-probe
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-40-prestop-hook-drains-sidecar
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-41-projected-volume-merge-missing-key
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - ConfigMap
+  - Secret
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-42-qos-guaranteed-mismatched-limits
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-43-resourcefieldref-memory-divisor
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-44-init-container-secret-defaultmode-too-restrictive
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Secret
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-45-sidecar-runasnonroot-config-error
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-46-ambassador-dependent-env-var-order
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-47-readonlyrootfs-sidecar-needs-scratch-volume
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-48-chained-native-sidecars-startup-order
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-49-termination-message-policy-hides-crash-reason
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q102-50-livenessprobe-wrong-path-crashloop
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1

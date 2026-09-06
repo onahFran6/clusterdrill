@@ -1,0 +1,31 @@
+ClusterDrill {{ .Chart.AppVersion }} installed into namespace clusterdrill-system.
+
+This is a dedicated, disposable appliance - it expects sole ownership of
+its Minikube profile/dedicated cluster, not a shared or production one.
+See README.md's "Scope" section if you're unsure this applies to you.
+
+Wait for the rollout, then find the NodePort:
+
+  kubectl -n clusterdrill-system rollout status deployment/clusterdrill-web
+  kubectl -n clusterdrill-system get svc clusterdrill
+
+Reach it from your Minikube host:
+
+  minikube service clusterdrill --namespace clusterdrill-system --url
+
+Log in with the password in the Secret you supplied via
+auth.existingSecretName:
+
+  kubectl -n clusterdrill-system get secret {{ .Values.auth.existingSecretName }} -o jsonpath='{.data.password}' | base64 -d
+
+The embedded terminal (ttyd) is never directly reachable - only through
+this same authenticated web app's own proxied routes.
+
+To uninstall:
+
+  helm uninstall {{ .Release.Name }} --namespace clusterdrill-system
+
+This removes only what this chart created - the ClusterRole/
+ClusterRoleBinding are cluster-scoped, so `helm uninstall` removes those
+too, but nothing outside the clusterdrill-system namespace/these two
+cluster-scoped resources is touched.

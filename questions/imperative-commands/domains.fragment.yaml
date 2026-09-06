@@ -1,0 +1,424 @@
+topic: imperative-commands
+questions:
+- id: q101-01-create-pod-imperative
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-02-create-pod-labels-port
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-03-generate-pod-yaml-dry-run
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-04-expose-pod-clusterip
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-05-expose-deployment-nodeport
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-06-create-deployment-imperative
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-07-scale-deployment
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-08-set-image-deployment
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-09-create-configmap-literal
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - ConfigMap
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-10-create-secret-generic
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Secret
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-11-label-pods-selector
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-12-create-job-imperative
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-13-create-cronjob-imperative
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - CronJob
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-14-edit-live-deployment
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-15-run-pod-env-vars
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-16-run-pod-command-args
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-17-create-serviceaccount-imperative
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - ServiceAccount
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-18-annotate-resource
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-19-run-pod-resource-limits
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-20-generate-pod-restart-policy
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-21-generate-resourcequota-cli
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - ResourceQuota
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-22-create-pod-multiple-ports-imperative
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-23-diagnose-wrong-configmap-key-reference
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - ConfigMap
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-24-fix-secret-mount-wrong-key-path
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Secret
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-25-rightsize-deployment-via-set-resources
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - LimitRange
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-26-recover-deleted-deployment-from-history
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - ReplicaSet
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-27-generate-job-with-backofflimit-and-completions
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-28-fix-cronjob-suspended-and-wrong-schedule
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - CronJob
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-29-fix-serviceaccount-token-automount-mismatch
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - ServiceAccount
+  - Role
+  - RoleBinding
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-30-convert-single-container-pod-to-multicontainer-sidecar
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-31-rollback-deployment-specific-revision
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - ReplicaSet
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-32-json-patch-remove-env-var-by-index
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-33-hpa-fights-manual-scale
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - HorizontalPodAutoscaler
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-34-extract-pod-spec-into-cronjob
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  - CronJob
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-35-create-configmap-from-file
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - ConfigMap
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-36-create-secret-tls-imperative
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Secret
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-37-create-secret-docker-registry-imperative
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Secret
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-38-autoscale-deployment-imperative
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Deployment
+  - HorizontalPodAutoscaler
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-39-set-env-running-deployment
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-40-create-configmap-from-env-file
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - ConfigMap
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-41-create-job-from-cronjob
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - CronJob
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-42-patch-deployment-rollout-strategy
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-43-copy-file-into-running-pod
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-44-conditional-scale-current-replicas
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-45-fix-imagepullbackoff-wrong-tag
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  - ServiceAccount
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-46-fix-stuck-rollout-bad-readiness-probe
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-47-fix-cronjob-concurrency-policy-pileup
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - CronJob
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-48-fix-job-activedeadlineseconds-premature-failure
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-49-rollout-restart-stale-secret-values
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - Secret
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q101-50-scale-down-to-free-resourcequota
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - Pod
+  - ResourceQuota
+  points: 5
+  requirements:
+    min_nodes: 1

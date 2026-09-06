@@ -1,0 +1,352 @@
+topic: deployments-strategies
+questions:
+  - id: q104-01-create-deployment-strategy
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-02-rollout-history-change-cause
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, ReplicaSet]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-03-rollout-undo-previous
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, ReplicaSet]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-04-rollout-undo-to-revision
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, ReplicaSet]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-05-tune-max-unavailable-zero
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-06-tune-max-surge-fast-rollout
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-07-pause-rollout-mid-update
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, ReplicaSet]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-08-resume-paused-rollout
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, ReplicaSet]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-09-replicaset-ownership-inspect
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, ReplicaSet]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-10-revision-history-limit
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, ReplicaSet]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-11-blue-green-service-switch
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, Service]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-12-canary-shared-selector-split
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, Service]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-13-canary-increase-weight
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, Service]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-14-readiness-gate-stuck-rollout
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-15-fix-stuck-rollout-bad-probe
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-16-rollout-restart-config-change
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-17-min-ready-seconds-pacing
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-18-scale-during-rollout
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, ReplicaSet]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-19-autoscale-deployment-cpu
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, HorizontalPodAutoscaler]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-22-set-progress-deadline
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-20-recreate-strategy-downtime
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-21-observe-recreate-terminate-before-create
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-23-detect-progress-deadline-exceeded
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-24-immutable-selector-rejected
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-25-terminationgraceperiod-during-rollout
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-26-poddisruptionbudget-minavailable
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment, PodDisruptionBudget]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-27-rolling-update-both-percentages
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-28-multi-container-pod-partial-image-update
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-29-diagnose-and-fix-cascading-strategy-misconfig
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-30-diagnose-wrong-container-name-in-set-image
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-31-fix-canary-selector-leak-wrong-traffic-split
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, Service]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-32-recover-deployment-after-bad-rollback-wrong-revision
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-33-scale-deployment-imperative
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-34-create-deployment-imperative
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-35-basic-image-update-set-image
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-36-scale-via-patch-merge
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-37-set-env-var-triggers-rollout
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-38-tune-maxunavailable-percent-maxsurge-fixed
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-39-set-resources-triggers-rollout
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-40-label-deployment-object-metadata
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-41-canary-abort-rollback-to-stable
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, Service]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-42-blue-green-secret-config-cutover
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, Service, Secret]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-43-multi-container-both-images-single-rollout
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, ReplicaSet]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-44-hpa-v2-yaml-behavior-scaledown
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, HorizontalPodAutoscaler]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-45-poddisruptionbudget-maxunavailable-percent
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, PodDisruptionBudget]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-46-rollout-stuck-imagepullbackoff-typo
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, ReplicaSet]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-47-rollout-stuck-resourcequota-exceeded
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, ReplicaSet]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-48-liveness-probe-crashloop-blocks-rollout
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-49-rollback-fails-no-history-fix-forward
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, ReplicaSet]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q104-50-deployment-missing-serviceaccount-blocks-rollout
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, ServiceAccount]
+    points: 5
+    requirements:
+      min_nodes: 1

@@ -1,0 +1,127 @@
+{
+  "architecture": {
+    "title": "Topic primer: imperative-commands",
+    "description": "Core CKAD imperative workflow - Pod, up through Deployment, to a reachable Service, plus the ConfigMap/Secret objects and mutating commands this topic's questions exercise.",
+    "nodes": [
+      {
+        "id": "Img",
+        "label": "container image",
+        "type": "pod"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Dep",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "RS",
+        "label": "ReplicaSet",
+        "type": "controller"
+      },
+      {
+        "id": "RS2",
+        "label": "ReplicaSet (new)",
+        "type": "controller",
+        "sub": "after set image"
+      },
+      {
+        "id": "Svc",
+        "label": "Service",
+        "type": "service"
+      },
+      {
+        "id": "CM",
+        "label": "ConfigMap",
+        "type": "resource"
+      },
+      {
+        "id": "Sec",
+        "label": "Secret",
+        "type": "resource"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Img",
+        "to": "Pod",
+        "label": "run",
+        "animated": true,
+        "command": "kubectl run pod --image=..."
+      },
+      {
+        "from": "Img",
+        "to": "Dep",
+        "label": "create",
+        "animated": true,
+        "command": "kubectl create deployment"
+      },
+      {
+        "from": "Dep",
+        "to": "RS",
+        "label": "owns (auto-created)",
+        "animated": true
+      },
+      {
+        "from": "RS",
+        "to": "Pod",
+        "label": "creates",
+        "animated": true,
+        "command": "spec.replicas"
+      },
+      {
+        "from": "Dep",
+        "to": "RS2",
+        "label": "updates image",
+        "animated": true,
+        "command": "kubectl set image / edit"
+      },
+      {
+        "from": "Dep",
+        "to": "RS",
+        "label": "scale",
+        "animated": false,
+        "command": "kubectl scale --replicas"
+      },
+      {
+        "from": "RS2",
+        "to": "Pod",
+        "label": "creates",
+        "animated": true,
+        "command": "spec.replicas"
+      },
+      {
+        "from": "Pod",
+        "to": "Svc",
+        "label": "expose",
+        "animated": true,
+        "command": "kubectl expose pod --port"
+      },
+      {
+        "from": "Dep",
+        "to": "Svc",
+        "label": "expose",
+        "animated": true,
+        "command": "kubectl expose deployment --port"
+      },
+      {
+        "from": "CM",
+        "to": "Pod",
+        "label": "inject",
+        "animated": false,
+        "command": "kubectl create configmap --from-literal"
+      },
+      {
+        "from": "Sec",
+        "to": "Pod",
+        "label": "inject",
+        "animated": false,
+        "command": "kubectl create secret generic"
+      }
+    ]
+  }
+}

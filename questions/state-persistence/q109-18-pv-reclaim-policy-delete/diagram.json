@@ -1,0 +1,81 @@
+{
+  "architecture": {
+    "title": "q109-18-pv-reclaim-policy-delete: PersistentVolume",
+    "description": "Resources involved: PersistentVolume",
+    "nodes": [
+      {
+        "id": "PersistentVolume",
+        "label": "PersistentVolume",
+        "type": "storage"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "PersistentVolume",
+        "to": "PersistentVolumeClaim",
+        "label": "bound by",
+        "animated": true,
+        "command": "capacity/accessMode match"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q109-18-pv-reclaim-policy-delete: PersistentVolume",
+    "description": "Resources involved: PersistentVolume",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "PersistentVolume",
+        "label": "PersistentVolume",
+        "type": "storage"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      },
+      {
+        "id": "PV controller",
+        "label": "PV controller",
+        "type": "controller"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl apply -f pv.yaml"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "PV controller",
+        "to": "API Server",
+        "label": "watches PersistentVolume objects"
+      },
+      {
+        "from": "PV controller",
+        "to": "API Server",
+        "label": "bound by PersistentVolumeClaim (capacity/accessMode match)"
+      }
+    ]
+  }
+}

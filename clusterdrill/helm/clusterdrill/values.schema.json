@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "clusterdrill chart values",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["image", "auth"],
+  "properties": {
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "digest"],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OCI repository, e.g. docker.io/w00dson/clusterdrill. No tag or digest here - see digest below."
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "Immutable image digest. A mutable tag (including 'latest') is rejected by this pattern, matching clusterdrill local install's own refusal of non-digest images."
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["existingSecretName"],
+      "properties": {
+        "existingSecretName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of a Secret, already present in the release namespace, with a 'password' key. Create it yourself or have the CLI create it before running helm - this chart never generates or accepts a password value."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "architecture": {
+    "title": "q106-22-imagepullsecret-attach-to-serviceaccount: Secret, ServiceAccount",
+    "description": "Resources involved: Secret, ServiceAccount",
+    "nodes": [
+      {
+        "id": "Secret",
+        "label": "Secret",
+        "type": "resource"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Secret",
+        "to": "ServiceAccount",
+        "label": "accessible to",
+        "animated": true,
+        "command": "readable only if a bound Role/ClusterRole grants get/list on secrets"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q106-22-imagepullsecret-attach-to-serviceaccount: Secret, ServiceAccount",
+    "description": "Resources involved: Secret, ServiceAccount",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Secret",
+        "label": "Secret",
+        "type": "resource"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates Secret"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "ServiceAccount",
+        "label": "accessible to (enforced at request time)"
+      }
+    ]
+  }
+}

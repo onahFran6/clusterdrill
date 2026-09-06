@@ -1,0 +1,1786 @@
+/* "Terminal Ops" design system, v4 - revised 2026-09-01 PM.
+
+   Color   ink #080D1A (bg) · panel #0D1528 · sidebar #0A1020 ·
+           border rgba(255,255,255,.11) · text #E2E8F5 · muted #64799A ·
+           accent (Kubernetes blue) #326CE5 · accent-2/info (cyan) #06B6D4 ·
+           signature (terminal amber) #FFB000 · pass #3FB950 · fail #F85149
+   Type    IBM Plex Mono - headings, labels, nav, status bar, sidebar, all
+           code/kubectl output (the CLI is the actual subject matter, not a
+           neutral delivery vehicle for it) - kept from v1 unchanged; the
+           Figma prototype this revision's layout/palette come from loads no
+           custom fonts at all (a Figma Make default, not a considered
+           choice - confirmed by inspecting its computed styles directly).
+           IBM Plex Sans - body copy, for long-form readability mono
+           doesn't give you.
+   Layout  hub pages (Topics/Practice Tests/Progress/Mock Exam) get a fixed
+           left sidebar (.sidebar, see _shell.html); the question/practice
+           page stays chrome-less by design and uses a resizable workspace -
+           Task above Checklist in a left column, Terminal a full-height
+           column on the right - evoking an editor/multiplexer rather than a
+           stacked content page.
+   v4      Structural containers (panels, rows, cards) dropped from an 8-10px
+           soft-card radius to a 2px `--radius` token, and `--border` got more
+           visible - real TUI dashboards (k9s, lazygit, htop) read as sharp
+           hairline-ruled windows, not rounded SaaS cards; that was this
+           product's biggest remaining "generic dark-mode dev tool" tell.
+           Topics page rebuilt around a `kubectl get topiclabs` command
+           table (this revision's signature element) instead of a card grid.
+           New `.status-dot` component (pass/warn/fail/muted) for at-a-glance
+           state, mirroring `kubectl get`'s own STATUS column convention.
+   Signature elements (still this product's clearest visual identity):
+     1. The live grading checklist reads like CI/test-runner output -
+        bracket markers [ ]/[✓]/[✗], monospace, staggered reveal on Check.
+     2. A tmux/wezterm-style status-bar footer (wezterm/README.md's own
+        vocabulary) - segments for prev/id/End session/next.
+     3. (v4) The Topics page performs the exam's own subject matter: a real
+        `kubectl get topiclabs -o wide` prompt line with a blinking cursor,
+        followed by an actual column-aligned command-output table. */
+
+:root {
+  --ink: #080d1a;
+  --panel: #0d1528;
+  --panel-raised: #111c35;
+  --sidebar: #0a1020;
+  /* v4: nudged up from .07/.16 - a real terminal/TUI hairline (k9s,
+     lazygit, htop) is a visible rule, not a barely-there soft-card edge. */
+  --border: rgba(255, 255, 255, 0.11);
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --text: #e2e8f5;
+  --muted: #64799a;
+  --accent: #326ce5;      /* Kubernetes blue - kept from v1, unchanged */
+  --accent-dim: #24427e;
+  --accent-2: #06b6d4;    /* cyan - second accent, from the v2 palette */
+  --info: var(--accent-2); /* v4: semantic alias for "pending/info" status-dot use, same hex */
+  --signature: #ffb000;   /* terminal amber - the "Terminal Ops" signature accent, kept from v1 */
+  --pass: #3fb950;
+  --fail: #f85149;
+  --warn: #e3b34b;
+  /* v5: raw RGB triples for the severity/accent colors above, so every
+     translucent tint derives from the same base value instead of
+     re-deriving its own rgba(...) literal - if a hex above ever
+     changes, every tint below follows automatically. Kept alongside
+     the hex tokens rather than replacing them: most call sites want an
+     opaque color (border, text) and only some want a tint. */
+  --pass-rgb: 63, 185, 80;
+  --fail-rgb: 248, 81, 73;
+  --warn-rgb: 227, 179, 75;
+  --accent-rgb: 50, 108, 229;
+  --accent-2-rgb: 6, 182, 212;
+  /* v5: the one canonical tint alpha for new call sites - existing
+     call sites that legitimately want a different alpha (a status-dot
+     glow ring, a pulsing box-shadow) still compose rgba(var(--pass-rgb),
+     ...) directly with their own alpha, rather than being forced onto
+     this single value. */
+  --pass-tint: rgba(var(--pass-rgb), 0.16);
+  --fail-tint: rgba(var(--fail-rgb), 0.16);
+  --warn-tint: rgba(var(--warn-rgb), 0.16);
+  --accent-tint: rgba(var(--accent-rgb), 0.16);
+  --accent-2-tint: rgba(var(--accent-2-rgb), 0.16);
+  /* v5: named, previously one-off literals - none of these are
+     numerically equal to --ink/--panel/--pass, so reusing one of
+     those would be a real (if subtle) color change, not a refactor. */
+  --code-bg: #070b12;       /* code/diagram block backgrounds - darker than --ink/--panel, not equal to either */
+  --pass-contrast: #06240f; /* text sitting on a solid --pass background */
+  --on-accent: #fff;        /* text sitting on a solid --accent background */
+  --terminal-black: #000;   /* the terminal emulator's own surface - a deliberate true black, distinct from --ink */
+  /* v4: structural-container radius - panels/rows/cards read as a TUI
+     window, not a rounded SaaS card. Small chips/pills/buttons keep their
+     own tighter radii unchanged; this token is only for the big shapes.
+     v5 adds two more named steps below, for the ad hoc 4-6px cluster
+     small components had been using instead. */
+  --radius: 2px;
+  --radius-control: 6px;
+  --radius-pill: 9999px;
+
+  --chart-1: #3b82f6;
+  --chart-2: #06b6d4;
+  --chart-3: #8b5cf6;
+  --chart-4: #10b981;
+  --chart-5: #f59e0b;
+
+  /* Diagram tab rebuild: node/edge-type colors for static/diagram.js's
+     Architecture + Sequence SVG renderer. Aliased from tokens already
+     defined above rather than new hex values - pod/storage reuse the
+     existing --accent-2/--accent brand colors, controller/service/resource
+     reuse the chart-series colors already used by the radar chart and
+     activity bars, policy/external reuse --fail/--muted. */
+  --diagram-controller: var(--chart-3);
+  --diagram-service: var(--chart-5);
+  --diagram-resource: var(--chart-4);
+
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  font-family: var(--font-sans);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--text);
+  line-height: 1.55;
+}
+
+/* v5 (issue #109): headings are sans-serif by default - monospace stays
+   scoped to genuine code/data/terminal content (.tab-content's rendered
+   Markdown, .topbar's wordmark) via their own, more specific selectors
+   below, which still win over this one on specificity alone. Stated
+   explicitly here rather than left as an implicit inheritance side
+   effect, so it's a real, auditable rule and not an accident that a
+   future change could silently undo. */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--signature);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}
+
+/* --- Topbar ---------------------------------------------------------- */
+
+.topbar {
+  padding: var(--space-3) 20px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--ink);
+  z-index: 10;
+}
+
+.topbar-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.topbar h1 {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  margin: 0;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.wheel { color: var(--accent); }
+
+.topic-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 3px 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.topbar-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.session-badge { text-transform: none; }
+.session-badge-none { color: var(--muted); border-color: var(--border-strong); opacity: 0.75; }
+
+/* A small pulsing dot marks a genuinely *live* running session - distinct
+   from a static badge, reinforcing "this clock is actually ticking right
+   now" (matches the KodeKloud-style "lab is running" affordance this
+   session's redesign is modeled on). Respects prefers-reduced-motion via
+   the global rule above. */
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--pass);
+  flex-shrink: 0;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(var(--pass-rgb), 0.5); }
+  50% { opacity: 0.6; box-shadow: 0 0 0 4px rgba(var(--pass-rgb), 0); }
+}
+
+.timer-badge {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--text);
+}
+.timer-badge.timer-low {
+  color: var(--fail);
+  border-color: var(--fail);
+}
+.timer-badge.timer-expired {
+  color: var(--fail);
+  border-color: var(--fail);
+  background: rgba(var(--fail-rgb), 0.12);
+}
+
+.home-link { color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.home-link:hover { color: var(--text); }
+
+/* v6 (issue #116): one shared alert/notice component (macro: alert() in
+   _macros.html) replacing 5 previously inconsistent treatments -
+   .active-session-banner (two severities via an inline-style override),
+   .idle-warning (border-bottom only, no fill), .login-error (bare text,
+   no box, no aria-live at all despite being the single most consequential
+   message an unauthenticated visitor can see), and .check-status-*
+   (bare text, .alert-compact below keeps its original inline footprint
+   since it's embedded in the checklist header row, not a standalone
+   banner - same severity vocabulary and ARIA pattern as the other four,
+   deliberately not the same visual weight).
+   critical/warning interrupt (role="alert"); success/info don't
+   (role="status", aria-live="polite") - set by the macro, not here. */
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  margin-bottom: var(--space-4);
+}
+.alert[hidden] { display: none; }
+.alert-prefix { font-family: var(--font-mono); font-weight: 700; flex-shrink: 0; }
+.alert-body { flex: 1; }
+.alert-dismiss { flex-shrink: 0; }
+
+.alert-critical { border-color: var(--fail); background: var(--fail-tint); color: var(--fail); }
+.alert-warning { border-color: var(--warn); background: var(--warn-tint); color: var(--warn); }
+.alert-success { border-color: var(--pass); background: var(--pass-tint); color: var(--pass); }
+/* Info stays neutral-on-tint, not solid-colored text like the other three -
+   it means "here's what's happening", not "pay urgent attention", and
+   .active-session-banner (this variant's only user before this pass)
+   never colored its body text either. */
+.alert-info { border-color: var(--accent); background: var(--accent-tint); color: var(--text); }
+.alert-info a { color: var(--accent); text-decoration: none; font-weight: 600; }
+
+/* Embedded in the checklist header row (question.html), not a standalone
+   banner - keeps its original compact, borderless, text-only footprint.
+   Its severity color/prefix still come from the shared variant classes
+   above; only the container chrome is suppressed. */
+.alert-compact {
+  display: inline-flex;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  min-height: 16px;
+  margin-bottom: 10px;
+}
+.alert-compact .alert-prefix { display: none; }
+
+#idle-countdown { font-variant-numeric: tabular-nums; font-weight: 700; }
+
+.progress-bar {
+  margin-top: 10px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+
+.progress-label {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Question navigator - a compact row of jump
+   links, one per question in the active session. Deliberately small
+   numbered squares rather than full question-row treatment
+   (.question-row-mark, topic_detail.html) - this needs to fit N-at-once
+   inline under the progress bar, not read top-to-bottom as a list. */
+.question-navigator {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.question-navigator-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--panel-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  text-decoration: none;
+}
+.question-navigator-item:hover { border-color: var(--border-strong); }
+.question-navigator-item.status-visited { color: var(--text); border-color: var(--border-strong); }
+.question-navigator-item.status-passed { color: var(--pass); border-color: var(--pass); }
+.question-navigator-item.status-failed { color: var(--fail); border-color: var(--fail); }
+.question-navigator-item.current {
+  outline: 2px solid var(--signature);
+  outline-offset: 1px;
+}
+
+/* Boss mini-exam HP bar. Same shape/height as .progress-bar right
+   above it, deliberately - it reads as a sibling status strip, not a
+   different widget - but its own fill color (pass green fading to fail
+   red under .boss-hp-low, not the neutral --accent progress fill), since
+   this one's dropping is bad news, unlike the progress bar filling up. */
+.boss-hp-bar {
+  margin-top: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.boss-hp-bar-fill {
+  height: 100%;
+  background: var(--pass);
+  transition: width 0.2s ease, background-color 0.2s ease;
+}
+
+.boss-hp-bar-fill.boss-hp-low { background: var(--fail); }
+
+.btn-docs {
+  font-size: 12px;
+  padding: 4px 12px;
+}
+
+.docs-allowlist-note {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.docs-allowlist-note code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+}
+
+/* --- Resizable workspace, v3: terminal as a full-height right column ----
+   v2 put Task+Checklist side by side on top with Terminal as a full-width
+   row below - usable width for the terminal, but it pushed the terminal
+   below the fold on anything but a tall viewport, so reaching it meant
+   scrolling past Task+Checklist first. v3 goes back to a side-by-side
+   split, but along the *other* axis: Task stacks directly above Checklist
+   in one left-hand column (Task is what you're reading, Checklist is what
+   you check when you think you're done - a natural top-to-bottom reading
+   order), and Terminal takes the entire right-hand column at full height,
+   so it's always in view without scrolling. Two independent drag handles,
+   same "two explicit pixel tracks summing to a fixed total" mechanism for
+   both (app.js): [data-resize-index="0"] is the vertical handle between
+   the left column and the Terminal (column widths); [data-resize-index="1"]
+   is the horizontal handle between Task and Checklist (row heights within
+   the left column). Only the second exists without a terminal (nothing to
+   drag the left column's width against otherwise) - see the
+   `.layout.has-terminal` block below for where the column axis is added. */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  /* Task gets every pixel Checklist doesn't need (1fr), Checklist sizes to
+     its own content (auto) instead of stretching to split the leftover
+     space evenly - a short "click Check to grade your work" state (the
+     common case) should read as a compact status strip, not a half-empty
+     box competing with Task for room. Resizing (app.js) still overrides
+     both with explicit pixel tracks once dragged, same as the column
+     axis - this is only the un-dragged default. */
+  grid-template-rows: 1fr 13px auto;
+  gap: 0;
+  padding: var(--space-5) 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  align-items: stretch;
+}
+
+.layout .question-panel { grid-column: 1; grid-row: 1; min-height: 0; overflow-y: auto; }
+.layout [data-resize-index="1"] { grid-column: 1; grid-row: 2; cursor: row-resize; }
+.layout .checklist-panel {
+  grid-column: 1;
+  grid-row: 3;
+  min-height: 0;
+  max-height: 40vh;
+  overflow-y: auto;
+  /* Tighter than the shared .panel default (var(--space-4) 20px) - a
+     compact status strip reads as compact partly through less padding
+     around it, not just a shorter track. */
+  padding: var(--space-3) 18px;
+}
+
+/* login.html's trademark disclaimer - a plain sibling of .layout, not a
+   grid child, so it doesn't need to fit .layout's 3-column question/
+   terminal/checklist grid it otherwise has nothing to do with. */
+.login-disclaimer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px var(--space-5);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted);
+  text-align: center;
+}
+
+.layout.has-terminal {
+  max-width: 1680px;
+  grid-template-columns: 1.4fr 13px 1fr;
+}
+
+.layout.has-terminal [data-resize-index="0"] {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  cursor: col-resize;
+}
+
+.layout.has-terminal .terminal-panel {
+  grid-column: 3;
+  grid-row: 1 / -1;
+  /* .layout's own align-items: stretch already fills the column's full
+     height, but grid-row spans all three left-column rows above, so this
+     stays explicit for clarity and survives if align-items ever changes
+     back to start for the left column alone. */
+  align-self: stretch;
+}
+
+.layout.has-terminal.terminal-collapsed {
+  grid-template-columns: 1fr;
+}
+
+/* "One screen" fit: with a terminal present, the whole page becomes
+   exactly one viewport tall and never scrolls itself - Task, Checklist,
+   and Terminal each scroll their own content instead (their own
+   overflow-y:auto above; the terminal's xterm.js/ttyd scrollback handles
+   itself regardless of container height). This is the actual fix for
+   "I have to scroll down to see the terminal" - a full-height right
+   column only helps if the page doesn't scroll past it in the first
+   place. Scoped to this one body-class combination (set server-side in
+   question.html, mirroring .layout's own has-terminal class) rather than
+   body generally, so every other page - topics/progress/login, none of
+   which have a terminal to fit around - keeps its ordinary scrolling
+   document flow untouched. */
+body.question-view.has-terminal-view {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+body.question-view.has-terminal-view .topbar,
+body.question-view.has-terminal-view #idle-warning,
+body.question-view.has-terminal-view .status-bar {
+  flex: 0 0 auto;
+}
+body.question-view.has-terminal-view .layout {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.resizer {
+  position: relative;
+  z-index: 2;
+  align-self: stretch;
+}
+/* Base shape is the vertical divider (index 0: left column <-> Terminal) -
+   a thin bar running the full height of its track. */
+.resizer::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: var(--border);
+  transition: background 0.15s ease, width 0.15s ease, left 0.15s ease, height 0.15s ease;
+}
+.resizer:hover::after,
+.resizer.resizing::after {
+  background: var(--signature);
+  width: 3px;
+  left: 5px;
+}
+/* index 1 (Task <-> Checklist, always present) is the other orientation -
+   a thin bar running the full width of its track instead. */
+.resizer[data-resize-index="1"]::after {
+  left: 8px;
+  right: 8px;
+  top: 6px;
+  bottom: auto;
+  width: auto;
+  height: 1px;
+}
+.resizer[data-resize-index="1"]:hover::after,
+.resizer[data-resize-index="1"].resizing::after {
+  height: 3px;
+  top: 5px;
+  width: auto;
+  left: 8px;
+}
+/* Collapsing the terminal removes both its column handle and itself from
+   grid flow entirely (display:none takes a grid item out of track
+   calculations, not just out of view) - paired with the single-column
+   .terminal-collapsed rule above. */
+.layout.terminal-collapsed [data-resize-index="0"],
+.layout.terminal-collapsed .terminal-panel {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  body.question-view.has-terminal-view {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+  .layout { grid-template-columns: 1fr !important; grid-template-rows: auto auto auto !important; }
+  .layout .question-panel,
+  .layout .checklist-panel,
+  .layout .terminal-panel { grid-column: 1 !important; grid-row: auto !important; }
+  .layout .question-panel,
+  .layout .checklist-panel { overflow-y: visible !important; }
+  .layout .resizer { display: none; }
+  .layout .terminal-panel { position: static; max-height: none; min-height: 320px; }
+}
+
+/* Hub shell (sidebar + content) - a fixed 200px sidebar was never given a
+   narrow-viewport treatment when it was added for v2, which would eat a
+   large fraction of a real mobile screen. Collapse to a horizontal top bar
+   instead of a left rail, same "don't fight the viewport" posture as the
+   question page's own 900px rule above. */
+@media (max-width: 700px) {
+  .hub-shell { flex-direction: column; }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    overflow-x: auto;
+    padding: var(--space-2) var(--space-3);
+  }
+  .sidebar-brand { padding: 4px 10px 4px 4px; white-space: nowrap; }
+  .sidebar-nav { flex-direction: row; }
+  .sidebar-nav-item.active { box-shadow: inset 0 -2px 0 var(--signature); }
+  .hub-content { padding: var(--space-4) 16px var(--space-5); }
+  /* A multi-sentence disclaimer doesn't fit this horizontal-scroll top bar
+     the way a short username/logout button does - same "don't fight the
+     viewport" reasoning already governing this whole block. Still present
+     in README.md/the desktop sidebar, so this isn't the disclaimer's only
+     appearance, just not duplicated into a cramped mobile nav. */
+  .sidebar-disclaimer { display: none; }
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-4) 20px;
+  /* Grid items default to min-width:auto, so a long unbreakable line (a
+     kubectl one-liner, an unwrapped URL) can blow out this track past its
+     fr share and starve the sibling panel - min-width:0 lets the pre
+     block's own overflow-x:auto do the scrolling instead. */
+  min-width: 0;
+}
+
+.error-panel {
+  border-color: var(--fail);
+}
+
+/* v8 (issue #117): the one shared themed confirmation dialog - a native
+   <dialog>, not a hand-rolled ARIA modal, for the real focus trap and
+   Escape-to-cancel it gives for free. Reset the UA default box/border
+   entirely and re-theme it to match .panel, rather than layering our
+   colors on top of the browser's own dialog chrome. */
+.confirm-dialog {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: var(--space-4) 20px;
+  max-width: 420px;
+  font-size: 13px;
+}
+.confirm-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: var(--space-4);
+}
+
+.question-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.question-title { font-family: var(--font-mono); font-weight: 600; font-size: 14px; }
+
+/* v5 (issue #109): filled/tinted pills, not outlined boxes - a sans-serif
+   label (this is a taxonomy tag, not code/data), no border; the neutral
+   (no-variant) pill still gets a solid fill so it doesn't read as a lone
+   outlined survivor next to its now-filled siblings. */
+.pill {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 10.5px;
+  color: var(--muted);
+  background: var(--panel-raised);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 2px 9px;
+}
+
+.pill-hard { color: var(--fail); background: var(--fail-tint); }
+.pill-medium { color: var(--warn); background: var(--warn-tint); }
+.pill-easy { color: var(--pass); background: var(--pass-tint); }
+/* Same colors as .pill-easy, but named for what it actually means at its
+   call sites (a completed/cleared state, not a difficulty rating) - see
+   topics.html's "cleared today" badge. */
+.pill-pass { color: var(--pass); background: var(--pass-tint); }
+
+/* GPL-3.0 community-content badge - a color-only modifier, same pattern as
+   .pill-easy/medium/hard above, applied to either .pill (topics.html/
+   topic_detail.html) or .topic-badge (question.html's topbar) since both
+   share compatible shape/padding already. --accent-2 (cyan) rather than
+   any of the difficulty colors - this isn't a difficulty signal, it's a
+   licensing one, so it deliberately doesn't borrow that color vocabulary. */
+.pill-community { color: var(--accent-2); background: var(--accent-2-tint); }
+
+/* v5 (issue #109): sans-serif - a tab bar is navigation, not code/data. */
+.tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-4);
+}
+
+.tab {
+  padding: 7px 13px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12.5px;
+  border-bottom: 2px solid transparent;
+}
+
+.tab.active {
+  color: var(--text);
+  border-bottom-color: var(--signature);
+}
+
+.tab-content { font-size: 14.5px; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.tab-content h1, .tab-content h2, .tab-content h3 { font-family: var(--font-mono); }
+.tab-content pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  padding: 12px;
+  border-radius: var(--radius-control);
+  overflow-x: auto;
+  font-family: var(--font-mono);
+}
+.tab-content code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--panel-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--accent-2);
+}
+.tab-content pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+
+/* Click-to-copy: every inline `code` value (namespace, resource name, a
+   `100m`-style limit, ...) is a literal the candidate is about to retype
+   into a manifest or a kubectl flag - copying it removes a class of typo
+   that has nothing to do with the actual skill being tested. Fenced code
+   blocks (the Solution tab's full manifest/command) get their own header
+   with a single "Copy" button for the whole block instead, since selecting
+   a multi-line block by hand is the more tedious case. Both are pure
+   client-side affordances (app.js) - see it for the copyText()/flash*()
+   helpers; nothing here touches grading. */
+.tab-content code.copyable-code {
+  cursor: pointer;
+  position: relative;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.tab-content code.copyable-code:hover {
+  border-color: var(--signature);
+  color: var(--text);
+}
+.tab-content code.copyable-code:focus-visible {
+  outline: 2px solid var(--signature);
+  outline-offset: 1px;
+}
+.tab-content code.copyable-code.copied {
+  background: var(--pass-tint);
+  border-color: var(--pass);
+  color: var(--pass);
+}
+.tab-content code.copyable-code.copied::after {
+  content: "copied";
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--pass);
+  color: var(--pass-contrast);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.code-block { position: relative; }
+.code-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+  background: var(--panel-raised);
+  color: var(--muted);
+  cursor: pointer;
+  z-index: 1;
+}
+.code-copy-btn:hover { color: var(--text); border-color: var(--border-strong); }
+.code-copy-btn.copied { color: var(--pass); border-color: var(--pass); }
+
+.diagram-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 8px;
+}
+
+.diagram-note {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(var(--accent-rgb), 0.08);
+}
+
+.mermaid {
+  min-width: 0;
+  overflow-x: auto;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 12px;
+}
+
+/* --- Diagram tab rebuild: Architecture/Sequence sub-tabs + SVG renderer -
+   static/diagram.js draws into #diagram-arch-mount/#diagram-seq-mount;
+   these rules are the chrome around that (sub-tab bar, frame, legend) plus
+   the couple of classes diagram.js applies directly to SVG children. Node/
+   edge colors themselves come from the --diagram-*/--accent-2/--accent/
+   --fail/--muted custom properties up in :root, not hardcoded here. */
+/* --- Solution tab: Discovery Path/Exact Solution toggle - a rounded pill
+   switch (distinct from the underline-style .tabs used everywhere else)
+   since this is a sub-choice within one tab's content, not a peer of
+   Task/Hint/Solution/Diagram itself. */
+.solution-subtabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--panel-raised);
+  margin-bottom: var(--space-4);
+}
+.solution-subtab {
+  padding: 6px 12px;
+  font-size: 11px;
+  border-radius: var(--radius-control);
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.solution-subtab.active {
+  background: var(--panel);
+  color: var(--text);
+  font-weight: 600;
+}
+.solution-subtab-panel { display: none; }
+.solution-subtab-panel.active { display: block; }
+
+.diagram-subtabs {
+  margin-bottom: var(--space-3);
+}
+.diagram-subtabs .tab {
+  padding: 5px 11px;
+  font-size: 11.5px;
+}
+.diagram-subtab-panel { display: none; }
+.diagram-subtab-panel.active { display: block; }
+
+.diagram-desc {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+
+.diagram-svg-frame {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  overflow-x: auto;
+}
+.diagram-svg { width: 100%; max-height: 420px; }
+.diagram-mono-text { font-family: var(--font-mono); }
+
+@media (prefers-reduced-motion: reduce) {
+  .diagram-flow-dot { display: none; }
+}
+
+.diagram-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin-top: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.diagram-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: capitalize;
+}
+.diagram-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+.diagram-legend-item-line { text-transform: none; }
+
+/* --- Checklist (signature element) -------------------------------------
+   Bracket-style [ ]/[✓]/[✗] rows in monospace, reading like a test-runner
+   or `kubectl get` STATUS column rather than a generic checkbox list -
+   see renderCriteria() in app.js, which builds this markup live from
+   check.sh's real stdout on every Check click. */
+
+.checklist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+/* v5 (issue #109): scoped to .panel .checklist-header h2, not the bare
+   .checklist-header h2 this used to be - needs to out-specificity
+   .hub-content h2 below (same 0,2,0,1 either way otherwise, so source
+   order alone would decide) to keep this specific header genuinely
+   CI-log-styled (uppercase, mono, small) - a deliberate signature
+   element, unlike a plain page/section title. */
+.panel .checklist-header h2 {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  margin: 0;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.actions { display: flex; gap: 8px; }
+
+/* v5 (issue #109): sans-serif - a button label is UI chrome, not code/
+   data/terminal content, even when its text reads like a CLI verb
+   ("Fixed", "Start Exam"). */
+.btn {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  border-radius: var(--radius-control);
+  padding: 6px 13px;
+  font-size: 12.5px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn-primary:hover:not(:disabled) { background: var(--accent-dim); }
+.btn-secondary { color: var(--muted); }
+.btn-secondary:hover:not(:disabled) { color: var(--text); border-color: var(--border-strong); }
+.btn-danger-ghost { color: var(--fail); border-color: var(--fail); background: transparent; }
+.btn-danger-ghost:hover { background: rgba(var(--fail-rgb), 0.12); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* #check-status is now the shared .alert component in .alert-compact
+   mode (see the block above where .alert is defined) - app.js's
+   setStatus() sets className directly (this element's state changes
+   don't go through a template re-render), so its class list must match
+   what the alert() macro would emit for the same variant. The idle,
+   no-check-yet state has no variant, matching the original .check-status
+   base rule's neutral color: var(--muted). */
+.alert-compact.alert-idle { color: var(--muted); }
+
+.criteria-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.criteria-empty { color: var(--muted); padding: 6px 0; }
+
+.criterion {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  opacity: 0;
+  animation: reveal 0.28s ease forwards;
+}
+.criterion:last-child { border-bottom: none; }
+
+@keyframes reveal {
+  from { opacity: 0; transform: translateX(-4px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.criterion-mark { width: 26px; flex-shrink: 0; font-weight: 700; }
+.criterion-pass .criterion-mark { color: var(--pass); }
+.criterion-fail .criterion-mark { color: var(--fail); }
+.criterion-fail .criterion-desc { color: var(--muted); }
+.criterion-desc { font-family: var(--font-sans); }
+
+.score-line {
+  margin-top: 12px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* --- Terminal panel -----------------------------------------------------
+   v2: a full-width row below Task/Checklist (see the 2-row grid comment
+   above), not sticky anymore - v1's sticky-beside-the-task-panel made sense
+   for a side column that needed to stay in view while a long task
+   description scrolled past it; a bottom row has nothing to "stay in view
+   past," so it just occupies its own grid row with an explicit resizable
+   height (grid-template-rows' third value) instead. */
+
+.terminal-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.terminal-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px 8px;
+  flex-shrink: 0;
+}
+
+.terminal-workdir-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.terminal-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.terminal-tab,
+.terminal-tab-add {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px 4px 0 0;
+  background: var(--ink);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.terminal-tab:hover,
+.terminal-tab-add:hover {
+  color: var(--text);
+  border-color: var(--signature);
+}
+
+.terminal-tab.active {
+  color: var(--signature);
+  border-color: var(--signature);
+  background: var(--terminal-black);
+}
+
+.terminal-tab-add {
+  min-width: 28px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 8px 4px;
+}
+
+.terminal-tab-add:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* issue #122 (M7): only ever present in the DOM at all when the live
+   cluster topology actually has a worker node (see question.html) - never
+   shown-but-disabled on a single-node cluster. */
+.terminal-node-picker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--ink);
+  color: var(--muted);
+}
+
+.terminal-node-picker:hover {
+  color: var(--text);
+  border-color: var(--signature);
+}
+
+.terminal-panel-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--signature);
+}
+
+.terminal-frame-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--terminal-black);
+  min-width: 0;
+  flex: 1;
+  min-height: 320px;
+  position: relative;
+}
+
+.terminal-frame {
+  display: none;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  min-width: 0;
+  position: absolute;
+  inset: 0;
+}
+
+.terminal-frame.active {
+  display: block;
+}
+
+.btn-terminal-toggle {
+  font-size: 12px;
+  padding: 4px 12px;
+}
+
+/* --- Status-bar footer --------------------------------------------------
+   A tmux/wezterm-style segmented bar - the same multiplexer vocabulary
+   this project's own daily toolchain uses (wezterm/README.md) - rather
+   than a plain two-button footer. Center segment carries the "End
+   session" lifecycle action; app.js also calls the same endpoint
+   automatically when the timer reaches zero. */
+
+.status-bar {
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 0 20px 24px;
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.status-segment {
+  background: var(--panel-raised);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+}
+.status-segment-nav:first-child { border-radius: var(--radius-control) 0 0 var(--radius-control); }
+.status-segment-nav:last-child { border-radius: 0 var(--radius-control) var(--radius-control) 0; }
+.status-segment-id { color: var(--muted); flex: 1; justify-content: center; }
+.status-segment-end { justify-content: center; }
+
+.btn-nav {
+  min-width: 70px;
+  text-align: center;
+  border: none;
+  padding: 0;
+  background: none;
+  color: var(--text);
+}
+.btn-nav:hover:not(.btn-disabled) { color: var(--signature); }
+.btn-disabled { opacity: 0.35; pointer-events: none; }
+
+/* --- Hub shell: left sidebar + content area (_shell.html) --------------
+   Only the four "return to this dashboard" pages (Topics, Practice Tests,
+   Progress, Mock Exam) use this shell - the question/practice page stays
+   chrome-less by design, to keep that page focused on the task at hand. */
+
+.hub-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+  padding: var(--space-4) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.sidebar-brand {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  padding: var(--space-2) var(--space-2) var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-nav { display: flex; flex-direction: column; gap: 2px; }
+
+/* v5 (issue #109): sans-serif - main navigation, not code/data/terminal
+   content. */
+.sidebar-nav-item {
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: var(--radius-control);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sidebar-nav-item:hover { color: var(--text); background: var(--panel); }
+.sidebar-nav-item.active {
+  color: var(--text);
+  background: var(--panel);
+  box-shadow: inset 2px 0 0 var(--signature);
+}
+
+/* Pinned to the bottom of the sidebar (.sidebar is already a column flex
+   container) - a <form>/<button> reusing .sidebar-nav-item's visual
+   language rather than a plain <a>, since logging out has to be a POST
+   (CSRF-protected, auth.py's require_csrf_form) not a GET navigation. */
+.sidebar-footer { margin-top: auto; }
+.sidebar-user {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  padding: 4px 10px;
+}
+.sidebar-logout-btn {
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.sidebar-logout-btn:hover { color: var(--text); background: var(--panel); }
+
+/* Trademark disclaimer, _shell.html - always the last sidebar child.
+   margin-top:auto here is a no-op when .sidebar-footer (also
+   margin-top:auto) already claimed the free space above it - it only
+   takes over and pins this to the bottom itself on the logged-out pages
+   where .sidebar-footer isn't rendered at all. */
+.sidebar-disclaimer {
+  margin-top: auto;
+  padding: 8px 10px 4px;
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.hub-content {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-5) 32px var(--space-6);
+  max-width: 1200px;
+}
+
+.hub-content h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+.hub-intro { color: var(--muted); font-size: 13px; max-width: 640px; margin: 0 0 var(--space-4); }
+
+/* v7 (issue #119): shared "there's no data yet" component - small,
+   muted, centered. Deliberately no max-width like .hub-intro (this one
+   needs to sit inside a narrow bordered list, not just a full-width
+   page-intro paragraph). */
+.empty-state {
+  color: var(--muted);
+  font-size: 12.5px;
+  text-align: center;
+  padding: var(--space-3) 0;
+  margin: 0;
+}
+
+/* --- Stat cards (Progress / Practice Tests summary rows) ---------------- */
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: var(--space-5);
+}
+
+.stat-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  background: var(--panel);
+}
+.stat-card-value {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+}
+.stat-card-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* Active-session notice is now the shared .alert component (variant
+   "info" for "a session is running", "warning" for the focus-area
+   nudge) - see the .alert block above. */
+
+/* --- v4 signature: Topics page as `kubectl get` output ------------------
+   The one deliberate bold move this revision spends its risk on: the topic-card
+   grid is retired in favor of a literal command-output table, because a
+   CKAD candidate spends the entire exam reading exactly this shape of
+   output - NAME/STATUS-style columns, monospace-aligned - and no card
+   grid says "this tool is the real thing" the way performing its own
+   subject matter does. Everything else in this file stays quiet on
+   purpose so this is the one place that gets to be loud. */
+
+/* v5 (issue #109): demoted to a small eyebrow above .page-title, not the
+   page's only heading - it's genuine personality (a real kubectl prompt
+   line), but repeating it as the entire heading on every hub page had
+   stopped reading as personality and started reading as "there's no real
+   heading component." */
+.kget-hero {
+  font-family: var(--font-mono);
+  margin: 0 0 var(--space-2);
+}
+.kget-prompt {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+.page-title {
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 var(--space-4);
+}
+.kget-prompt-user { color: var(--pass); }
+.kget-prompt-sep { color: var(--muted); margin-right: 9px; }
+.kget-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 1em;
+  background: var(--signature);
+  margin-left: 7px;
+  vertical-align: -0.1em;
+  animation: kget-cursor-blink 1.05s steps(1) infinite;
+}
+@media (prefers-reduced-motion: reduce) { .kget-cursor { animation: none; } }
+@keyframes kget-cursor-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+.status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot-pass { background: var(--pass); box-shadow: 0 0 0 3px var(--pass-tint); }
+.status-dot-warn { background: var(--warn); box-shadow: 0 0 0 3px var(--warn-tint); }
+.status-dot-fail { background: var(--fail); box-shadow: 0 0 0 3px var(--fail-tint); }
+.status-dot-muted { background: var(--muted); }
+
+.kget-table {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin: 0 0 var(--space-5);
+  font-family: var(--font-mono);
+}
+.kget-row {
+  display: grid;
+  grid-template-columns: 1.7fr 0.4fr 1.5fr 1.3fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.kget-row:last-child { border-bottom: none; }
+.kget-row:not(.kget-row-head):hover { background: rgba(255, 255, 255, 0.03); }
+.kget-row-head {
+  background: var(--panel-raised);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+.kget-col-name a { color: var(--text); text-decoration: none; font-weight: 600; font-size: 13.5px; }
+.kget-col-name a:hover { color: var(--signature); }
+.kget-col-pool { color: var(--muted); font-size: 12.5px; }
+.kget-col-status { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+.kget-bar {
+  --pct: 0;
+  display: inline-block;
+  width: 64px;
+  height: 5px;
+  background: var(--border);
+  position: relative;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+.kget-bar-fill { position: absolute; inset: 0; width: calc(var(--pct) * 1%); background: var(--accent); }
+.kget-pct { color: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.kget-col-actions { display: flex; align-items: center; gap: 12px; justify-content: flex-end; }
+.kget-actions-form { display: inline-flex; }
+.kget-view-link { color: var(--muted); text-decoration: none; font-size: 11.5px; }
+.kget-view-link:hover { color: var(--text); }
+
+@media (max-width: 860px) {
+  .kget-row { grid-template-columns: 1fr; row-gap: 8px; }
+  .kget-row-head { display: none; }
+  .kget-col-actions { justify-content: flex-start; }
+}
+
+.mode-form { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+.timer-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--signature);
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+}
+
+.btn-mode { font-size: 12px; padding: 6px 12px; }
+
+/* --- Practice-setup panel (topic-detail page) ---------------------------
+   Replaces topic_detail.html's old bare .mode-form row (three buttons and
+   a static, non-interactive "60 min" label) with a real setup step: pick a
+   difficulty and a timer, then pick a mode - the same "configure, then
+   commit" order a real lab-booking flow uses, matching the direct product
+   ask this replaced ("set up a timer for myself, only hard questions...
+   and then proceed"). .mode-form/.timer-note/.btn-mode above are untouched
+   and still used by topics.html/practice_tests.html's smaller quick-start
+   cards - this is a separate, richer variant for the one page that
+   deserves the extra real estate. */
+.practice-setup {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.practice-setup-title {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  margin: 0 0 var(--space-3);
+}
+
+.practice-setup-form {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.practice-setup-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.practice-setup-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.practice-setup-field select {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text);
+  background: var(--panel-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 6px 30px 6px 10px;
+  min-width: 150px;
+  cursor: pointer;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 16px) center, calc(100% - 11px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.practice-setup-field select:hover { border-color: var(--border-strong); }
+.practice-setup-field select:focus-visible { outline: 2px solid var(--signature); outline-offset: 1px; }
+.practice-setup-field select option:disabled { color: var(--muted); }
+
+/* Exam setup's topic/difficulty multi-select checkboxes - rendered as
+   small toggle chips rather than a native multi-
+   select <select>, since a native one hides its own selection state
+   behind a scrollbar and needs ctrl/cmd-click to pick more than one,
+   neither of which fits "default: all checked, uncheck a few". */
+.practice-setup-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.practice-setup-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+  background: var(--panel-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.practice-setup-chip:has(input:checked) {
+  border-color: var(--signature);
+  color: var(--signature);
+}
+.practice-setup-chip input { accent-color: var(--signature); }
+
+.practice-setup-modes {
+  display: flex;
+  gap: 8px;
+  /* Keeps the three mode buttons visually anchored to the *end* of the
+     row (the "now commit" step) even as flex-wrap reshuffles the two
+     dropdowns above/beside them on a narrower viewport. */
+  margin-left: auto;
+}
+
+.practice-setup-hint {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: var(--space-3) 0 0;
+}
+
+/* Boss fight panel - reuses .practice-setup's shape/spacing (same
+   surface, same title styling) but with its own accent so it reads as a
+   distinct "special" panel rather than a fourth session mode bolted onto
+   the regular Start Practice card above it. --signature (amber) when
+   unlocked/fightable; dimmed to --muted when still locked, matching the
+   disabled-option treatment .practice-setup-field select already uses. */
+.boss-fight-panel { border-color: var(--signature); }
+.boss-fight-panel .practice-setup-title { color: var(--signature); }
+.boss-fight-panel.boss-fight-locked { border-color: var(--border); }
+.boss-fight-panel.boss-fight-locked .practice-setup-title { color: var(--muted); }
+
+/* --- Status/Difficulty filter groups (topic-detail question list) ------- */
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+.filter-group-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  width: 62px;
+  flex-shrink: 0;
+}
+.filter-group:last-of-type { margin-bottom: var(--space-4); }
+.filter-group .filter-tabs { margin-bottom: 0; }
+
+.filter-tab-easy.active { border-color: var(--pass); color: var(--pass); background: rgba(var(--pass-rgb), 0.08); }
+.filter-tab-medium.active { border-color: var(--warn); color: var(--warn); background: rgba(var(--warn-rgb), 0.08); }
+.filter-tab-hard.active { border-color: var(--fail); color: var(--fail); background: rgba(var(--fail-rgb), 0.08); }
+
+@media (max-width: 700px) {
+  .practice-setup-form { align-items: stretch; }
+  .practice-setup-modes { margin-left: 0; width: 100%; }
+  .practice-setup-modes .btn { flex: 1; }
+  .filter-group { align-items: flex-start; flex-direction: column; gap: 6px; }
+  .filter-group-label { width: auto; }
+}
+
+.mixed-cta {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-4);
+}
+.mixed-cta h3 {
+  margin-bottom: 4px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Two .mixed-cta blocks stacked (Mixed session, then the daily
+   challenge right below it) need breathing room between them - the lone
+   top border/padding this class already has is only enough separation
+   from the content above it, not from a second instance of itself. */
+.mixed-cta + .mixed-cta { margin-top: var(--space-5); }
+
+/* --- Skill radar chart (Progress page) - the one component that's real
+   inline SVG, built by app.js's renderRadarChart() from the stored profile's
+   per-domain data. This CSS only styles the wrapper/axis-label layer the
+   SVG sits inside; the polygon/axis lines themselves are SVG elements. */
+
+.radar-chart-wrap {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4) 0;
+}
+.radar-chart text {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  fill: var(--muted);
+}
+.radar-chart .radar-axis { stroke: var(--border); stroke-width: 1; }
+.radar-chart .radar-fill { fill: var(--accent); fill-opacity: 0.22; stroke: var(--accent); stroke-width: 1.5; }
+
+/* --- Daily activity bars (Progress page) - plain CSS flex bars, no SVG. */
+
+.activity-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 90px;
+  padding: 0 4px;
+}
+.activity-bar {
+  flex: 1;
+  min-width: 2px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+  opacity: 0.85;
+}
+.activity-bar:hover { opacity: 1; }
+
+/* --- Filter tabs (topic-detail question list) - visually related to but
+   distinct from the question page's Task/Hint/Solution/Diagram .tabs. */
+
+.filter-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: var(--space-4);
+}
+/* v5 (issue #109): sans-serif - a filter tab is nav/UI chrome. */
+.filter-tab {
+  font-size: 12px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 5px 12px;
+  text-decoration: none;
+}
+.filter-tab.active { color: var(--text); border-color: var(--signature); background: rgba(255, 176, 0, 0.08); }
+
+/* --- Question-list rows (topic-detail page) ----------------------------- */
+
+/* v4: a hairline-bordered list (one border around the whole list, a
+   divider between rows) rather than each row its own separate rounded
+   box - the same dense-table language as .kget-table on the Topics page,
+   so "a list of things you can act on" reads consistently everywhere it
+   appears in the app. */
+.question-row-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.question-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 14px;
+  text-decoration: none;
+  color: var(--text);
+}
+.question-row:last-child { border-bottom: none; }
+.question-row:hover { background: rgba(255, 255, 255, 0.03); }
+.question-row-mark { width: 26px; flex-shrink: 0; font-family: var(--font-mono); font-weight: 700; }
+.question-row-mark.pass { color: var(--pass); }
+.question-row-mark.fail { color: var(--fail); }
+.question-row-mark.unanswered { color: var(--muted); }
+.question-row-mark.warn { color: var(--warn); }
+.question-row-text { flex: 1; font-size: 13px; }
+.question-row-best { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+
+/* --- Related-features panel --- */
+.related-features-panel {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  color: var(--muted);
+  font-size: 12.5px;
+  margin-top: var(--space-4);
+}
+.related-features-panel strong { color: var(--text); }
+.related-features-panel a { color: var(--accent-2); }
+
+/* --- Shared text input, used by the login form and both admin forms
+   below. One rule, one deliberate size - .admin-inline-form's narrower
+   6px/8px/13px predecessor was unintentional drift, not a deliberate
+   density choice (two of the three original call sites already agreed
+   on the values below). .text-input:user-invalid only matches after
+   the user has interacted with (or attempted to submit past) an
+   invalid field - never on initial, untouched page load - so a failed
+   required/minlength check gets a themed signal instead of falling
+   back to the browser's unstyled native tooltip as the only cue. */
+.text-input {
+  background: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 14px;
+  font-family: var(--font-mono);
+}
+.text-input:user-invalid {
+  border-color: var(--fail);
+}
+
+/* --- Password gate login page ----------------------------------- */
+.login-panel { max-width: 420px; margin: 40px auto; }
+.login-form { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.login-form label { font-size: 13px; color: var(--muted); }
+.login-form button { align-self: flex-start; }
+/* The login/admin error message is now the shared .alert component
+   (variant "critical") - see the .alert block near the top of this
+   file. Previously bare, unstyled text with no aria-live/role="alert"
+   at all, despite being the single most consequential message an
+   unauthenticated or locked-out visitor can see. */
+
+/* --- Admin user-management page -------------------------------- */
+.admin-panel { max-width: 720px; }
+.admin-users-table { width: 100%; border-collapse: collapse; margin: var(--space-4) 0; }
+.admin-users-table th, .admin-users-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.admin-users-table th { color: var(--muted); font-weight: 600; }
+.admin-inline-form { display: flex; gap: 6px; align-items: center; }
+/* .admin-inline-form is a row flex container (no stretch on the main
+   axis), so its input needs an explicit width - unlike the two
+   column-flex forms above, which stretch to their container width for
+   free. Purely a layout constraint, not a smaller variant of the base
+   input. */
+.admin-inline-form .text-input { width: 140px; }
+.admin-add-form { display: flex; flex-direction: column; gap: 10px; max-width: 320px; }
+.admin-add-form label { font-size: 13px; color: var(--muted); }
+.admin-checkbox-label { display: flex; align-items: center; gap: 6px; }
+.admin-add-form button { align-self: flex-start; }

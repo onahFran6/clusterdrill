@@ -1,0 +1,59 @@
+name: Bug report
+description: Something in the practice bank or web app is broken or incorrect
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What's wrong?
+    validations:
+      required: true
+  - type: input
+    id: location
+    attributes:
+      label: Location
+      description: Question ID (e.g. q105-01-configmap-literal-envfrom), file path, or web page/URL affected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should happen instead?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happens? Include error messages, `check.sh` output, or screenshots if relevant.
+    validations:
+      required: true
+  - type: input
+    id: k8s-version
+    attributes:
+      label: Kubernetes version
+    validations:
+      required: false
+  - type: dropdown
+    id: environment
+    attributes:
+      label: How you ran the lab
+      options:
+        - minikube (local appliance)
+        - kind
+        - Other/unsure
+    validations:
+      required: false

@@ -1,0 +1,23 @@
+%% Topic primer: observability
+%% Probes on a Pod drive kubelet restart/traffic decisions; kubectl logs/debug are the
+%% inspection paths used to diagnose CrashLoopBackOff and other failures.
+graph LR
+  Pod["Pod / Container"]
+  Live["livenessProbe\n(httpGet / exec / tcpSocket)"]
+  Ready["readinessProbe"]
+  Startup["startupProbe\n(gates the other two during slow init)"]
+  Kubelet["kubelet"]
+  Restart["container restart"]
+  Endpoints["Service Endpoints\n(traffic in/out)"]
+  Logs["kubectl logs [-p] [-c container]"]
+  Debug["kubectl debug (ephemeral container / node shell)"]
+
+  Startup -- "must succeed once before" --> Live
+  Startup -- "must succeed once before" --> Ready
+  Pod -- "declares" --> Live
+  Pod -- "declares" --> Ready
+  Live -- "fails -> kubelet kills container" --> Kubelet
+  Kubelet -- "restartPolicy" --> Restart
+  Ready -- "fails -> pod removed from" --> Endpoints
+  Pod -. "kubectl logs (crash diagnosis)" .-> Logs
+  Pod -. "kubectl debug (no shell / distroless)" .-> Debug

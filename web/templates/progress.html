@@ -1,0 +1,63 @@
+{% extends "_shell.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Progress - ClusterDrill{% endblock %}
+{% block content %}
+  {{ m.kget_hero('kubectl get profile -o wide') }}
+  <h1 class="page-title">Progress</h1>
+  <p class="hub-intro">Track performance, identify weak areas, and see your activity over time.</p>
+
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-card-value">{{ questions_answered }}</div>
+      <div class="stat-card-label">questions answered <span style="opacity:.6;">of {{ questions_total }} total</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-value">{{ correct_rate }}%</div>
+      <div class="stat-card-label">correct rate</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-value">{{ streak_days }} day{{ 's' if streak_days != 1 else '' }}</div>
+      <div class="stat-card-label">current streak</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-value">{{ topics_started }}/{{ topics_total }}</div>
+      <div class="stat-card-label">topics started</div>
+    </div>
+  </div>
+
+  <section class="panel" style="margin-bottom: var(--space-5);">
+    <div class="checklist-header">
+      <h2>Daily activity &middot; last 30 days</h2>
+      {{ m.pill('total: ' ~ daily_activity_total) }}
+    </div>
+    <div class="activity-bars" id="activity-bars" data-max="{{ daily_activity_max }}">
+      {% for d in daily_activity %}
+        <div class="activity-bar" style="height: {{ (d.count / daily_activity_max * 100) if daily_activity_max else 0 }}%"
+             title="{{ d.date }}: {{ d.count }}"></div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel" style="margin-bottom: var(--space-5);">
+    <div class="checklist-header"><h2>Topic breakdown</h2></div>
+    {% for t in topic_breakdown %}
+      <div style="margin-bottom: 10px;">
+        <div style="display:flex; justify-content:space-between; font-size: 12.5px; margin-bottom: 3px;">
+          <span>{{ t.name }}</span>{{ m.pill(t.pct ~ '%') }}
+        </div>
+        <div class="progress-bar" style="margin-top:0;">
+          <div class="progress-bar-fill" style="width: {{ t.pct }}%"></div>
+        </div>
+      </div>
+    {% endfor %}
+  </section>
+
+  <section class="panel">
+    <div class="checklist-header"><h2>Skill radar</h2></div>
+    <div class="radar-chart-wrap" id="radar-chart-wrap"></div>
+    <script type="application/json" id="radar-data">{{ radar_domains | tojson }}</script>
+  </section>
+{% endblock %}
+{% block scripts %}
+  <script src="/static/app.js"></script>
+{% endblock %}

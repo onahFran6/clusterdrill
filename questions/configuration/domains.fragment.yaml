@@ -1,0 +1,444 @@
+topic: configuration
+questions:
+- id: q105-01-configmap-literal-envfrom
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ConfigMap
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-02-configmap-from-file-volume
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ConfigMap
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-03-configmap-from-env-file
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ConfigMap
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-04-secret-generic-env-var
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - Secret
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-05-secret-docker-registry-imagepullsecret
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - Secret
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-06-secret-tls-volume-mount
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - Secret
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-07-configmap-key-env-var
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ConfigMap
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-08-configmap-volume-mount-whole
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ConfigMap
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-09-configmap-volume-subpath
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - ConfigMap
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-10-secret-envfrom-prefix
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - Secret
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-11-resource-requests-limits
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-12-limitrange-defaults
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - LimitRange
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-13-resourcequota-namespace
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - ResourceQuota
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-14-immutable-configmap
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - ConfigMap
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-15-immutable-secret
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - Secret
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-16-configmap-projected-volume-live-update
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - ConfigMap
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-17-multiple-configmaps-envfrom
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - ConfigMap
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-18-secret-volume-default-mode
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - Secret
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-19-configmap-override-individual-env
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - ConfigMap
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-20-guaranteed-qos-class
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-21-limitrange-min-max-bounds
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - LimitRange
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-22-secret-ssh-auth-type
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - Secret
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-23-optional-configmap-key-env
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ConfigMap
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-24-secret-from-literal-multiple-keys
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - Secret
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-25-configmap-command-line-args
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ConfigMap
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-26-diagnose-crashloop-missing-secret-key
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - Secret
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-27-resourcequota-blocks-new-pod
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - ResourceQuota
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-28-limitrange-default-vs-explicit-request
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - LimitRange
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-29-immutable-configmap-rollout-swap
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - ConfigMap
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-30-projected-volume-configmap-and-secret
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - ConfigMap
+  - Secret
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-31-downward-api-resource-fields-mismatch
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-32-secret-type-mismatch-imagepull-broken
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - Secret
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-33-multicontainer-limitrange-default-mismatch
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - LimitRange
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-34-configmap-checksum-rollout-trigger
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - ConfigMap
+  - Deployment
+  - ReplicaSet
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-35-env-var-expansion-order-dependency
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - ConfigMap
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-36-secret-basicauth-stringdata
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - Secret
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-37-kubectl-set-env-configmap
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ConfigMap
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-38-downward-api-podinfo-env
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-39-configmap-patch-merge-preserve-keys
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ConfigMap
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-40-secret-from-file-directory
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - Secret
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-41-configmap-volume-selected-items-rename
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ConfigMap
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-42-resourcequota-requires-explicit-resources
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ResourceQuota
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-43-configmap-binarydata-from-file
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - ConfigMap
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-44-limitrange-ephemeral-storage
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - LimitRange
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-45-configmap-subpath-no-live-update
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - ConfigMap
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-46-configmap-missing-mount-pending
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - ConfigMap
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-47-resourcequota-scope-besteffort
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - ResourceQuota
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q105-48-limitrange-type-pod-aggregate
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - LimitRange
+  - Pod
+  points: 6
+  requirements:
+    min_nodes: 1
+- id: q105-49-downwardapi-volume-podinfo
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 6
+  requirements:
+    min_nodes: 1
+- id: q105-50-secret-env-vs-volume-rotation
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - Secret
+  - Pod
+  points: 6
+  requirements:
+    min_nodes: 1

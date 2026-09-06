@@ -1,0 +1,107 @@
+{
+  "architecture": {
+    "title": "q105-48-limitrange-type-pod-aggregate: LimitRange, Pod",
+    "description": "Resources involved: LimitRange, Pod",
+    "nodes": [
+      {
+        "id": "LimitRange",
+        "label": "LimitRange",
+        "type": "policy"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      }
+    ],
+    "edges": [
+      {
+        "from": "LimitRange",
+        "to": "Pod",
+        "label": "constrains",
+        "animated": true,
+        "command": "kubectl apply -f limitrange.yaml (default/min/max at admission)"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q105-48-limitrange-type-pod-aggregate: LimitRange, Pod",
+    "description": "Resources involved: LimitRange, Pod",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "LimitRange",
+        "label": "LimitRange",
+        "type": "policy"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl apply -f limitrange.yaml (default/min/max at admission)"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "Pod",
+        "label": "constrains (enforced at request time)"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=78"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "clusterdrill"
+version = "0.1.0"
+description = "Hands-on Kubernetes practice appliance"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = ["pyyaml~=6.0"]
+
+[project.optional-dependencies]
+# clusterdrill/tests' own suite, plus the Python-side quality tools. web/'s
+# own runtime+test dependencies are pinned separately in
+# web/requirements*.txt (see the comment there for why: the web app isn't
+# installed as part of this pip package, so it can't share this extra).
+dev = ["pytest~=9.1", "ruff~=0.16", "yamllint~=1.38"]
+
+[project.scripts]
+clusterdrill = "clusterdrill.cli:main"
+
+[tool.setuptools]
+packages = ["clusterdrill"]
+
+[tool.setuptools.package-data]
+clusterdrill = [
+    "release_manifest.json",
+    "manifests/*.yaml",
+    "helm/clusterdrill/Chart.yaml",
+    "helm/clusterdrill/values.yaml",
+    "helm/clusterdrill/values.schema.json",
+    "helm/clusterdrill/README.md",
+    "helm/clusterdrill/templates/*.yaml",
+    "helm/clusterdrill/templates/*.tpl",
+    "helm/clusterdrill/templates/NOTES.txt",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+extend-exclude = ["questions", "build"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+# Question-content check.sh/setup.sh scripts aren't Python, so E501 (line
+# length) on Python source is the one we actually enforce; question folders
+# are excluded above entirely since they're content, not application code.
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# Star imports and unused-import-as-reexport patterns are fine in test
+# fixtures/conftest files that exist to populate sys.modules for the module
+# under test.
+"**/conftest.py" = ["F401"]
+# sys.path.insert(0, WEB_DIR) must run before these imports resolve - see
+# this file's own module docstring for why (flat pytest rootdir-insertion
+# style, matching web/'s own `import auth`-style layout).
+"web/tests/routes/conftest.py" = ["E402"]

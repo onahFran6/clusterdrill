@@ -1,0 +1,15 @@
+{
+  "name": "clusterdrill-dev-tools",
+  "private": true,
+  "type": "module",
+  "description": "Dev-only JS/Markdown quality tooling for the clusterdrill web UI. Not published.",
+  "scripts": {
+    "lint:js": "eslint web/static/*.js",
+    "lint:md": "markdownlint --config .markdownlint.jsonc --ignore-path .markdownlintignore '**/*.md'"
+  },
+  "devDependencies": {
+    "eslint": "10.9.1",
+    "globals": "17.12.0",
+    "markdownlint-cli": "0.49.1"
+  }
+}

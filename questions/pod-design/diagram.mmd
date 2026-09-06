@@ -1,0 +1,16 @@
+%% Topic primer: pod-design
+%% CronJob schedules Jobs, Jobs manage Pods via completions/parallelism;
+%% label selectors are the connective tissue used to target Pods directly too.
+graph LR
+  CJ["CronJob\n(spec.schedule)"]
+  Job["Job\n(spec.completions / spec.parallelism / backoffLimit)"]
+  Pod1["Pod (completion 1)"]
+  Pod2["Pod (completion N)"]
+  Sel["label selector\n(kubectl get/delete -l key=value)"]
+
+  CJ -- "kubectl create cronjob / triggers on schedule" --> Job
+  CJ -. "kubectl create job --from=cronjob (manual trigger)" .-> Job
+  Job -- "creates (spec.completions, spec.parallelism)" --> Pod1
+  Job -- "creates (spec.completions, spec.parallelism)" --> Pod2
+  Sel -. "matches job-name / custom labels" .-> Pod1
+  Sel -. "matches job-name / custom labels" .-> Pod2

@@ -1,0 +1,97 @@
+{
+  "architecture": {
+    "title": "Topic primer: security",
+    "description": "ServiceAccount identifies a Pod; Role/ClusterRole + (Cluster)RoleBinding grant it API access; SecurityContext fields on Pod/Container constrain what the container can do at runtime.",
+    "nodes": [
+      {
+        "id": "SA",
+        "label": "ServiceAccount",
+        "type": "external"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Role",
+        "label": "Role / ClusterRole",
+        "type": "policy",
+        "sub": "kubectl create role/clusterrole --verb --resource"
+      },
+      {
+        "id": "RB",
+        "label": "RoleBinding / ClusterRoleBinding",
+        "type": "policy",
+        "sub": "kubectl create rolebinding --role --serviceaccount"
+      },
+      {
+        "id": "API",
+        "label": "API server",
+        "type": "external",
+        "sub": "authorized action, e.g. get pods"
+      },
+      {
+        "id": "PSC",
+        "label": "Pod securityContext",
+        "type": "policy",
+        "sub": "runAsUser, runAsNonRoot, fsGroup"
+      },
+      {
+        "id": "CSC",
+        "label": "Container securityContext",
+        "type": "policy",
+        "sub": "capabilities, readOnlyRootFilesystem"
+      }
+    ],
+    "edges": [
+      {
+        "from": "SA",
+        "to": "Pod",
+        "label": "identity for",
+        "animated": true,
+        "command": "spec.serviceAccountName"
+      },
+      {
+        "from": "Role",
+        "to": "RB",
+        "label": "granted by",
+        "animated": true,
+        "command": "kubectl create rolebinding"
+      },
+      {
+        "from": "RB",
+        "to": "SA",
+        "label": "binds subject",
+        "animated": true
+      },
+      {
+        "from": "RB",
+        "to": "Role",
+        "label": "grants rules from",
+        "animated": true
+      },
+      {
+        "from": "SA",
+        "to": "API",
+        "label": "authorized action",
+        "animated": false,
+        "command": "kubectl auth can-i --as=system:serviceaccount:..."
+      },
+      {
+        "from": "PSC",
+        "to": "Pod",
+        "label": "applies",
+        "animated": true,
+        "command": "spec.securityContext"
+      },
+      {
+        "from": "CSC",
+        "to": "Pod",
+        "label": "overrides Pod-level",
+        "animated": true,
+        "command": "spec.containers[].securityContext"
+      }
+    ]
+  }
+}

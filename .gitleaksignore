@@ -1,0 +1,13 @@
+# Documented secret-scanner baseline. The entry below is a learner
+# fixture that is REQUIRED to look like a real secret (a valid
+# kubernetes.io/ssh-auth Secret payload) for the exercise to teach the
+# intended behavior - the content is synthetic, but the *shape* (a PEM
+# private-key header) is exactly what trips this rule regardless of
+# what's inside it.
+# See docs/adr/0003-secret-scanner-baseline.md for the full review record
+# (owner, justification, and removal condition).
+#
+# Format: one gitleaks Fingerprint per line, generated with (from this
+# directory): gitleaks detect --source . --no-git -v
+
+questions/configuration/q105-22-secret-ssh-auth-type/setup.sh:private-key:24

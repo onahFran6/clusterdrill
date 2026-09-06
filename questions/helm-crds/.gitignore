@@ -1,0 +1,4 @@
+# Charts are generated on disk by each question's setup.sh at run time
+# (kept out of git so the repo doesn't carry generated chart trees).
+# */chart*/ also covers q110-40's chart-cache/ subchart dependency dir.
+*/chart*/

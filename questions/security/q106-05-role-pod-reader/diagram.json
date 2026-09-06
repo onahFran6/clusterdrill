@@ -1,0 +1,92 @@
+{
+  "architecture": {
+    "title": "q106-05-role-pod-reader: Role",
+    "description": "Resources involved: Role",
+    "nodes": [
+      {
+        "id": "Role",
+        "label": "Role",
+        "type": "policy"
+      },
+      {
+        "id": "RoleBinding",
+        "label": "RoleBinding",
+        "type": "policy"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Role",
+        "to": "RoleBinding",
+        "label": "granted by",
+        "animated": true,
+        "command": "kubectl create rolebinding ..."
+      },
+      {
+        "from": "RoleBinding",
+        "to": "ServiceAccount",
+        "label": "binds",
+        "animated": true
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q106-05-role-pod-reader: Role",
+    "description": "Resources involved: Role",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Role",
+        "label": "Role",
+        "type": "policy"
+      },
+      {
+        "id": "RoleBinding",
+        "label": "RoleBinding",
+        "type": "policy"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create role ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "RoleBinding",
+        "label": "granted by (enforced at request time)"
+      },
+      {
+        "from": "API Server",
+        "to": "ServiceAccount",
+        "label": "binds (enforced at request time)"
+      }
+    ]
+  }
+}

@@ -1,0 +1,450 @@
+topic: security
+questions:
+- id: q106-01-create-serviceaccount-basic
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ServiceAccount
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-02-pod-uses-serviceaccount
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ServiceAccount
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-03-disable-automount-pod-level
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-04-disable-automount-sa-level
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - ServiceAccount
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-05-role-pod-reader
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - Role
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-06-rolebinding-bind-sa-to-role
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - Role
+  - RoleBinding
+  - ServiceAccount
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-07-clusterrole-node-viewer
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - ClusterRole
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-08-clusterrolebinding-bind-sa
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - ClusterRole
+  - ClusterRoleBinding
+  - ServiceAccount
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-09-auth-can-i-self
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ConfigMap
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-10-auth-can-i-as-serviceaccount
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - ServiceAccount
+  - Role
+  - RoleBinding
+  - ConfigMap
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-11-pod-runasuser-runasgroup
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-12-runasnonroot-enforced
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-13-readonly-root-filesystem
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-14-block-privilege-escalation
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-15-capabilities-add-drop
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-16-fsgroup-shared-volume
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-17-container-overrides-pod-securitycontext
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-18-networkpolicy-default-deny-ingress
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - NetworkPolicy
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-19-role-restrict-secret-by-name
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - Role
+  - RoleBinding
+  - ServiceAccount
+  - Secret
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-20-serviceaccount-no-secret-access
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - ServiceAccount
+  - Role
+  - RoleBinding
+  - Secret
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-21-drop-all-capabilities-explicit
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-22-imagepullsecret-attach-to-serviceaccount
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - Secret
+  - ServiceAccount
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-23-mount-secret-as-file-not-env
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - Secret
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-24-clusterrolebinding-view-group
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ServiceAccount
+  - ClusterRoleBinding
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-25-configmap-immutable-flag
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ConfigMap
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-26-role-list-watch-only-no-get
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - ServiceAccount
+  - Role
+  - RoleBinding
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-27-diagnose-conflicting-podsecurity-and-networkpolicy
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  - NetworkPolicy
+  - Namespace
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-28-chained-rbac-role-wrong-apigroup
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - ServiceAccount
+  - Role
+  - RoleBinding
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-29-secret-env-key-typo-crashloop
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - Secret
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-30-resourcequota-blocks-new-pod-with-limits
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - ResourceQuota
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-31-serviceaccount-token-projection-audience
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  - ServiceAccount
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-32-seccomp-runtime-default
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-33-podsecurity-baseline-hostpath-rejected
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - Namespace
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-34-aggregated-clusterrole-by-label
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - ClusterRole
+  - ClusterRoleBinding
+  - ServiceAccount
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-35-secret-from-literal-two-keys
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - Secret
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-36-role-multiple-resources-verbs
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - Role
+  - RoleBinding
+  - ServiceAccount
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-37-clusterrolebinding-to-group
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ClusterRole
+  - ClusterRoleBinding
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-38-networkpolicy-allow-podselector
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - NetworkPolicy
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-39-allowprivilegeescalation-false
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-40-serviceaccount-automount-pod-override-true
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - ServiceAccount
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-41-secret-type-tls-basic
+  domain: Application Environment, Configuration and Security
+  difficulty: easy
+  resource_kinds:
+  - Secret
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-42-networkpolicy-egress-allow-dns-and-target
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - NetworkPolicy
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-43-podsecurity-restricted-rejects-root
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - Namespace
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-44-clusterrolebinding-serviceaccount-namespace-mismatch
+  domain: Application Environment, Configuration and Security
+  difficulty: medium
+  resource_kinds:
+  - ServiceAccount
+  - ClusterRole
+  - ClusterRoleBinding
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-45-networkpolicy-combined-ingress-egress
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - NetworkPolicy
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-46-capabilities-net-bind-service-port80
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-47-rolebinding-roleref-kind-mismatch
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - Role
+  - RoleBinding
+  - ClusterRole
+  - ServiceAccount
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-48-secret-stringdata-precedence-over-data
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - Secret
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-49-clusterrole-nonresourceurl-healthz
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - ServiceAccount
+  - ClusterRole
+  - ClusterRoleBinding
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q106-50-networkpolicy-namespaceselector-and-podselector-and
+  domain: Application Environment, Configuration and Security
+  difficulty: hard
+  resource_kinds:
+  - NetworkPolicy
+  - Pod
+  - Namespace
+  points: 5
+  requirements:
+    min_nodes: 1

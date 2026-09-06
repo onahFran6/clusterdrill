@@ -1,0 +1,81 @@
+{
+  "architecture": {
+    "title": "q104-19-autoscale-deployment-cpu: Deployment, HorizontalPodAutoscaler",
+    "description": "Resources involved: Deployment, HorizontalPodAutoscaler",
+    "nodes": [
+      {
+        "id": "HorizontalPodAutoscaler",
+        "label": "HorizontalPodAutoscaler",
+        "type": "controller"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      }
+    ],
+    "edges": [
+      {
+        "from": "HorizontalPodAutoscaler",
+        "to": "Deployment",
+        "label": "scales",
+        "animated": true,
+        "command": "kubectl autoscale deployment ... --min --max --cpu-percent (spec.scaleTargetRef)"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q104-19-autoscale-deployment-cpu: Deployment, HorizontalPodAutoscaler",
+    "description": "Resources involved: Deployment, HorizontalPodAutoscaler",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "HorizontalPodAutoscaler",
+        "label": "HorizontalPodAutoscaler",
+        "type": "controller"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "HPA controller",
+        "label": "HPA controller",
+        "type": "controller"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl autoscale deployment ... --min --max --cpu-percent (spec.scaleTargetRef)"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "HPA controller",
+        "to": "API Server",
+        "label": "watches HorizontalPodAutoscaler objects"
+      },
+      {
+        "from": "HPA controller",
+        "to": "API Server",
+        "label": "scales Deployment (kubectl autoscale deployment ... --min --max --cpu-percent (spec.scaleTargetRef))"
+      }
+    ]
+  }
+}

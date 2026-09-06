@@ -1,0 +1,137 @@
+{
+  "architecture": {
+    "title": "q106-10-auth-can-i-as-serviceaccount: ServiceAccount, Role, RoleBinding, ConfigMap",
+    "description": "Resources involved: ServiceAccount, Role, RoleBinding, ConfigMap",
+    "nodes": [
+      {
+        "id": "RoleBinding",
+        "label": "RoleBinding",
+        "type": "policy"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      },
+      {
+        "id": "ConfigMap",
+        "label": "ConfigMap",
+        "type": "resource"
+      },
+      {
+        "id": "Role",
+        "label": "Role",
+        "type": "policy"
+      }
+    ],
+    "edges": [
+      {
+        "from": "RoleBinding",
+        "to": "ServiceAccount",
+        "label": "binds",
+        "animated": true,
+        "command": "roleRef + subjects[].kind: ServiceAccount"
+      },
+      {
+        "from": "ConfigMap",
+        "to": "ServiceAccount",
+        "label": "readable by",
+        "animated": true,
+        "command": "subject to RBAC on the ServiceAccount's bound Role"
+      },
+      {
+        "from": "Role",
+        "to": "RoleBinding",
+        "label": "granted by",
+        "animated": true,
+        "command": "kubectl create role ...; kubectl create rolebinding ..."
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q106-10-auth-can-i-as-serviceaccount: ServiceAccount, Role, RoleBinding, ConfigMap",
+    "description": "Resources involved: ServiceAccount, Role, RoleBinding, ConfigMap",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "RoleBinding",
+        "label": "RoleBinding",
+        "type": "policy"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      },
+      {
+        "id": "ConfigMap",
+        "label": "ConfigMap",
+        "type": "resource"
+      },
+      {
+        "id": "Role",
+        "label": "Role",
+        "type": "policy"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates RoleBinding"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "ServiceAccount",
+        "label": "binds (enforced at request time)"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates ConfigMap"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "ServiceAccount",
+        "label": "readable by (enforced at request time)"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create role ...; kubectl create rolebinding ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "RoleBinding",
+        "label": "granted by (enforced at request time)"
+      }
+    ]
+  }
+}

@@ -1,0 +1,101 @@
+{% extends "_shell.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Topics - ClusterDrill{% endblock %}
+{% block content %}
+  {{ m.kget_hero('kubectl get topiclabs -o wide') }}
+  <h1 class="page-title">Topics</h1>
+  <p class="hub-intro">
+    A <strong>session</strong> is {{ session_size }} questions drawn from a topic's
+    <strong>pool</strong>, timed the moment it starts - <strong>{{ topic_timer_minutes }} minutes</strong>
+    for a single topic, <strong>{{ mixed_timer_minutes }} minutes</strong> for a full Mixed run.
+    Each row's <strong>Fixed</strong> button starts the deterministic default straight away;
+    open a topic to also choose <strong>Randomized</strong>, <strong>Mixed</strong>, a difficulty, or a timer length.
+  </p>
+
+  {% if active_session %}
+    {% call m.alert('info') %}
+      <span class="live-dot" aria-hidden="true"></span>
+      Session running: <strong>{{ active_session.mode }}</strong>
+      {% if active_session.topic %}on <strong>{{ active_session.topic }}</strong>{% else %}across all topics{% endif %}
+      ({{ active_session.question_ids|length }} questions).
+      <a href="/questions/{{ active_session.question_ids[0] }}">Resume &rarr;</a>
+    {% endcall %}
+  {% endif %}
+
+  <div class="kget-table" role="table" aria-label="Topic labs">
+    {{ m.kget_table_head([
+      ('name', 'Name'), ('pool', 'Pool'), ('progress', 'Progress'),
+      ('status', 'Status'), ('actions', 'Start'),
+    ]) }}
+    {% for t in topics %}
+      {% call m.kget_row() %}
+        {% call m.kget_col('name') %}
+          <a href="/topics/{{ t.name }}">{{ t.name }}</a>
+          {% if t.name == "community" %}
+            {{ m.pill('GPL-3.0', 'community', 'Ported from GPL-3.0 sources - see questions/community/README.md') }}
+          {% endif %}
+        {% endcall %}
+        {% call m.kget_col('pool') %}{{ t.pool_size }}{% endcall %}
+        {% call m.kget_col('progress') %}
+          <span class="kget-bar" style="--pct: {{ t.progress_pct }}"><span class="kget-bar-fill"></span></span>
+          <span class="kget-pct">{{ t.progress_pct }}%</span>
+        {% endcall %}
+        {% call m.kget_col('status') %}
+          {% if t.progress_pct == 100 %}
+            <span class="status-dot status-dot-pass" aria-hidden="true"></span> Completed
+          {% elif t.progress_pct > 0 %}
+            <span class="status-dot status-dot-warn" aria-hidden="true"></span> In progress
+          {% else %}
+            <span class="status-dot status-dot-muted" aria-hidden="true"></span> Not started
+          {% endif %}
+        {% endcall %}
+        {% call m.kget_col('actions') %}
+          <form class="kget-actions-form" method="post" action="/sessions/start">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="topic" value="{{ t.name }}">
+            <button type="submit" name="mode" value="fixed" class="btn btn-mode">Fixed &rarr;</button>
+          </form>
+          <a class="kget-view-link" href="/topics/{{ t.name }}">configure</a>
+        {% endcall %}
+      {% endcall %}
+    {% endfor %}
+  </div>
+
+  <div class="mixed-cta">
+    <h3>Cross-topic mixed session</h3>
+    <p class="hub-intro">
+      Draws {{ session_size }} questions at random from every topic's pool combined -
+      a mock-exam-style mix, not scoped to one topic. Runs on the
+      {{ mixed_timer_minutes }}-minute exam-simulation clock.
+    </p>
+    <form method="post" action="/sessions/start">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" name="mode" value="mixed" class="btn btn-primary">
+        Start a Mixed session &middot; {{ session_size }} questions &middot; {{ mixed_timer_minutes }} min
+      </button>
+    </form>
+  </div>
+
+  <!-- Daily/session mixed challenge - a small, separate reward
+       track from the topic labs and the Mixed/Mock Exam run above. Always
+       available (no unlock gate, unlike the boss fights),
+       freshly re-drawn every time it's started. -->
+  <div class="mixed-cta daily-challenge-cta">
+    <h3>
+      Daily challenge
+      {% if daily_cleared_today %}
+        {{ m.pill('cleared today', 'pass') }}
+      {% endif %}
+    </h3>
+    <p class="hub-intro">
+      A quick {{ daily_session_size }}-question cross-topic draw, freshly re-rolled every time you start it - its
+      own small reward track, separate from the topic labs. Runs on a {{ daily_timer_minutes }}-minute clock.
+    </p>
+    <form method="post" action="/sessions/start-daily">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn btn-mode">
+        Start today's challenge &middot; {{ daily_session_size }} questions &middot; {{ daily_timer_minutes }} min
+      </button>
+    </form>
+  </div>
+{% endblock %}

@@ -1,0 +1,107 @@
+{
+  "architecture": {
+    "title": "q109-09-custom-storageclass-provisioner: StorageClass",
+    "description": "Resources involved: StorageClass",
+    "nodes": [
+      {
+        "id": "StorageClass",
+        "label": "StorageClass",
+        "type": "storage"
+      },
+      {
+        "id": "PersistentVolume",
+        "label": "PersistentVolume",
+        "type": "storage"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "StorageClass",
+        "to": "PersistentVolume",
+        "label": "provisions",
+        "animated": true,
+        "command": "dynamically provisioned on PVC create"
+      },
+      {
+        "from": "PersistentVolume",
+        "to": "PersistentVolumeClaim",
+        "label": "bound by",
+        "animated": true
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q109-09-custom-storageclass-provisioner: StorageClass",
+    "description": "Resources involved: StorageClass",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "StorageClass",
+        "label": "StorageClass",
+        "type": "storage"
+      },
+      {
+        "id": "PersistentVolume",
+        "label": "PersistentVolume",
+        "type": "storage"
+      },
+      {
+        "id": "PV controller",
+        "label": "PV controller",
+        "type": "controller"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl apply -f storageclass.yaml"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "PV controller",
+        "to": "API Server",
+        "label": "watches StorageClass objects"
+      },
+      {
+        "from": "PV controller",
+        "to": "API Server",
+        "label": "provisions PersistentVolume (dynamically provisioned on PVC create)"
+      },
+      {
+        "from": "PV controller",
+        "to": "API Server",
+        "label": "watches PersistentVolume objects"
+      },
+      {
+        "from": "PV controller",
+        "to": "API Server",
+        "label": "bound by PersistentVolumeClaim"
+      }
+    ]
+  }
+}

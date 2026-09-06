@@ -1,0 +1,352 @@
+topic: observability
+questions:
+  - id: q107-01-liveness-httpget-basic
+    domain: "Application Observability and Maintenance"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-02-readiness-httpget-basic
+    domain: "Application Observability and Maintenance"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-03-startup-probe-slow-init
+    domain: "Application Observability and Maintenance"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-04-exec-liveness-probe
+    domain: "Application Observability and Maintenance"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-05-tcpsocket-readiness-probe
+    domain: "Application Observability and Maintenance"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-06-tune-probe-timing-flaky
+    domain: "Application Observability and Maintenance"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-07-diagnose-crashloop-badcommand
+    domain: "Application Observability and Maintenance"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-08-diagnose-crashloop-oomkilled
+    domain: "Application Observability and Maintenance"
+    difficulty: hard
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-09-multicontainer-logs-dash-c
+    domain: "Application Observability and Maintenance"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-10-logs-previous-container-restart
+    domain: "Application Observability and Maintenance"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-11-debug-ephemeral-container
+    domain: "Application Observability and Maintenance"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-12-debug-distroless-copy
+    domain: "Application Observability and Maintenance"
+    difficulty: hard
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-13-debug-node-shell
+    domain: "Application Observability and Maintenance"
+    difficulty: medium
+    resource_kinds: [Node]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-14-deprecated-apiversion-fix
+    domain: "Application Observability and Maintenance"
+    difficulty: easy
+    resource_kinds: [CronJob]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-15-ready-not-live-distinguish
+    domain: "Application Observability and Maintenance"
+    difficulty: hard
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-16-events-sort-by-time
+    domain: "Application Observability and Maintenance"
+    difficulty: easy
+    resource_kinds: [Pod, Event]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-17-logs-since-time-window
+    domain: "Application Observability and Maintenance"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-18-top-pod-identify-hungry-container
+    domain: "Application Observability and Maintenance"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-19-describe-find-image-pull-error
+    domain: "Application Observability and Maintenance"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-20-init-container-blocking-app
+    domain: "Application Observability and Maintenance"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-21-preStop-graceful-shutdown-log
+    domain: "Application Observability and Maintenance"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-23-terminationMessage-custom-path
+    domain: "Application Observability and Maintenance"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-24-readiness-gate-blocks-deployment-rollout
+    domain: "Application Observability and Maintenance"
+    difficulty: hard
+    resource_kinds: [Deployment, Pod, ReplicaSet]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-25-cascading-liveness-failure-dependent-service
+    domain: "Application Observability and Maintenance"
+    difficulty: hard
+    resource_kinds: [Pod, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-27-debug-container-target-vs-copy-tradeoff
+    domain: "Application Observability and Maintenance"
+    difficulty: hard
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-22-multi-container-shared-log-volume
+    domain: "Application Observability and Maintenance"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-26-node-pressure-eviction-diagnosis
+    domain: "Application Observability and Maintenance"
+    difficulty: hard
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-28-multi-probe-conflicting-ports-debug
+    domain: "Application Observability and Maintenance"
+    difficulty: hard
+    resource_kinds: [Pod, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-29-cronjob-failed-runs-log-forensics
+    domain: "Application Observability and Maintenance"
+    difficulty: hard
+    resource_kinds: [CronJob, ConfigMap, Job]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-30-log-rotation-container-restart-history
+    domain: "Application Observability and Maintenance"
+    difficulty: hard
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-31-kubectl-logs-since-duration
+    domain: "Application Observability and Maintenance"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-32-readiness-successthreshold-recovery
+    domain: "Application Observability and Maintenance"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-33-rollout-history-change-cause
+    domain: "Application Observability and Maintenance"
+    difficulty: easy
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-34-deprecated-ingress-apiversion-fix
+    domain: "Application Observability and Maintenance"
+    difficulty: easy
+    resource_kinds: [Ingress, Service]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-35-events-field-selector-filter
+    domain: "Application Observability and Maintenance"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-36-kubectl-top-nodes-basic
+    domain: "Application Observability and Maintenance"
+    difficulty: easy
+    resource_kinds: [Node]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-37-custom-columns-extraction
+    domain: "Application Observability and Maintenance"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-38-startupprobe-never-succeeds-blocks-liveness
+    domain: "Application Observability and Maintenance"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-39-multiple-init-containers-sequential-failure
+    domain: "Application Observability and Maintenance"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-40-cpu-throttling-diagnosis-via-top
+    domain: "Application Observability and Maintenance"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-41-job-failed-pod-logs-forensics
+    domain: "Application Observability and Maintenance"
+    difficulty: medium
+    resource_kinds: [Job, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-42-nodeselector-mismatch-blocks-scheduling
+    domain: "Application Observability and Maintenance"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-43-readinessprobe-httpget-custom-header
+    domain: "Application Observability and Maintenance"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-44-terminationgraceperiod-vs-prestop-timing
+    domain: "Application Observability and Maintenance"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-45-sidecar-native-readiness-gates-main
+    domain: "Application Observability and Maintenance"
+    difficulty: hard
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-46-livenessprobe-exec-array-vs-shell-pipeline
+    domain: "Application Observability and Maintenance"
+    difficulty: hard
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-47-terminationmessagepolicy-fallback-to-logs
+    domain: "Application Observability and Maintenance"
+    difficulty: hard
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-48-shareprocessnamespace-cross-container-visibility
+    domain: "Application Observability and Maintenance"
+    difficulty: hard
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-49-diagnose-two-simultaneous-crashloops-different-causes
+    domain: "Application Observability and Maintenance"
+    difficulty: hard
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q107-50-multi-container-one-container-gates-readiness
+    domain: "Application Observability and Maintenance"
+    difficulty: hard
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1

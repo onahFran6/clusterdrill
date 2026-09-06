@@ -1,0 +1,19 @@
+%% Topic primer: security
+%% ServiceAccount identifies a Pod; Role/ClusterRole + (Cluster)RoleBinding grant it API access;
+%% SecurityContext fields on Pod/Container constrain what the container can do at runtime.
+graph LR
+  SA["ServiceAccount"]
+  Pod["Pod"]
+  Role["Role / ClusterRole\n(kubectl create role/clusterrole --verb --resource)"]
+  RB["RoleBinding / ClusterRoleBinding\n(kubectl create rolebinding --role --serviceaccount)"]
+  API["API server\n(authorized action, e.g. get pods)"]
+  PSC["Pod securityContext\n(runAsUser, runAsNonRoot, fsGroup)"]
+  CSC["Container securityContext\n(capabilities, readOnlyRootFilesystem, allowPrivilegeEscalation)"]
+
+  SA -- "spec.serviceAccountName" --> Pod
+  Role -- "kubectl create rolebinding" --> RB
+  RB -- "binds subject: SA" --> SA
+  RB -- "grants rules from" --> Role
+  SA -- "kubectl auth can-i --as=system:serviceaccount:..." --> API
+  PSC -- "spec.securityContext" --> Pod
+  CSC -- "spec.containers[].securityContext (overrides Pod-level)" --> Pod

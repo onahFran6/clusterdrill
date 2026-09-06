@@ -1,0 +1,18 @@
+%% Topic primer: services-networking
+%% Ingress -> Service -> Endpoints -> Pod (via label selector) -> Deployment -> ReplicaSet,
+%% plus a NetworkPolicy attaching to the same selected Pods to restrict traffic.
+graph LR
+  Ing["Ingress\n(kubectl create ingress --rule=host/path=service:port)"]
+  Svc["Service\n(kubectl expose deployment --port / ClusterIP,NodePort)"]
+  Ep["Endpoints / EndpointSlice\n(auto-managed from selector matches)"]
+  Pod["Pod"]
+  Dep["Deployment"]
+  RS["ReplicaSet"]
+  NP["NetworkPolicy\n(spec.podSelector, restricts ingress/egress)"]
+
+  Ing -- "spec.rules[].http.paths[].backend.service" --> Svc
+  Svc -- "spec.selector matches Pod labels" --> Ep
+  Ep -- "tracks ready Pod IPs:port" --> Pod
+  Dep -- "owns" --> RS
+  RS -- "creates (spec.template labels)" --> Pod
+  NP -. "spec.podSelector (same labels)" .-> Pod

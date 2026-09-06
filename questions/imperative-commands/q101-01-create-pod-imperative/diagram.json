@@ -1,0 +1,113 @@
+{
+  "architecture": {
+    "title": "q101-01-create-pod-imperative: Pod",
+    "description": "Resources involved: Pod",
+    "nodes": [
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Container",
+        "label": "Container",
+        "type": "pod"
+      },
+      {
+        "id": "Image",
+        "label": "Image",
+        "type": "pod"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Pod",
+        "to": "Container",
+        "label": "runs",
+        "animated": true
+      },
+      {
+        "from": "Container",
+        "to": "Image",
+        "label": "pulls",
+        "animated": true,
+        "command": "imagePullPolicy on kubelet's first run"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q101-01-create-pod-imperative: Pod",
+    "description": "Resources involved: Pod",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Container",
+        "label": "Container",
+        "type": "pod"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl run web --image=... / kubectl apply -f pod.yaml"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}

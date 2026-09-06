@@ -1,0 +1,71 @@
+{
+  "architecture": {
+    "title": "q105-46-configmap-missing-mount-pending: ConfigMap, Deployment",
+    "description": "Resources involved: ConfigMap, Deployment",
+    "nodes": [
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "ConfigMap",
+        "label": "ConfigMap",
+        "type": "resource"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Deployment",
+        "to": "ConfigMap",
+        "label": "reads",
+        "animated": true,
+        "command": "envFrom / volumeMount; kubectl rollout restart on change"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q105-46-configmap-missing-mount-pending: ConfigMap, Deployment",
+    "description": "Resources involved: ConfigMap, Deployment",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "ConfigMap",
+        "label": "ConfigMap",
+        "type": "resource"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates Deployment"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "ConfigMap",
+        "label": "reads"
+      }
+    ]
+  }
+}

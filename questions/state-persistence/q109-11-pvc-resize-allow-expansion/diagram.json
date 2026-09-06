@@ -1,0 +1,81 @@
+{
+  "architecture": {
+    "title": "q109-11-pvc-resize-allow-expansion: StorageClass, PersistentVolumeClaim",
+    "description": "Resources involved: StorageClass, PersistentVolumeClaim",
+    "nodes": [
+      {
+        "id": "StorageClass",
+        "label": "StorageClass",
+        "type": "storage"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "StorageClass",
+        "to": "PersistentVolumeClaim",
+        "label": "provisions for",
+        "animated": true,
+        "command": "spec.storageClassName references it; PV dynamically provisioned"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q109-11-pvc-resize-allow-expansion: StorageClass, PersistentVolumeClaim",
+    "description": "Resources involved: StorageClass, PersistentVolumeClaim",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "StorageClass",
+        "label": "StorageClass",
+        "type": "storage"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      },
+      {
+        "id": "PV controller",
+        "label": "PV controller",
+        "type": "controller"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates StorageClass"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "PV controller",
+        "to": "API Server",
+        "label": "watches StorageClass objects"
+      },
+      {
+        "from": "PV controller",
+        "to": "API Server",
+        "label": "provisions for PersistentVolumeClaim (spec.storageClassName references it; PV dynamically provisioned)"
+      }
+    ]
+  }
+}

@@ -1,0 +1,190 @@
+{
+  "architecture": {
+    "title": "q103-30-cronjob-needs-rbac-to-complete-task: CronJob, Job, ConfigMap, ServiceAccount, Role, RoleBinding",
+    "description": "Resources involved: CronJob, Job, ConfigMap, ServiceAccount, Role, RoleBinding",
+    "nodes": [
+      {
+        "id": "CronJob",
+        "label": "CronJob",
+        "type": "controller"
+      },
+      {
+        "id": "Job",
+        "label": "Job",
+        "type": "controller"
+      },
+      {
+        "id": "ConfigMap",
+        "label": "ConfigMap",
+        "type": "resource"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      },
+      {
+        "id": "RoleBinding",
+        "label": "RoleBinding",
+        "type": "policy"
+      },
+      {
+        "id": "Role",
+        "label": "Role",
+        "type": "policy"
+      }
+    ],
+    "edges": [
+      {
+        "from": "CronJob",
+        "to": "Job",
+        "label": "schedules",
+        "animated": true,
+        "command": "kubectl create cronjob ... --schedule=... (fires on each tick)"
+      },
+      {
+        "from": "ConfigMap",
+        "to": "ServiceAccount",
+        "label": "readable by",
+        "animated": true,
+        "command": "subject to RBAC on the ServiceAccount's bound Role"
+      },
+      {
+        "from": "RoleBinding",
+        "to": "ServiceAccount",
+        "label": "binds",
+        "animated": true,
+        "command": "roleRef + subjects[].kind: ServiceAccount"
+      },
+      {
+        "from": "Role",
+        "to": "RoleBinding",
+        "label": "granted by",
+        "animated": true,
+        "command": "kubectl create role ...; kubectl create rolebinding ..."
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q103-30-cronjob-needs-rbac-to-complete-task: CronJob, Job, ConfigMap, ServiceAccount, Role, RoleBinding",
+    "description": "Resources involved: CronJob, Job, ConfigMap, ServiceAccount, Role, RoleBinding",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "CronJob",
+        "label": "CronJob",
+        "type": "controller"
+      },
+      {
+        "id": "Job",
+        "label": "Job",
+        "type": "controller"
+      },
+      {
+        "id": "CronJob controller",
+        "label": "CronJob controller",
+        "type": "controller"
+      },
+      {
+        "id": "ConfigMap",
+        "label": "ConfigMap",
+        "type": "resource"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      },
+      {
+        "id": "RoleBinding",
+        "label": "RoleBinding",
+        "type": "policy"
+      },
+      {
+        "id": "Role",
+        "label": "Role",
+        "type": "policy"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create cronjob ... --schedule=... (fires on each tick)"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "CronJob controller",
+        "to": "API Server",
+        "label": "watches CronJob objects"
+      },
+      {
+        "from": "CronJob controller",
+        "to": "API Server",
+        "label": "schedules Job (kubectl create cronjob ... --schedule=... (fires on each tick))"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates ConfigMap"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "ServiceAccount",
+        "label": "readable by (enforced at request time)"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates RoleBinding"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "ServiceAccount",
+        "label": "binds (enforced at request time)"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create role ...; kubectl create rolebinding ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "RoleBinding",
+        "label": "granted by (enforced at request time)"
+      }
+    ]
+  }
+}

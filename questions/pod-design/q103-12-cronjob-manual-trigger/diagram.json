@@ -1,0 +1,81 @@
+{
+  "architecture": {
+    "title": "q103-12-cronjob-manual-trigger: CronJob, Job",
+    "description": "Resources involved: CronJob, Job",
+    "nodes": [
+      {
+        "id": "CronJob",
+        "label": "CronJob",
+        "type": "controller"
+      },
+      {
+        "id": "Job",
+        "label": "Job",
+        "type": "controller"
+      }
+    ],
+    "edges": [
+      {
+        "from": "CronJob",
+        "to": "Job",
+        "label": "schedules",
+        "animated": true,
+        "command": "kubectl create cronjob ... --schedule=... (fires on each tick)"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q103-12-cronjob-manual-trigger: CronJob, Job",
+    "description": "Resources involved: CronJob, Job",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "CronJob",
+        "label": "CronJob",
+        "type": "controller"
+      },
+      {
+        "id": "Job",
+        "label": "Job",
+        "type": "controller"
+      },
+      {
+        "id": "CronJob controller",
+        "label": "CronJob controller",
+        "type": "controller"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create cronjob ... --schedule=... (fires on each tick)"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "CronJob controller",
+        "to": "API Server",
+        "label": "watches CronJob objects"
+      },
+      {
+        "from": "CronJob controller",
+        "to": "API Server",
+        "label": "schedules Job (kubectl create cronjob ... --schedule=... (fires on each tick))"
+      }
+    ]
+  }
+}

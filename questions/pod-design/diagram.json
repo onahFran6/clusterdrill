@@ -1,0 +1,80 @@
+{
+  "architecture": {
+    "title": "Topic primer: pod-design",
+    "description": "CronJob schedules Jobs, Jobs manage Pods via completions/parallelism; label selectors are the connective tissue used to target Pods directly too.",
+    "nodes": [
+      {
+        "id": "CJ",
+        "label": "CronJob",
+        "type": "controller",
+        "sub": "spec.schedule"
+      },
+      {
+        "id": "Job",
+        "label": "Job",
+        "type": "controller",
+        "sub": "completions / parallelism / backoffLimit"
+      },
+      {
+        "id": "Pod1",
+        "label": "Pod (completion 1)",
+        "type": "pod"
+      },
+      {
+        "id": "Pod2",
+        "label": "Pod (completion N)",
+        "type": "pod"
+      },
+      {
+        "id": "Sel",
+        "label": "label selector",
+        "type": "external",
+        "sub": "kubectl get/delete -l key=value"
+      }
+    ],
+    "edges": [
+      {
+        "from": "CJ",
+        "to": "Job",
+        "label": "triggers on schedule",
+        "animated": true,
+        "command": "kubectl create cronjob"
+      },
+      {
+        "from": "CJ",
+        "to": "Job",
+        "label": "manual trigger",
+        "animated": false,
+        "command": "kubectl create job --from=cronjob"
+      },
+      {
+        "from": "Job",
+        "to": "Pod1",
+        "label": "creates",
+        "animated": true,
+        "command": "spec.completions/parallelism"
+      },
+      {
+        "from": "Job",
+        "to": "Pod2",
+        "label": "creates",
+        "animated": true,
+        "command": "spec.completions/parallelism"
+      },
+      {
+        "from": "Sel",
+        "to": "Pod1",
+        "label": "matches",
+        "animated": false,
+        "command": "job-name / custom labels"
+      },
+      {
+        "from": "Sel",
+        "to": "Pod2",
+        "label": "matches",
+        "animated": false,
+        "command": "job-name / custom labels"
+      }
+    ]
+  }
+}

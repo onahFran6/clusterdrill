@@ -1,0 +1,40 @@
+# CODEOWNERS
+#
+# Ownership is split along the MIT/GPL boundary described in README.md's
+# Licensing section: questions/community/ is GPL-3.0 ported content and is
+# reviewed separately from the MIT-licensed original question pools under
+# questions/<topic>/. Keep these two groups from being routed as a single
+# review so a PR can never quietly mix content across the license boundary.
+#
+# Default: everything not matched below falls back to the repo owner.
+*                           @onahFran6
+
+# GPL-3.0 ported content - isolated on purpose, own LICENSE file.
+/questions/community/       @onahFran6
+
+# MIT-licensed original question pools, one topic per directory.
+/questions/_template/       @onahFran6
+/questions/configuration/   @onahFran6
+/questions/deployments-strategies/ @onahFran6
+/questions/helm-crds/       @onahFran6
+/questions/imperative-commands/ @onahFran6
+/questions/multi-container-pods/ @onahFran6
+/questions/observability/   @onahFran6
+/questions/pod-design/      @onahFran6
+/questions/security/        @onahFran6
+/questions/services-networking/ @onahFran6
+/questions/state-persistence/ @onahFran6
+
+# Shared grading/verification harness - changes here affect every question.
+/lib/                       @onahFran6
+
+# Governance and legal boundaries need explicit sign-off.
+/LICENSE                    @onahFran6
+/THIRD_PARTY_NOTICES.md     @onahFran6
+/CODE_OF_CONDUCT.md         @onahFran6
+/GOVERNANCE.md              @onahFran6
+/SECURITY.md                @onahFran6
+/SUPPORT.md                 @onahFran6
+/.github/CODEOWNERS         @onahFran6
+/.github/ISSUE_TEMPLATE/    @onahFran6
+/.github/PULL_REQUEST_TEMPLATE.md @onahFran6

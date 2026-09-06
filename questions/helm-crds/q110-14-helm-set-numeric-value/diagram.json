@@ -1,0 +1,149 @@
+{
+  "architecture": {
+    "title": "q110-14-helm-set-numeric-value: Deployment",
+    "description": "Resources involved: Deployment",
+    "nodes": [
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "ReplicaSet",
+        "label": "ReplicaSet",
+        "type": "controller"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Deployment",
+        "to": "ReplicaSet",
+        "label": "owns",
+        "animated": true,
+        "command": "controller creates on template change"
+      },
+      {
+        "from": "ReplicaSet",
+        "to": "Pod",
+        "label": "owns",
+        "animated": true,
+        "command": "created to match spec.replicas"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q110-14-helm-set-numeric-value: Deployment",
+    "description": "Resources involved: Deployment",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "ReplicaSet",
+        "label": "ReplicaSet",
+        "type": "controller"
+      },
+      {
+        "id": "Deployment controller",
+        "label": "Deployment controller",
+        "type": "controller"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "ReplicaSet controller",
+        "label": "ReplicaSet controller",
+        "type": "controller"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create deployment ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "Deployment controller",
+        "to": "API Server",
+        "label": "watches Deployment objects"
+      },
+      {
+        "from": "Deployment controller",
+        "to": "API Server",
+        "label": "owns ReplicaSet (controller creates on template change)"
+      },
+      {
+        "from": "ReplicaSet controller",
+        "to": "API Server",
+        "label": "watches ReplicaSet objects"
+      },
+      {
+        "from": "ReplicaSet controller",
+        "to": "API Server",
+        "label": "owns Pod (created to match spec.replicas)"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}

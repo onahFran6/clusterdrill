@@ -1,0 +1,5 @@
+# Test-only dependencies - never installed by install-practice-bank.sh's
+# systemd deploy, only needed for `pytest tests/` during development/CI.
+-r requirements.txt
+pytest~=9.1
+pytest-asyncio~=1.4

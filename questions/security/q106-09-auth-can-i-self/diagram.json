@@ -1,0 +1,61 @@
+{
+  "architecture": {
+    "title": "q106-09-auth-can-i-self: ConfigMap",
+    "description": "Resources involved: ConfigMap",
+    "nodes": [
+      {
+        "id": "ConfigMap",
+        "label": "ConfigMap",
+        "type": "resource"
+      },
+      {
+        "id": "Container",
+        "label": "Container",
+        "type": "pod"
+      }
+    ],
+    "edges": [
+      {
+        "from": "ConfigMap",
+        "to": "Container",
+        "label": "consumed by",
+        "animated": true,
+        "command": "via envFrom / volumeMount"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q106-09-auth-can-i-self: ConfigMap",
+    "description": "Resources involved: ConfigMap",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "ConfigMap",
+        "label": "ConfigMap",
+        "type": "resource"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create configmap ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+%% Topic primer: imperative-commands
+%% Core CKAD imperative workflow - Pod, up through Deployment, to a reachable Service,
+%% plus the ConfigMap/Secret objects and mutating commands this topic's questions exercise.
+graph LR
+  Img[("container image")]
+  Pod["Pod"]
+  Dep["Deployment"]
+  RS["ReplicaSet"]
+  RS2["ReplicaSet (new, after set image)"]
+  Svc["Service"]
+  CM["ConfigMap"]
+  Sec["Secret"]
+
+  Img -- "kubectl run pod --image=..." --> Pod
+  Img -- "kubectl create deployment" --> Dep
+  Dep -- "owns (auto-created)" --> RS
+  RS -- "creates (spec.replicas)" --> Pod
+  Dep -- "kubectl set image / kubectl edit" --> RS2
+  Dep -- "kubectl scale --replicas" --> RS
+  RS2 -- "creates (spec.replicas)" --> Pod
+  Pod -- "kubectl expose pod --port" --> Svc
+  Dep -- "kubectl expose deployment --port" --> Svc
+  CM -. "kubectl create configmap --from-literal" .-> Pod
+  Sec -. "kubectl create secret generic" .-> Pod

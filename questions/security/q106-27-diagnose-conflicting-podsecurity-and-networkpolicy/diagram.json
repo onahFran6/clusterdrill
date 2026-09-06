@@ -1,0 +1,150 @@
+{
+  "architecture": {
+    "title": "q106-27-diagnose-conflicting-podsecurity-and-networkpolicy: Pod, NetworkPolicy, Namespace",
+    "description": "Resources involved: Pod, NetworkPolicy, Namespace",
+    "nodes": [
+      {
+        "id": "NetworkPolicy",
+        "label": "NetworkPolicy",
+        "type": "service"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Namespace",
+        "label": "Namespace",
+        "type": "external"
+      },
+      {
+        "id": "related_object",
+        "label": "related object",
+        "type": "external"
+      }
+    ],
+    "edges": [
+      {
+        "from": "NetworkPolicy",
+        "to": "Pod",
+        "label": "selects",
+        "animated": true,
+        "command": "kubectl apply -f networkpolicy.yaml (spec.podSelector)"
+      },
+      {
+        "from": "Namespace",
+        "to": "related_object",
+        "label": "relates to",
+        "animated": true,
+        "command": "no special-cased relationship yet - see resource_kinds"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q106-27-diagnose-conflicting-podsecurity-and-networkpolicy: Pod, NetworkPolicy, Namespace",
+    "description": "Resources involved: Pod, NetworkPolicy, Namespace",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "NetworkPolicy",
+        "label": "NetworkPolicy",
+        "type": "service"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Namespace",
+        "label": "Namespace",
+        "type": "external"
+      },
+      {
+        "id": "related_object",
+        "label": "related object",
+        "type": "external"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl apply -f networkpolicy.yaml (spec.podSelector)"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "Pod",
+        "label": "selects (enforced at request time)"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates Namespace"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "related_object",
+        "label": "relates to"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}

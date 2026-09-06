@@ -1,0 +1,93 @@
+{
+  "architecture": {
+    "title": "q106-06-rolebinding-bind-sa-to-role: Role, RoleBinding, ServiceAccount",
+    "description": "Resources involved: Role, RoleBinding, ServiceAccount",
+    "nodes": [
+      {
+        "id": "Role",
+        "label": "Role",
+        "type": "policy"
+      },
+      {
+        "id": "RoleBinding",
+        "label": "RoleBinding",
+        "type": "policy"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Role",
+        "to": "RoleBinding",
+        "label": "granted by",
+        "animated": true,
+        "command": "kubectl create role ...; kubectl create rolebinding ..."
+      },
+      {
+        "from": "RoleBinding",
+        "to": "ServiceAccount",
+        "label": "binds",
+        "animated": true,
+        "command": "roleRef + subjects[].kind: ServiceAccount"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q106-06-rolebinding-bind-sa-to-role: Role, RoleBinding, ServiceAccount",
+    "description": "Resources involved: Role, RoleBinding, ServiceAccount",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Role",
+        "label": "Role",
+        "type": "policy"
+      },
+      {
+        "id": "RoleBinding",
+        "label": "RoleBinding",
+        "type": "policy"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create role ...; kubectl create rolebinding ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "RoleBinding",
+        "label": "granted by (enforced at request time)"
+      },
+      {
+        "from": "API Server",
+        "to": "ServiceAccount",
+        "label": "binds (enforced at request time)"
+      }
+    ]
+  }
+}

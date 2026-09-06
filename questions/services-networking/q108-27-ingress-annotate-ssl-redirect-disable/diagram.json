@@ -1,0 +1,128 @@
+{
+  "architecture": {
+    "title": "q108-27-ingress-annotate-ssl-redirect-disable: Ingress",
+    "description": "Resources involved: Ingress",
+    "nodes": [
+      {
+        "id": "Ingress",
+        "label": "Ingress",
+        "type": "service"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Ingress",
+        "to": "Service",
+        "label": "routes to",
+        "animated": true
+      },
+      {
+        "from": "Service",
+        "to": "Pod",
+        "label": "routes to",
+        "animated": true,
+        "command": "via spec.selector label match"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q108-27-ingress-annotate-ssl-redirect-disable: Ingress",
+    "description": "Resources involved: Ingress",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Ingress",
+        "label": "Ingress",
+        "type": "service"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create ingress ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "Service",
+        "label": "routes to"
+      },
+      {
+        "from": "API Server",
+        "to": "Pod",
+        "label": "routes to"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}

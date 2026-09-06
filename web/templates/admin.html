@@ -1,0 +1,69 @@
+{% extends "_shell.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Admin - ClusterDrill{% endblock %}
+{% block content %}
+<section class="panel admin-panel">
+  <h2>Manage users</h2>
+  <p>Accounts are admin-provisioned only - there is no public sign-up page.</p>
+
+  {% if error %}
+    {% call m.alert('critical') %}{{ error }}{% endcall %}
+  {% elif success %}
+    {% call m.alert('success') %}{{ success }}{% endcall %}
+  {% endif %}
+
+  <table class="admin-users-table">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Admin</th>
+        <th>Created</th>
+        <th>Reset password</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.username }}{{ ' (you)' if u.user_id == current_user_id else '' }}</td>
+        <td>{{ 'Yes' if u.is_admin else 'No' }}</td>
+        <td>{{ u.created_at }}</td>
+        <td>
+          <form method="post" action="/admin/users/{{ u.user_id }}/reset-password" class="admin-inline-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="password" name="password" class="text-input" placeholder="New password" required minlength="8" autocomplete="new-password">
+            <button type="submit" class="btn btn-secondary">Set</button>
+          </form>
+        </td>
+        <td>
+          <form
+            method="post" action="/admin/users/{{ u.user_id }}/delete" class="admin-inline-form"
+            data-confirm="Delete {{ u.username }}? This can't be undone." data-confirm-label="Delete"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="btn btn-danger-ghost">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h3>Add a user</h3>
+  <form method="post" action="/admin/users" class="admin-add-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="new-username">Username</label>
+    <input type="text" id="new-username" name="username" class="text-input" required autocomplete="off">
+    <label for="new-password">Password</label>
+    <input type="password" id="new-password" name="password" class="text-input" required minlength="8" autocomplete="new-password">
+    <label class="admin-checkbox-label">
+      <input type="checkbox" name="is_admin" value="true"> Admin
+    </label>
+    <button type="submit" class="btn btn-primary">Add user</button>
+  </form>
+</section>
+{{ m.confirm_dialog() }}
+{% endblock %}
+{% block scripts %}
+  <script src="/static/app.js"></script>
+{% endblock %}

@@ -1,0 +1,107 @@
+{
+  "architecture": {
+    "title": "q103-15-pod-nodeselector-os-linux: Pod, Node",
+    "description": "Resources involved: Pod, Node",
+    "nodes": [
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Node",
+        "label": "Node",
+        "type": "external"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Pod",
+        "to": "Node",
+        "label": "scheduled to",
+        "animated": true,
+        "command": "kubectl label node ...; spec.nodeSelector match"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q103-15-pod-nodeselector-os-linux: Pod, Node",
+    "description": "Resources involved: Pod, Node",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Node",
+        "label": "Node",
+        "type": "external"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl label node ...; spec.nodeSelector match"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "Node",
+        "label": "scheduled to"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}

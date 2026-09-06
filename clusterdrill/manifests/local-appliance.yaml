@@ -1,0 +1,273 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: clusterdrill-system
+  labels:
+    app.kubernetes.io/name: clusterdrill
+    app.kubernetes.io/instance: clusterdrill
+    app.kubernetes.io/version: "${CLUSTERDRILL_VERSION}"
+    app.kubernetes.io/component: system
+    app.kubernetes.io/part-of: clusterdrill
+    app.kubernetes.io/managed-by: clusterdrill-cli
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: clusterdrill-web
+  namespace: clusterdrill-system
+  labels:
+    app.kubernetes.io/name: clusterdrill
+    app.kubernetes.io/instance: clusterdrill
+    app.kubernetes.io/version: "${CLUSTERDRILL_VERSION}"
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: clusterdrill
+    app.kubernetes.io/managed-by: clusterdrill-cli
+automountServiceAccountToken: true
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: clusterdrill-web-auth
+  namespace: clusterdrill-system
+  labels:
+    app.kubernetes.io/name: clusterdrill
+    app.kubernetes.io/instance: clusterdrill
+    app.kubernetes.io/version: "${CLUSTERDRILL_VERSION}"
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: clusterdrill
+    app.kubernetes.io/managed-by: clusterdrill-cli
+type: Opaque
+stringData:
+  # Quotes preserve an intentional empty value for --no-password. Without
+  # them YAML parses the rendered field as null and kubectl leaves a prior
+  # password in place during an apply.
+  password: "${CLUSTERDRILL_PASSWORD}"
+---
+# The appliance operates only on its dedicated, disposable profile. The rules
+# are deliberately explicit rather than binding cluster-admin: they cover the
+# Kubernetes API groups used by the reviewed question bank and app bootstrap.
+#
+# Every resource/verb pair below is derived from a real grep
+# across every question's setup.sh/check.sh/ANSWER.md plus the app's own
+# bootstrap code (lib/grading.sh, web/rbac.py, web/users.py,
+# web/profile_store.py) - not a guess. The standard verb list
+# (get/list/watch/create/update/patch/delete/deletecollection) legitimately
+# covers nearly every resource kind here: across ~500 questions, real usage
+# spans every one of those verbs (kubectl apply/create/patch/label/set/
+# annotate/delete, plus lib/grading.sh's label-selector cleanup of leaked
+# cluster-scoped objects). Two kinds narrow further because usage evidence
+# never goes beyond reads:
+#   - nodes: never labeled/patched/deleted anywhere in the question bank -
+#     matches this repo's own "never touch the real Node object" rule
+#     (shared across every concurrently-running question on this
+#     single-node cluster); only ever read for topology/nodeSelector work.
+#   - events: standard Kubernetes design - Events are system-generated,
+#     never created/deleted directly by a kubectl command a candidate or
+#     setup.sh would run; only ever read via `kubectl get/describe events`.
+# pods/exec and pods/log are split into their own rules because those
+# subresources only ever accept "create" (opening an exec stream) and
+# "get" (reading a log stream) respectively - no other verb is meaningful
+# for either, so granting the full list would itself be a wildcard grant
+# in disguise.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: clusterdrill-appliance
+  labels:
+    app.kubernetes.io/name: clusterdrill
+    app.kubernetes.io/instance: clusterdrill
+    app.kubernetes.io/version: "${CLUSTERDRILL_VERSION}"
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: clusterdrill
+    app.kubernetes.io/managed-by: clusterdrill-cli
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "endpoints", "limitranges", "namespaces", "persistentvolumeclaims", "persistentvolumes", "pods", "resourcequotas", "secrets", "serviceaccounts", "services"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+- apiGroups: [""]
+  resources: ["nodes", "events"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get"]
+- apiGroups: ["apps"]
+  resources: ["daemonsets", "deployments", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+- apiGroups: ["batch"]
+  resources: ["cronjobs", "jobs"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses", "networkpolicies"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+- apiGroups: ["policy"]
+  resources: ["poddisruptionbudgets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterrolebindings", "clusterroles", "rolebindings", "roles"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+- apiGroups: ["storage.k8s.io"]
+  resources: ["storageclasses"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+# Profile/achievement/user state lives in ConfigMaps and Secrets (see
+# web/kube_json.py's docstring - no domain is confirmed for a project-owned
+# CRD group), already covered by the core apiGroups [""] rule above; no
+# separate rule is needed for them.
+# helm-crds questions each define and instantiate their own CRD, with its
+# own apiGroup (e.g. "jobs.clusterdrill.io") - candidate-authored. Live
+# testing showed the appliance was Forbidden
+# from reading back custom-resource instances of a question's own CRD
+# (kubectl get crd/apiextensions.k8s.io was already granted above, but
+# that only covers the CRD *definition*, not instances of the type it
+# defines - a distinct apiGroup+resource pair the ServiceAccount had never
+# been granted at all). Every group below is grep-derived
+# (`group: *.clusterdrill.io` across questions/helm-crds), one rule per
+# explicitly-named group with resources: ["*"] rather than enumerating
+# every plural - each group is entirely owned by exactly one question's
+# own CRD, so this is not an apiGroup wildcard (every group is named
+# explicitly, see test_no_clusterrole_grants_a_wildcard_api_group), just a
+# resource-kind wildcard scoped to that one already-explicit group. The
+# alternative (naming every plural) would silently re-break on every new
+# helm-crds question the same way this one was broken until found live.
+- apiGroups: ["analytics.clusterdrill.io", "bakery.clusterdrill.io", "billing.clusterdrill.io", "catalog.clusterdrill.io", "diner.clusterdrill.io", "finance.clusterdrill.io", "fleet.clusterdrill.io", "gadgets.clusterdrill.io", "infra.clusterdrill.io", "jobs.clusterdrill.io", "limits.clusterdrill.io", "media.clusterdrill.io", "monitoring.clusterdrill.io", "music.clusterdrill.io", "ops.clusterdrill.io", "people.clusterdrill.io", "retail.clusterdrill.io", "snacks.clusterdrill.io", "storage.clusterdrill.io", "storagepolicy.clusterdrill.io", "support.clusterdrill.io"]
+  resources: ["*"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: clusterdrill-appliance
+  labels:
+    app.kubernetes.io/name: clusterdrill
+    app.kubernetes.io/instance: clusterdrill
+    app.kubernetes.io/version: "${CLUSTERDRILL_VERSION}"
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: clusterdrill
+    app.kubernetes.io/managed-by: clusterdrill-cli
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: clusterdrill-appliance
+subjects:
+- kind: ServiceAccount
+  name: clusterdrill-web
+  namespace: clusterdrill-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clusterdrill-web
+  namespace: clusterdrill-system
+  labels:
+    app.kubernetes.io/name: clusterdrill
+    app.kubernetes.io/instance: clusterdrill
+    app.kubernetes.io/version: "${CLUSTERDRILL_VERSION}"
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: clusterdrill
+    app.kubernetes.io/managed-by: clusterdrill-cli
+spec:
+  replicas: 1
+  # Only name+instance in the selector - it is immutable after creation, so
+  # nothing that legitimately changes release to release (version) may be
+  # in it. See docs/adr/0002-kubernetes-metadata-conventions.md.
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: clusterdrill
+      # Kept for compatibility with existing local appliances. Deployment
+      # selectors are immutable, so omitting this historical label would
+      # make an in-place upgrade fail before it can apply the new
+      # single-user boundary.
+      app.kubernetes.io/instance: clusterdrill
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: clusterdrill
+        app.kubernetes.io/instance: clusterdrill
+        app.kubernetes.io/version: "${CLUSTERDRILL_VERSION}"
+        app.kubernetes.io/component: web
+        app.kubernetes.io/part-of: clusterdrill
+        app.kubernetes.io/managed-by: clusterdrill-cli
+    spec:
+      serviceAccountName: clusterdrill-web
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: web
+        image: ${CLUSTERDRILL_IMAGE}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8000
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        env:
+        - name: CLUSTERDRILL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: clusterdrill-web-auth
+              key: password
+        # Cluster-scoped RBAC exercises cannot safely run in a shared
+        # cluster. This local appliance permits one trusted operator. A
+        # hosted multi-user service requires an isolated cluster per user.
+        - name: CLUSTERDRILL_SINGLE_USER
+          value: "true"
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 15
+        volumeMounts:
+        - name: home
+          mountPath: /home/clusterdrill
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: home
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clusterdrill
+  namespace: clusterdrill-system
+  labels:
+    app.kubernetes.io/name: clusterdrill
+    app.kubernetes.io/instance: clusterdrill
+    app.kubernetes.io/version: "${CLUSTERDRILL_VERSION}"
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: clusterdrill
+    app.kubernetes.io/managed-by: clusterdrill-cli
+spec:
+  # `clusterdrill local url` provides a local tunnel. Do not expose this
+  # broadly capable, single-user appliance through the node network.
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: clusterdrill
+    app.kubernetes.io/instance: clusterdrill
+  ports:
+  - name: http
+    port: 8000
+    targetPort: http

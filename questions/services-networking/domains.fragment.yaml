@@ -1,0 +1,478 @@
+topic: services-networking
+questions:
+- id: q108-01-nodeport-fixed-port
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-02-multiport-service
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 6
+  requirements:
+    min_nodes: 1
+- id: q108-03-headless-service-dns
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 6
+  requirements:
+    min_nodes: 1
+- id: q108-04-externalname-service
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-05-service-without-selector-endpoints
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Service
+  - Endpoints
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q108-06-inspect-endpointslices
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 6
+  requirements:
+    min_nodes: 1
+- id: q108-07-session-affinity-clientip
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 6
+  requirements:
+    min_nodes: 1
+- id: q108-08-dns-resolve-same-namespace
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Pod
+  - Service
+  points: 6
+  requirements:
+    min_nodes: 1
+- id: q108-09-dns-resolve-cross-namespace
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  - Service
+  points: 6
+  requirements:
+    min_nodes: 1
+- id: q108-10-ingress-path-based-routing
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  - Ingress
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q108-11-ingress-host-based-routing
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  - Ingress
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q108-12-ingress-tls
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - Service
+  - Ingress
+  - Secret
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q108-13-ingress-default-backend
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  - Ingress
+  points: 6
+  requirements:
+    min_nodes: 1
+- id: q108-14-networkpolicy-allow-ingress-from-pods
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - NetworkPolicy
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q108-15-networkpolicy-allow-egress-to-pods
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - NetworkPolicy
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q108-16-networkpolicy-namespace-selector
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - NetworkPolicy
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q108-17-networkpolicy-restrict-port
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - NetworkPolicy
+  points: 6
+  requirements:
+    min_nodes: 1
+- id: q108-18-service-named-target-port
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 6
+  requirements:
+    min_nodes: 1
+- id: q108-19-fix-broken-service-selector
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q108-20-ingress-path-type-exact-vs-prefix
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - Service
+  - Ingress
+  points: 7
+  requirements:
+    min_nodes: 1
+- id: q108-21-clusterip-to-nodeport-type-change
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Service
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-22-add-second-service-port-mapping
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Service
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-23-expose-deployment-via-kubectl-expose
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Service
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-24-ingress-rewrite-target-annotation
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Ingress
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-25-add-readiness-gate-to-populate-endpoints
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-26-networkpolicy-default-deny-all-ingress
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - NetworkPolicy
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-27-ingress-annotate-ssl-redirect-disable
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Ingress
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-28-diagnose-dns-wrong-namespace-suffix
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-29-networkpolicy-conflicting-rules-egress-dns
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - NetworkPolicy
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-30-ingress-multiple-backends-wrong-service-port-name
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Ingress
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-31-networkpolicy-label-selector-typo-cascading
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - NetworkPolicy
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-32-networkpolicy-and-vs-or-selector-semantics
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - NetworkPolicy
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-33-ingress-multihost-tls-precedence
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Ingress
+  - Service
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-34-service-type-loadbalancer-basic
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-35-kubectl-expose-pod-imperative
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-36-fix-externalname-wrong-target
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-37-fix-nodeport-out-of-range
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-38-service-targetport-numeric-mismatch
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-39-networkpolicy-default-deny-all-egress
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Deployment
+  - NetworkPolicy
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-40-service-add-second-selector-key-fix
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-41-ingress-wildcard-host-routing
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  - Ingress
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-42-service-externaltrafficpolicy-local
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-43-service-internaltrafficpolicy-local
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-44-networkpolicy-ipblock-cidr-except
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - NetworkPolicy
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-45-ingress-tls-secretname-mismatch-fix
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - Service
+  - Secret
+  - Ingress
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-46-ingress-missing-ingressclassname-fix
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - Service
+  - Ingress
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-47-networkpolicy-podselector-matchexpressions-notin
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - NetworkPolicy
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-48-networkpolicy-multi-tier-chained-egress-diagnosis
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - NetworkPolicy
+  points: 6
+  requirements:
+    min_nodes: 1
+- id: q108-49-statefulset-headless-per-pod-stable-dns
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - StatefulSet
+  - Service
+  - ConfigMap
+  points: 6
+  requirements:
+    min_nodes: 1
+- id: q108-50-networkpolicy-ipblock-peer-exclusivity-fix
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - NetworkPolicy
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q108-51-networkpolicy-additive-allow-overrides-deny
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - NetworkPolicy
+  points: 6
+  requirements:
+    min_nodes: 1
+- id: q108-52-networkpolicy-same-namespace-only-ingress
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Deployment
+  - NetworkPolicy
+  points: 7
+  requirements:
+    min_nodes: 1

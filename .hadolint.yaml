@@ -1,0 +1,8 @@
+ignored:
+  # Pinning apt package versions here would make rebuilds *less*
+  # reproducible, not more: Debian slim's mirror drops old package
+  # versions, so a pinned ca-certificates/curl/tmux version eventually
+  # 404s and breaks the image build. KUBECTL_VERSION and TTYD_VERSION
+  # (the two things that actually need reproducible pinning) are already
+  # pinned as build ARGs above.
+  - DL3008

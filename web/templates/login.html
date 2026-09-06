@@ -1,0 +1,51 @@
+{% import "_macros.html" as m %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Log in - ClusterDrill</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-row">
+      <h1>ClusterDrill</h1>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel question-panel login-panel">
+      <h2>Log in</h2>
+      <p>This practice bank is shared over the internet via a tunnel. Log in with the
+        username and password your admin gave you - there is no
+        public sign-up.</p>
+      {% if lockout_seconds %}
+        {% set lockout_minutes = (lockout_seconds / 60) | round(0, 'ceil') | int %}
+        {% call m.alert('critical') %}
+          Too many failed attempts. Try again in {{ lockout_minutes }} minute{{ 's' if lockout_minutes != 1 else '' }}.
+        {% endcall %}
+      {% elif error %}
+        {% call m.alert('critical') %}Wrong username or password. Try again.{% endcall %}
+      {% endif %}
+      <form method="post" action="/login" class="login-form">
+        <input type="hidden" name="next" value="{{ next }}">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" class="text-input" autofocus required autocomplete="username" {{ 'disabled' if lockout_seconds }}>
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" class="text-input" required autocomplete="current-password" {{ 'disabled' if lockout_seconds }}>
+        <button type="submit" class="btn btn-primary" {{ 'disabled' if lockout_seconds }}>Log in</button>
+      </form>
+    </section>
+  </main>
+  <!-- Trademark disclaimer - login.html doesn't
+       extend _shell.html (no session yet, so no sidebar), so it needs its
+       own copy rather than inheriting one. -->
+  <p class="login-disclaimer">Not affiliated with, endorsed by, or sponsored by the Linux Foundation
+    or the Cloud Native Computing Foundation. "Certified Kubernetes Application Developer" and
+    "CKAD" are trademarks of the Linux Foundation.</p>
+</body>
+</html>

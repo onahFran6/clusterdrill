@@ -1,0 +1,118 @@
+{% extends "_shell.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ topic }} - ClusterDrill{% endblock %}
+{% block content %}
+  <p class="hub-intro"><a href="/topics" style="color: var(--muted);">&larr; Topics</a></p>
+  <h2>
+    {{ topic }}
+    {% if topic == "community" %}
+      {{ m.pill('GPL-3.0', 'community', 'Ported from GPL-3.0 sources - see questions/community/README.md') }}
+    {% endif %}
+  </h2>
+  <p class="hub-intro">
+    {{ counts.correct }} correct out of {{ counts.all }} seen so far
+    ({{ pool_size }} total in this topic's pool).
+  </p>
+
+  <section class="practice-setup">
+    <h3 class="practice-setup-title">Start practice</h3>
+    <form class="practice-setup-form" method="post" action="/sessions/start">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="topic" value="{{ topic }}">
+
+      <label class="practice-setup-field">
+        <span class="practice-setup-label">Difficulty</span>
+        <select name="difficulty">
+          <option value="" {{ 'selected' if selected_difficulty == 'all' else '' }}>All ({{ difficulty_counts.all }})</option>
+          <option value="easy" {{ 'selected' if selected_difficulty == 'easy' else '' }} {{ 'disabled' if difficulty_counts.easy == 0 else '' }}>Easy only ({{ difficulty_counts.easy }})</option>
+          <option value="medium" {{ 'selected' if selected_difficulty == 'medium' else '' }} {{ 'disabled' if difficulty_counts.medium == 0 else '' }}>Medium only ({{ difficulty_counts.medium }})</option>
+          <option value="hard" {{ 'selected' if selected_difficulty == 'hard' else '' }} {{ 'disabled' if difficulty_counts.hard == 0 else '' }}>Hard only ({{ difficulty_counts.hard }})</option>
+        </select>
+      </label>
+
+      <label class="practice-setup-field">
+        <span class="practice-setup-label">Timer</span>
+        <select name="timer_minutes">
+          {% for m in timer_choices_minutes %}
+            <option value="{{ m }}" {{ 'selected' if m == topic_timer_minutes else '' }}>{{ m }} min</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <div class="practice-setup-modes">
+        <button type="submit" name="mode" value="fixed" class="btn btn-primary">Fixed</button>
+        <button type="submit" name="mode" value="randomized" class="btn btn-mode"
+          {{ 'disabled' if not randomized_available else '' }}>Randomized</button>
+        <button type="submit" name="mode" value="mixed" class="btn btn-mode"
+          {{ 'disabled' if not mixed_available else '' }}>Mixed</button>
+      </div>
+    </form>
+    <p class="practice-setup-hint">
+      Fixed and Randomized draw from <strong>{{ topic }}</strong>'s pool.
+      Mixed draws across every topic's pool instead, at the same difficulty and timer chosen above.
+    </p>
+  </section>
+
+  <!-- Boss mini-exam. Unlocks the moment this topic's clean-sweep
+       achievement exists (profile_store.boss_unlocked) - "clear every
+       question in a topic lab's current session" is exactly what
+       clean-sweep already tracks, see that function's docstring. -->
+  <section class="practice-setup boss-fight-panel {{ '' if boss_unlocked else 'boss-fight-locked' }}">
+    <h3 class="practice-setup-title">Boss fight</h3>
+    {% if boss_unlocked %}
+      <p class="practice-setup-hint">
+        A {{ boss_timer_minutes }}-minute, mixed-difficulty {{ boss_session_size }}-question fight drawn from
+        <strong>{{ topic }}</strong>'s pool. A wrong or slow Check costs HP - clear every question before HP or the
+        clock runs out to win.
+      </p>
+      <form method="post" action="/sessions/start-boss">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="topic" value="{{ topic }}">
+        <button type="submit" class="btn btn-primary">Fight the {{ topic }} boss</button>
+      </form>
+    {% else %}
+      <p class="practice-setup-hint">
+        Locked - clear a full Fixed or Randomized session on <strong>{{ topic }}</strong> with zero failed Checks to
+        unlock this topic's boss fight.
+      </p>
+    {% endif %}
+  </section>
+
+  <div class="filter-group">
+    <span class="filter-group-label">Status</span>
+    <div class="filter-tabs">
+      <a class="filter-tab {{ 'active' if filter == 'all' else '' }}" href="/topics/{{ topic }}?filter=all&difficulty={{ selected_difficulty }}">All ({{ counts.all }})</a>
+      <a class="filter-tab {{ 'active' if filter == 'unanswered' else '' }}" href="/topics/{{ topic }}?filter=unanswered&difficulty={{ selected_difficulty }}">Unanswered ({{ counts.unanswered }})</a>
+      <a class="filter-tab {{ 'active' if filter == 'correct' else '' }}" href="/topics/{{ topic }}?filter=correct&difficulty={{ selected_difficulty }}">Correct ({{ counts.correct }})</a>
+      <a class="filter-tab {{ 'active' if filter == 'incorrect' else '' }}" href="/topics/{{ topic }}?filter=incorrect&difficulty={{ selected_difficulty }}">Incorrect ({{ counts.incorrect }})</a>
+    </div>
+  </div>
+
+  <div class="filter-group">
+    <span class="filter-group-label">Difficulty</span>
+    <div class="filter-tabs">
+      <a class="filter-tab {{ 'active' if selected_difficulty == 'all' else '' }}" href="/topics/{{ topic }}?filter={{ filter }}&difficulty=all">All ({{ difficulty_counts.all }})</a>
+      <a class="filter-tab filter-tab-easy {{ 'active' if selected_difficulty == 'easy' else '' }}" href="/topics/{{ topic }}?filter={{ filter }}&difficulty=easy">Easy ({{ difficulty_counts.easy }})</a>
+      <a class="filter-tab filter-tab-medium {{ 'active' if selected_difficulty == 'medium' else '' }}" href="/topics/{{ topic }}?filter={{ filter }}&difficulty=medium">Medium ({{ difficulty_counts.medium }})</a>
+      <a class="filter-tab filter-tab-hard {{ 'active' if selected_difficulty == 'hard' else '' }}" href="/topics/{{ topic }}?filter={{ filter }}&difficulty=hard">Hard ({{ difficulty_counts.hard }})</a>
+    </div>
+  </div>
+
+  <div class="question-row-list">
+    {% for row in rows %}
+      <a class="question-row" href="/questions/{{ row.id }}">
+        {{ m.question_status(row.status) }}
+        <span class="question-row-text">{{ row.id }}</span>
+        {% if row.difficulty %}{{ m.pill(row.difficulty, row.difficulty) }}{% endif %}
+        {% if row.best_time_ms %}
+          <span class="question-row-best">PB: {{ (row.best_time_ms / 1000) | round(1) }}s</span>
+        {% endif %}
+        {% if row.best_speed_tier %}
+          <span class="question-row-best">{{ row.best_speed_tier | capitalize }}</span>
+        {% endif %}
+      </a>
+    {% else %}
+      {{ m.empty_state('No questions match this filter.') }}
+    {% endfor %}
+  </div>
+{% endblock %}

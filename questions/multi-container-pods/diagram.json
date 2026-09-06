@@ -1,0 +1,84 @@
+{
+  "architecture": {
+    "title": "Topic primer: multi-container-pods",
+    "description": "One Pod: init containers run-to-completion before app containers start; sidecar/ambassador/adapter containers share the Pod's network namespace and volumes.",
+    "nodes": [
+      {
+        "id": "Init",
+        "label": "initContainers",
+        "type": "pod",
+        "sub": "wait-for, permission-fix - run in order, must exit 0"
+      },
+      {
+        "id": "App",
+        "label": "app container",
+        "type": "pod",
+        "sub": "main workload"
+      },
+      {
+        "id": "Sidecar",
+        "label": "sidecar container",
+        "type": "pod",
+        "sub": "e.g. log shipper, restartPolicy: Always"
+      },
+      {
+        "id": "Ambassador",
+        "label": "ambassador container",
+        "type": "pod",
+        "sub": "proxies localhost calls out"
+      },
+      {
+        "id": "Adapter",
+        "label": "adapter container",
+        "type": "pod",
+        "sub": "normalizes app output"
+      },
+      {
+        "id": "Vol",
+        "label": "emptyDir volume",
+        "type": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Init",
+        "to": "App",
+        "label": "runs to completion first",
+        "animated": true
+      },
+      {
+        "from": "App",
+        "to": "Ambassador",
+        "label": "localhost:port",
+        "animated": true,
+        "command": "shared network namespace"
+      },
+      {
+        "from": "App",
+        "to": "Vol",
+        "label": "writes logs to",
+        "animated": true
+      },
+      {
+        "from": "Vol",
+        "to": "Sidecar",
+        "label": "volumeMounts",
+        "animated": true,
+        "command": "same emptyDir"
+      },
+      {
+        "from": "App",
+        "to": "Vol",
+        "label": "writes metrics/logs to",
+        "animated": false
+      },
+      {
+        "from": "Vol",
+        "to": "Adapter",
+        "label": "volumeMounts",
+        "animated": true,
+        "command": "same emptyDir"
+      }
+    ]
+  }
+}

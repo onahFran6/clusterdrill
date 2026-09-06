@@ -1,0 +1,68 @@
+{% extends "_shell.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Practice Tests - ClusterDrill{% endblock %}
+{% block content %}
+  {{ m.kget_hero('kubectl get topiclabs --sort-by=.status.correctRate') }}
+  <h1 class="page-title">Practice Tests</h1>
+  <p class="hub-intro">Topic-focused question sets to sharpen your weak areas. No time pressure to browse - Fixed/Randomized sessions are still timed once started.</p>
+
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-card-value">{{ total_attempts }}</div>
+      <div class="stat-card-label">total check attempts</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-value">{{ avg_score }}%</div>
+      <div class="stat-card-label">avg. correct rate</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-value">{{ practice_sets_count }}</div>
+      <div class="stat-card-label">practice sets</div>
+    </div>
+  </div>
+
+  {% if focus_area %}
+    {% call m.alert('warning') %}
+      <strong>Focus area:</strong>&nbsp;{{ focus_area.name }} is at {{ focus_area.correct_pct }}%. Prioritize that set next.
+    {% endcall %}
+  {% endif %}
+
+  <div class="kget-table" role="table" aria-label="Practice sets">
+    {{ m.kget_table_head([
+      ('name', 'Name'), ('pool', 'Questions'), ('progress', 'Correct rate'),
+      ('status', 'Attempts'), ('actions', 'Start'),
+    ]) }}
+    {% for t in topic_stats %}
+      {% call m.kget_row() %}
+        {% call m.kget_col('name') %}
+          <a href="/topics/{{ t.name }}">{{ t.name }}</a>
+        {% endcall %}
+        {% call m.kget_col('pool') %}{{ t.pool_size }}{% endcall %}
+        {% call m.kget_col('progress') %}
+          <span class="kget-bar" style="--pct: {{ t.correct_pct }}"><span class="kget-bar-fill"></span></span>
+          <span class="kget-pct">{{ t.correct_pct }}%</span>
+        {% endcall %}
+        {% call m.kget_col('status') %}
+          {% if t.attempts == 0 %}
+            <span class="status-dot status-dot-muted" aria-hidden="true"></span> not attempted
+          {% else %}
+            <span class="status-dot status-dot-{{ 'pass' if t.correct_pct >= 80 else 'warn' }}" aria-hidden="true"></span>
+            {{ t.attempts }} attempt{{ 's' if t.attempts != 1 else '' }}
+          {% endif %}
+        {% endcall %}
+        {% call m.kget_col('actions') %}
+          <form class="kget-actions-form" method="post" action="/sessions/start">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="topic" value="{{ t.name }}">
+            <button type="submit" name="mode" value="fixed" class="btn btn-mode">
+              {{ 'Retry' if t.attempts > 0 else 'Start' }} &rarr;
+            </button>
+          </form>
+          <a class="kget-view-link" href="/topics/{{ t.name }}">configure</a>
+        {% endcall %}
+      {% endcall %}
+    {% else %}
+      {{ m.empty_state('No practice sets available yet.') }}
+    {% endfor %}
+  </div>
+{% endblock %}

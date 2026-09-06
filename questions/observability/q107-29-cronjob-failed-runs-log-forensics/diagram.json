@@ -1,0 +1,114 @@
+{
+  "architecture": {
+    "title": "q107-29-cronjob-failed-runs-log-forensics: CronJob, ConfigMap, Job",
+    "description": "Resources involved: CronJob, ConfigMap, Job",
+    "nodes": [
+      {
+        "id": "CronJob",
+        "label": "CronJob",
+        "type": "controller"
+      },
+      {
+        "id": "Job",
+        "label": "Job",
+        "type": "controller"
+      },
+      {
+        "id": "ConfigMap",
+        "label": "ConfigMap",
+        "type": "resource"
+      },
+      {
+        "id": "Container",
+        "label": "Container",
+        "type": "pod"
+      }
+    ],
+    "edges": [
+      {
+        "from": "CronJob",
+        "to": "Job",
+        "label": "schedules",
+        "animated": true,
+        "command": "kubectl create cronjob ... --schedule=... (fires on each tick)"
+      },
+      {
+        "from": "ConfigMap",
+        "to": "Container",
+        "label": "consumed by",
+        "animated": true,
+        "command": "via envFrom / volumeMount"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q107-29-cronjob-failed-runs-log-forensics: CronJob, ConfigMap, Job",
+    "description": "Resources involved: CronJob, ConfigMap, Job",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "CronJob",
+        "label": "CronJob",
+        "type": "controller"
+      },
+      {
+        "id": "Job",
+        "label": "Job",
+        "type": "controller"
+      },
+      {
+        "id": "CronJob controller",
+        "label": "CronJob controller",
+        "type": "controller"
+      },
+      {
+        "id": "ConfigMap",
+        "label": "ConfigMap",
+        "type": "resource"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create cronjob ... --schedule=... (fires on each tick)"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "CronJob controller",
+        "to": "API Server",
+        "label": "watches CronJob objects"
+      },
+      {
+        "from": "CronJob controller",
+        "to": "API Server",
+        "label": "schedules Job (kubectl create cronjob ... --schedule=... (fires on each tick))"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create configmap ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      }
+    ]
+  }
+}

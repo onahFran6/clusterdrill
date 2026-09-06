@@ -1,0 +1,19 @@
+%% Topic primer: deployments-strategies
+%% A rollout keeps the old ReplicaSet scaled down (not deleted) while scaling up the new one;
+%% rollout subcommands act on the Deployment and shift Pods between the two ReplicaSets.
+graph LR
+  Dep["Deployment\n(spec.strategy: RollingUpdate, maxSurge/maxUnavailable)"]
+  RSOld["ReplicaSet (old revision)\nscaled to 0 after rollout completes"]
+  RSNew["ReplicaSet (new revision)\nscaled to spec.replicas"]
+  PodOld["Pod (old image)"]
+  PodNew["Pod (new image)"]
+  Status["kubectl rollout status / history\n(inspect progress + revisions)"]
+
+  Dep -- "kubectl set image / kubectl edit / kubectl apply" --> RSNew
+  Dep -- "owns (revision history)" --> RSOld
+  RSOld -- "was creating" --> PodOld
+  RSNew -- "creates" --> PodNew
+  Dep -- "kubectl rollout pause" --> RSNew
+  Dep -- "kubectl rollout resume" --> RSNew
+  Dep -- "kubectl rollout undo / --to-revision" --> RSOld
+  Dep -.-> Status

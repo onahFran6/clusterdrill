@@ -1,0 +1,23 @@
+# Exactly one Service, the web app's own on port 8000 - never a second
+# one for ttyd. The embedded terminal is only ever reachable proxied
+# through the app's own password-gated routes (routers/terminal_router.py
+# in the practice-bank source), never directly. See
+# clusterdrill/tests/test_manifest.py's test_no_service_exposes_ttyd_directly
+# and clusterdrill/tests/test_helm_chart.py's equivalent chart-side check.
+apiVersion: v1
+kind: Service
+metadata:
+  name: clusterdrill
+  namespace: clusterdrill-system
+  labels:
+    {{- include "clusterdrill.labels" . | nindent 4 }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/component: web
+spec:
+  type: NodePort
+  selector:
+    {{- include "clusterdrill.selectorLabels" . | nindent 4 }}
+  ports:
+  - name: http
+    port: 8000
+    targetPort: http

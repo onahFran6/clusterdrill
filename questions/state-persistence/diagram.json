@@ -1,0 +1,73 @@
+{
+  "architecture": {
+    "title": "Topic primer: state-persistence",
+    "description": "PersistentVolumeClaim binds to a PersistentVolume (static hostPath or dynamic via StorageClass provisioner), then a Pod mounts the claim as a volume.",
+    "nodes": [
+      {
+        "id": "SC",
+        "label": "StorageClass",
+        "type": "storage",
+        "sub": "spec.provisioner, allowVolumeExpansion"
+      },
+      {
+        "id": "PV",
+        "label": "PersistentVolume",
+        "type": "storage",
+        "sub": "static hostPath or dynamically provisioned"
+      },
+      {
+        "id": "PVC",
+        "label": "PersistentVolumeClaim",
+        "type": "storage",
+        "sub": "spec.resources.requests.storage"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod / Deployment",
+        "type": "pod"
+      },
+      {
+        "id": "Vol",
+        "label": "volumeMounts",
+        "type": "storage",
+        "sub": "spec.volumes.persistentVolumeClaim.claimName"
+      }
+    ],
+    "edges": [
+      {
+        "from": "SC",
+        "to": "PV",
+        "label": "dynamic provisioning",
+        "animated": true,
+        "command": "spec.storageClassName"
+      },
+      {
+        "from": "PVC",
+        "to": "SC",
+        "label": "requests provisioning",
+        "animated": true,
+        "command": "spec.storageClassName"
+      },
+      {
+        "from": "PV",
+        "to": "PVC",
+        "label": "binds",
+        "animated": true,
+        "command": "capacity + accessMode match"
+      },
+      {
+        "from": "PVC",
+        "to": "Vol",
+        "label": "referenced by claimName",
+        "animated": true
+      },
+      {
+        "from": "Vol",
+        "to": "Pod",
+        "label": "mounts",
+        "animated": true,
+        "command": "volumeMounts.mountPath"
+      }
+    ]
+  }
+}

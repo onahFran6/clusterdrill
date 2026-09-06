@@ -1,0 +1,357 @@
+topic: state-persistence
+questions:
+  - id: q109-01-emptydir-basic-scratch
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-02-emptydir-sizelimit-memory
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-03-static-pv-hostpath
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [PersistentVolume]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-04-pvc-bind-static-pv
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-05-pv-reclaim-policy-retain
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolume]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-06-pod-mounts-pvc
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [Pod, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-07-deployment-mounts-pvc
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [Deployment, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-08-dynamic-provisioning-default-sc
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [PersistentVolumeClaim, StorageClass]
+    points: 5
+    requirements:
+      min_nodes: 1
+      storage_profile: minikube
+  - id: q109-09-custom-storageclass-provisioner
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [StorageClass]
+    points: 5
+    requirements:
+      min_nodes: 1
+      storage_profile: minikube
+  - id: q109-10-access-mode-rwo-vs-rwx
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-11-pvc-resize-allow-expansion
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [StorageClass, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+      storage_profile: minikube
+  - id: q109-12-pv-capacity-access-mode-mismatch
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-13-hostpath-volume-directory-or-create
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-14-emptydir-shared-sidecar-writer-reader
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-15-pod-mounts-pvc-readonly
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [Pod, PersistentVolume, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-16-volume-subpath-single-file
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [Pod, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-17-downwardapi-volume-pod-metadata
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-18-pv-reclaim-policy-delete
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [PersistentVolume]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-19-projected-volume-secret-downwardapi
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [Pod, Secret]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-20-pvc-bind-via-selector-empty-storageclass
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-21-statefulset-volumeclaimtemplates
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [StatefulSet, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-22-pvc-pending-troubleshoot-mismatch
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-23-generic-ephemeral-volume
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-24-local-pv-node-affinity
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-25-multi-container-subpath-partitioned-pvc
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [Pod, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-26-pv-released-manual-rebind
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-27-storageclass-waitforfirstconsumer
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [StorageClass, PersistentVolumeClaim, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+      storage_profile: minikube
+  - id: q109-28-readwriteoncepod-exclusive-mount
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-29-debug-deployment-missing-pvc-claimname
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [Deployment, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-30-pvc-immutable-recreate-not-patch
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+      storage_profile: minikube
+  - id: q109-31-configmap-volume-basic
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [ConfigMap, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-32-emptydir-shared-initcontainer-writer
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-33-storageclass-level-reclaim-policy
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [StorageClass]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-34-fix-pvc-storageclassname-typo
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-35-pod-mounts-pvc-and-emptydir-together
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [PersistentVolumeClaim, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-36-fix-hostpath-type-mismatch
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-37-pv-accessmodes-add-second-mode
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [PersistentVolume]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-38-pv-mountoptions-field
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolume]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-39-pvc-selector-matchexpressions
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-40-pvc-stuck-terminating-pod-still-attached
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolumeClaim, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-41-readonlymany-two-pods-share-pvc
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-42-projected-volume-two-secrets-custom-paths
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [Secret, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-43-storageclass-allowedtopologies-field
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [StorageClass]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-44-pv-nodeaffinity-mismatch-blocks-scheduling
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolume, StorageClass, PersistentVolumeClaim, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-45-statefulset-volumeclaimtemplates-storageclass-override
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [StorageClass, StatefulSet, PersistentVolumeClaim]
+    points: 6
+    requirements:
+      min_nodes: 1
+  - id: q109-46-pv-retain-recreate-from-released-data
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-47-generic-ephemeral-volume-storageclass-override
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [StorageClass, Pod, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-48-multi-pvc-different-storageclasses-one-pod
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [StorageClass, PersistentVolumeClaim, Pod]
+    points: 6
+    requirements:
+      min_nodes: 1
+  - id: q109-49-pv-claimref-namespace-mismatch-blocks-binding
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q109-50-crashloop-readonly-volume-mismatch
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1

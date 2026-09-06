@@ -1,0 +1,15 @@
+# Compatible-release pins (~=X.Y): allow patch/bugfix bumps, block
+# accidental minor/major breaks - this is the project's deliberate
+# dependency policy, not a placeholder for a lockfile tool; see
+# CONTRIBUTING.md's "Dependency pinning and upgrade policy" section. Pins
+# below reflect the versions this app was last verified against - bump
+# deliberately, not via an unpinned `pip install -r requirements.txt`.
+fastapi~=0.121
+uvicorn[standard]~=0.38
+jinja2~=3.1
+markdown~=3.10
+pyyaml~=6.0
+python-multipart~=0.0.32
+itsdangerous~=2.2
+httpx~=0.28
+websockets~=17.0

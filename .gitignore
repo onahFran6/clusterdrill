@@ -1,0 +1,22 @@
+# Local kubeconfig pointers / cluster state
+.kubeconfig
+kubeconfig*.yaml
+
+# Generated, not hand-edited (see lib/load-domains.sh)
+.generated/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+/build/
+.pytest_cache/
+.ruff_cache/
+
+# Node (dev-only JS/Markdown lint tooling, see package.json)
+node_modules/
+
+# OS / editor
+.DS_Store
+*.swp

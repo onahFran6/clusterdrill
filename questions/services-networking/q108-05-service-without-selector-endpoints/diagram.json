@@ -1,0 +1,81 @@
+{
+  "architecture": {
+    "title": "q108-05-service-without-selector-endpoints: Service, Endpoints",
+    "description": "Resources involved: Service, Endpoints",
+    "nodes": [
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      },
+      {
+        "id": "Endpoints",
+        "label": "Endpoints",
+        "type": "service"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Service",
+        "to": "Endpoints",
+        "label": "backed by",
+        "animated": true,
+        "command": "auto-created from spec.selector match"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q108-05-service-without-selector-endpoints: Service, Endpoints",
+    "description": "Resources involved: Service, Endpoints",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      },
+      {
+        "id": "Endpoints",
+        "label": "Endpoints",
+        "type": "service"
+      },
+      {
+        "id": "Endpoints controller",
+        "label": "Endpoints controller",
+        "type": "controller"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates Service"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "Endpoints controller",
+        "to": "API Server",
+        "label": "watches Service objects"
+      },
+      {
+        "from": "Endpoints controller",
+        "to": "API Server",
+        "label": "backed by Endpoints (auto-created from spec.selector match)"
+      }
+    ]
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "architecture": {
+    "title": "q106-34-aggregated-clusterrole-by-label: ClusterRole, ClusterRoleBinding, ServiceAccount",
+    "description": "Resources involved: ClusterRole, ClusterRoleBinding, ServiceAccount",
+    "nodes": [
+      {
+        "id": "ClusterRole",
+        "label": "ClusterRole",
+        "type": "policy"
+      },
+      {
+        "id": "ClusterRoleBinding",
+        "label": "ClusterRoleBinding",
+        "type": "policy"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      }
+    ],
+    "edges": [
+      {
+        "from": "ClusterRole",
+        "to": "ClusterRoleBinding",
+        "label": "granted by",
+        "animated": true,
+        "command": "kubectl create clusterrole ...; kubectl create clusterrolebinding ..."
+      },
+      {
+        "from": "ClusterRoleBinding",
+        "to": "ServiceAccount",
+        "label": "binds",
+        "animated": true,
+        "command": "roleRef + subjects[].kind: ServiceAccount"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q106-34-aggregated-clusterrole-by-label: ClusterRole, ClusterRoleBinding, ServiceAccount",
+    "description": "Resources involved: ClusterRole, ClusterRoleBinding, ServiceAccount",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "ClusterRole",
+        "label": "ClusterRole",
+        "type": "policy"
+      },
+      {
+        "id": "ClusterRoleBinding",
+        "label": "ClusterRoleBinding",
+        "type": "policy"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create clusterrole ...; kubectl create clusterrolebinding ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "ClusterRoleBinding",
+        "label": "granted by (enforced at request time)"
+      },
+      {
+        "from": "API Server",
+        "to": "ServiceAccount",
+        "label": "binds (enforced at request time)"
+      }
+    ]
+  }
+}

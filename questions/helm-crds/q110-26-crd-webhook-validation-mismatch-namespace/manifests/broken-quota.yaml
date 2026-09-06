@@ -1,0 +1,8 @@
+apiVersion: limits.clusterdrill.io/v1
+kind: Quota
+metadata:
+  name: team-quota
+  namespace: q110-26-crd-webhook-validation-mismatch-namespace
+spec:
+  maxUsers: 500
+  tier: platinum

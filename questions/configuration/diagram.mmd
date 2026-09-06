@@ -1,0 +1,22 @@
+%% Topic primer: configuration
+%% ConfigMap/Secret reach a Container via envFrom / volumeMount / configMapKeyRef;
+%% LimitRange and ResourceQuota shape the requests/limits set directly on the Container.
+graph LR
+  CM["ConfigMap"]
+  Sec["Secret"]
+  Vol["Pod volume\n(spec.volumes: configMap / secret)"]
+  Ctr["Container"]
+  QoS["QoS class\n(Guaranteed / Burstable / BestEffort)"]
+  LR["LimitRange\n(namespace default requests/limits)"]
+  RQ["ResourceQuota\n(namespace aggregate cap)"]
+
+  CM -- "envFrom.configMapRef" --> Ctr
+  CM -- "env.valueFrom.configMapKeyRef" --> Ctr
+  CM -- "volumes.configMap" --> Vol
+  Sec -- "envFrom.secretRef" --> Ctr
+  Sec -- "env.valueFrom.secretKeyRef" --> Ctr
+  Sec -- "volumes.secret" --> Vol
+  Vol -- "volumeMounts (+ optional subPath)" --> Ctr
+  LR -. "defaults injected if unset" .-> Ctr
+  RQ -. "enforced at namespace level" .-> Ctr
+  Ctr -- "resources.requests / resources.limits" --> QoS

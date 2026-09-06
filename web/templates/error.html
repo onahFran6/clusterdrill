@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ status_code }} - ClusterDrill</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-row">
+      <h1><a class="home-link" href="/topics"><span class="wheel" aria-hidden="true">&#9096;</span> ClusterDrill</a></h1>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel question-panel error-panel">
+      <h2>{{ status_code }}</h2>
+      <p>{{ detail }}</p>
+      <p><a class="btn btn-nav" href="/topics">&larr; back to topic labs</a></p>
+    </section>
+  </main>
+</body>
+</html>

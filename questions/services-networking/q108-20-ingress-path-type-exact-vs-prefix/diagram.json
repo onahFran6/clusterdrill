@@ -1,0 +1,104 @@
+{
+  "architecture": {
+    "title": "q108-20-ingress-path-type-exact-vs-prefix: Deployment, Service, Ingress",
+    "description": "Resources involved: Deployment, Service, Ingress",
+    "nodes": [
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      },
+      {
+        "id": "Ingress",
+        "label": "Ingress",
+        "type": "service"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Deployment",
+        "to": "Service",
+        "label": "exposed by",
+        "animated": true,
+        "command": "kubectl expose deployment ... (selector matches pod-template labels)"
+      },
+      {
+        "from": "Ingress",
+        "to": "Service",
+        "label": "routes to",
+        "animated": true,
+        "command": "kubectl create ingress --rule=\"host/path=svc:port\""
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q108-20-ingress-path-type-exact-vs-prefix: Deployment, Service, Ingress",
+    "description": "Resources involved: Deployment, Service, Ingress",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      },
+      {
+        "id": "Ingress",
+        "label": "Ingress",
+        "type": "service"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl expose deployment ... (selector matches pod-template labels)"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "Service",
+        "label": "exposed by"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create ingress --rule=\"host/path=svc:port\""
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "Service",
+        "label": "routes to"
+      }
+    ]
+  }
+}

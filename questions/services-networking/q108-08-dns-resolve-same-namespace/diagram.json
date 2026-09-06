@@ -1,0 +1,141 @@
+{
+  "architecture": {
+    "title": "q108-08-dns-resolve-same-namespace: Deployment, Pod, Service",
+    "description": "Resources involved: Deployment, Pod, Service",
+    "nodes": [
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Deployment",
+        "to": "Pod",
+        "label": "manages via ReplicaSet",
+        "animated": true,
+        "command": "kubectl create deployment ..."
+      },
+      {
+        "from": "Deployment",
+        "to": "Service",
+        "label": "exposed by",
+        "animated": true,
+        "command": "kubectl expose deployment ... (selector matches pod-template labels)"
+      },
+      {
+        "from": "Service",
+        "to": "Pod",
+        "label": "routes to",
+        "animated": true,
+        "command": "kubectl expose ... (spec.selector)"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q108-08-dns-resolve-same-namespace: Deployment, Pod, Service",
+    "description": "Resources involved: Deployment, Pod, Service",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create deployment ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "Pod",
+        "label": "manages via ReplicaSet"
+      },
+      {
+        "from": "API Server",
+        "to": "Service",
+        "label": "exposed by"
+      },
+      {
+        "from": "API Server",
+        "to": "Pod",
+        "label": "routes to"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}

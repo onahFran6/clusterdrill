@@ -1,0 +1,420 @@
+topic: pod-design
+questions:
+- id: q103-01-job-fixed-completions
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-02-job-parallelism-fanout
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-03-job-backofflimit-retries
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-04-job-restart-policy-onfailure
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-05-job-work-queue-parallelism
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-06-job-active-deadline-seconds
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-07-cronjob-fix-schedule
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - CronJob
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-08-cronjob-concurrency-forbid
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - CronJob
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-09-cronjob-suspend-existing
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - CronJob
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-10-cronjob-history-limits
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - CronJob
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-11-cronjob-starting-deadline
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - CronJob
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-12-cronjob-manual-trigger
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - CronJob
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-13-get-pods-multi-label-selector
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-14-delete-pods-by-selector
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-15-pod-nodeselector-os-linux
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  - Node
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-16-set-based-label-selector
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-17-job-ttl-after-finished
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-18-cronjob-fix-job-template
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - CronJob
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-19-cronjob-timezone-fix
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - CronJob
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-20-bulk-label-pods-by-selector
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-21-job-suspend-unsuspend
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-22-field-selector-pod-phase-cleanup
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-23-direct-nodename-assignment
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  - Node
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-24-job-podfailurepolicy-ignore-exit-code
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-25-job-indexed-completion-mode
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Job
+  - PersistentVolumeClaim
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-26-podantiaffinity-required-pending-on-single-node
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-27-job-activedeadline-interrupts-backoff
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-28-combined-matchlabels-matchexpressions-selector
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-29-suspend-running-job-deletes-pods
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Job
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-30-cronjob-needs-rbac-to-complete-task
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - CronJob
+  - Job
+  - ConfigMap
+  - ServiceAccount
+  - Role
+  - RoleBinding
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-31-podantiaffinity-required-running-on-two-nodes
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 2
+- id: q103-32-cronjob-concurrencypolicy-replace-slow-run
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - CronJob
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-33-job-invalid-restartpolicy-fix
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-34-pod-terminationgraceperiod-window
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-35-job-default-single-completion-fix
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-36-job-podtemplate-annotation-propagation
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-37-combined-fieldselector-labelselector-bulk-label
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-38-job-command-args-split-fix
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-39-nodeaffinity-required-hostname-match
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  - Node
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-40-podaffinity-required-colocate-cache
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-41-topologyspreadconstraint-invalid-maxskew-fix
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-42-label-selector-inequality-notequals-exclude
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-43-job-parallelism-scale-up-live
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-44-nodeaffinity-preferred-weighted-fallback
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Pod
+  - Node
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-45-cronjob-schedule-step-value-every-5-minutes
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - CronJob
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-46-job-podfailurepolicy-ignore-transient-retry
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Job
+  - PersistentVolumeClaim
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-47-combined-nodeaffinity-podantiaffinity-manifest
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  - Node
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-48-cronjob-concurrency-and-deadline-combined
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - CronJob
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-49-combined-fieldselector-setbased-labelselector-delete
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q103-50-job-indexed-completion-with-nodeaffinity-required
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Job
+  - Node
+  points: 5
+  requirements:
+    min_nodes: 1

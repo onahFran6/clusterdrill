@@ -1,0 +1,19 @@
+%% Topic primer: multi-container-pods
+%% One Pod: init containers run-to-completion before app containers start;
+%% sidecar/ambassador/adapter containers share the Pod's network namespace and volumes.
+graph TB
+  subgraph Pod["Pod (shared network namespace + volumes)"]
+    Init["initContainers: [wait-for, permission-fix]\n(spec.initContainers, run in order, must exit 0)"]
+    App["app container\n(main workload)"]
+    Sidecar["sidecar container\n(e.g. log shipper, native sidecar restartPolicy: Always)"]
+    Ambassador["ambassador container\n(proxies localhost calls out)"]
+    Adapter["adapter container\n(normalizes app output)"]
+    Vol[("emptyDir volume")]
+  end
+
+  Init -- "runs to completion first" --> App
+  App -- "localhost:port (shared network ns)" --> Ambassador
+  App -- "writes logs to" --> Vol
+  Vol -- "volumeMounts (same emptyDir)" --> Sidecar
+  App -- "writes metrics/logs to" --> Vol
+  Vol -- "volumeMounts (same emptyDir)" --> Adapter

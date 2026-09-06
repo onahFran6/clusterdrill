@@ -1,0 +1,29 @@
+# Default values for the clusterdrill chart. See values.schema.json for
+# validation rules and README.md for the full contract this chart keeps.
+#
+# There is deliberately no `rbac.rules` or similar customization knob -
+# the RBAC contract is fixed, not configurable, matching
+# clusterdrill/manifests/local-appliance.yaml exactly. Adding rules here
+# would be exactly the "extra RBAC rules" the chart contract forbids.
+
+image:
+  # No default repository/digest - see values.schema.json: both are
+  # required, and digest must match ^sha256:[0-9a-f]{64}$. This chart
+  # refuses to install a mutable image reference, the same rule
+  # `clusterdrill local install` already enforces for the raw-manifest
+  # path (see cli.py's local_install()).
+  repository: ""
+  digest: ""
+
+# Name of an existing Secret (created by the CLI or an operator before
+# `helm install`/`helm upgrade` runs) with a `password` key. The chart
+# never generates, accepts, or renders a password value itself - not as
+# a values.yaml default, not via --set, not anywhere - only ever a
+# reference to a Secret that already exists.
+auth:
+  existingSecretName: ""
+
+# A fixed 10001:10001 non-root user/group and a read-only root
+# filesystem, matching the raw manifest exactly - not configurable, for
+# the same reason RBAC isn't: this chart installs one specific,
+# already-reviewed appliance shape, not a general-purpose Pod spec.

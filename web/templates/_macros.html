@@ -1,0 +1,84 @@
+{% macro pill(text, variant=None, title=None, style=None) -%}
+<span class="pill{{ ' pill-' + variant if variant }}"{% if title %} title="{{ title }}"{% endif %}{% if style %} style="{{ style }}"{% endif %}>{{ text }}</span>
+{%- endmacro %}
+
+{% macro kget_hero(command) -%}
+<div class="kget-hero">
+  <p class="kget-prompt">
+    <span class="kget-prompt-user">clusterdrill</span><span class="kget-prompt-sep">:~$</span>{{ command }}<span class="kget-cursor" aria-hidden="true"></span>
+  </p>
+</div>
+{%- endmacro %}
+
+{% macro question_status(status) -%}
+{% if status == 'correct' %}<span class="question-row-mark pass">[&check;]</span>
+{% elif status == 'incorrect' %}<span class="question-row-mark fail">[&cross;]</span>
+{% elif status == 'partial' %}<span class="question-row-mark warn">[!]</span>
+{% else %}<span class="question-row-mark unanswered">[&nbsp;]</span>
+{% endif %}
+{%- endmacro %}
+
+{% macro kget_table_head(columns) -%}
+<div class="kget-row kget-row-head" role="row">
+  {% for suffix, label in columns %}<span class="kget-col kget-col-{{ suffix }}" role="columnheader">{{ label }}</span>
+  {% endfor %}</div>
+{%- endmacro %}
+
+{% macro kget_row() -%}
+<div class="kget-row" role="row">
+  {{ caller() }}
+</div>
+{%- endmacro %}
+
+{% macro kget_col(suffix) -%}
+<span class="kget-col kget-col-{{ suffix }}" role="cell">{{ caller() }}</span>
+{%- endmacro %}
+
+{# issue #116: the one shared alert/notice component - variant is one of
+   critical/warning/success/info. critical/warning interrupt (role="alert");
+   success/info don't (role="status", aria-live="polite") - matches how
+   urgently each one needs the user's attention. The bracket prefix matches
+   this app's own established convention (kubectl's own colored
+   Warning:/Error from server (...) text prefix, never an icon+card) rather
+   than inventing a new vocabulary. #}
+{% macro alert(variant, id=None, hidden=False, compact=False, dismiss_id=None, dismiss_label='Dismiss') -%}
+{% set prefix = {'critical': '[ERR]', 'warning': '[WARN]', 'success': '[OK]', 'info': '[i]'}[variant] %}
+{% set role = 'alert' if variant in ('critical', 'warning') else 'status' %}
+<div{% if id %} id="{{ id }}"{% endif %} class="alert alert-{{ variant }}{{ ' alert-compact' if compact }}" role="{{ role }}"{% if role == 'status' %} aria-live="polite"{% endif %}{% if hidden %} hidden{% endif %}>
+  <span class="alert-prefix" aria-hidden="true">{{ prefix }}</span>
+  <span class="alert-body">{{ caller() }}</span>
+  {%- if dismiss_id %}
+  <button type="button" id="{{ dismiss_id }}" class="btn btn-secondary alert-dismiss">{{ dismiss_label }}</button>
+  {%- endif %}
+</div>
+{%- endmacro %}
+
+{# issue #119: the one shared "there's no data yet" pattern - a small,
+   muted, centered message. Distinct from .hub-intro (page-level intro
+   copy, left-aligned, capped width) - reusing that class for empty
+   states was exactly the double-duty this macro replaces. #}
+{% macro empty_state(text) -%}
+<p class="empty-state">{{ text }}</p>
+{%- endmacro %}
+
+{# issue #117: the one shared themed confirmation dialog - a native
+   <dialog> (real focus trap, Escape-to-cancel, a styleable ::backdrop,
+   all built in - no hand-rolled ARIA modal needed). static/app.js's
+   confirmAction() opens it and resolves true/false from
+   dialog.returnValue, set by whichever button's value the visitor
+   clicked (a plain <form method="dialog">, no JS wiring per button).
+   Call this macro once per page that needs it (_shell.html covers every
+   page that extends it; question.html doesn't extend _shell.html, so it
+   calls this directly too) - one dialog element per page, reused for
+   every confirm on that page, not one per destructive action. #}
+{% macro confirm_dialog() -%}
+<dialog id="confirm-dialog" class="confirm-dialog">
+  <form method="dialog">
+    <p id="confirm-dialog-message"></p>
+    <div class="confirm-dialog-actions">
+      <button type="submit" value="cancel" class="btn btn-secondary">Cancel</button>
+      <button type="submit" value="confirm" id="confirm-dialog-confirm-btn" class="btn btn-danger-ghost"></button>
+    </div>
+  </form>
+</dialog>
+{%- endmacro %}

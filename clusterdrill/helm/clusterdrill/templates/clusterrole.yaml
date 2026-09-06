@@ -1,0 +1,54 @@
+# Fixed RBAC contract, not templated/configurable from values - must stay
+# byte-for-byte equivalent (same apiGroups/resources/verbs) to
+# clusterdrill/manifests/local-appliance.yaml's own ClusterRole. See that
+# file's own comment for the full derivation and rationale of every rule
+# below; clusterdrill/tests/test_helm_chart.py enforces this equivalence
+# automatically so the two can never silently drift apart.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: clusterdrill-appliance
+  labels:
+    {{- include "clusterdrill.labels" . | nindent 4 }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/component: web
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "endpoints", "limitranges", "namespaces", "persistentvolumeclaims", "persistentvolumes", "pods", "resourcequotas", "secrets", "serviceaccounts", "services"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+- apiGroups: [""]
+  resources: ["nodes", "events"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get"]
+- apiGroups: ["apps"]
+  resources: ["daemonsets", "deployments", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+- apiGroups: ["batch"]
+  resources: ["cronjobs", "jobs"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses", "networkpolicies"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+- apiGroups: ["policy"]
+  resources: ["poddisruptionbudgets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterrolebindings", "clusterroles", "rolebindings", "roles"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+- apiGroups: ["storage.k8s.io"]
+  resources: ["storageclasses"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+- apiGroups: ["analytics.clusterdrill.io", "bakery.clusterdrill.io", "billing.clusterdrill.io", "catalog.clusterdrill.io", "diner.clusterdrill.io", "finance.clusterdrill.io", "fleet.clusterdrill.io", "gadgets.clusterdrill.io", "infra.clusterdrill.io", "jobs.clusterdrill.io", "limits.clusterdrill.io", "media.clusterdrill.io", "monitoring.clusterdrill.io", "music.clusterdrill.io", "ops.clusterdrill.io", "people.clusterdrill.io", "retail.clusterdrill.io", "snacks.clusterdrill.io", "storage.clusterdrill.io", "storagepolicy.clusterdrill.io", "support.clusterdrill.io"]
+  resources: ["*"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]

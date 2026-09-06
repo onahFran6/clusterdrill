@@ -1,0 +1,61 @@
+{
+  "architecture": {
+    "title": "q105-15-immutable-secret: Secret",
+    "description": "Resources involved: Secret",
+    "nodes": [
+      {
+        "id": "Secret",
+        "label": "Secret",
+        "type": "resource"
+      },
+      {
+        "id": "Container",
+        "label": "Container",
+        "type": "pod"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Secret",
+        "to": "Container",
+        "label": "consumed by",
+        "animated": true,
+        "command": "via envFrom / volumeMount"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q105-15-immutable-secret: Secret",
+    "description": "Resources involved: Secret",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Secret",
+        "label": "Secret",
+        "type": "resource"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create secret ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "architecture": {
+    "title": "Topic primer: observability",
+    "description": "Probes on a Pod drive kubelet restart/traffic decisions; kubectl logs/debug are the inspection paths used to diagnose CrashLoopBackOff and other failures.",
+    "nodes": [
+      {
+        "id": "Pod",
+        "label": "Pod / Container",
+        "type": "pod"
+      },
+      {
+        "id": "Live",
+        "label": "livenessProbe",
+        "type": "policy",
+        "sub": "httpGet / exec / tcpSocket"
+      },
+      {
+        "id": "Ready",
+        "label": "readinessProbe",
+        "type": "policy"
+      },
+      {
+        "id": "Startup",
+        "label": "startupProbe",
+        "type": "policy",
+        "sub": "gates the other two during slow init"
+      },
+      {
+        "id": "Kubelet",
+        "label": "kubelet",
+        "type": "external"
+      },
+      {
+        "id": "Restart",
+        "label": "container restart",
+        "type": "external"
+      },
+      {
+        "id": "Endpoints",
+        "label": "Service Endpoints",
+        "type": "service",
+        "sub": "traffic in/out"
+      },
+      {
+        "id": "Logs",
+        "label": "kubectl logs",
+        "type": "external",
+        "sub": "-p / -c container"
+      },
+      {
+        "id": "Debug",
+        "label": "kubectl debug",
+        "type": "external",
+        "sub": "ephemeral container / node shell"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Startup",
+        "to": "Live",
+        "label": "must succeed once before",
+        "animated": true
+      },
+      {
+        "from": "Startup",
+        "to": "Ready",
+        "label": "must succeed once before",
+        "animated": true
+      },
+      {
+        "from": "Pod",
+        "to": "Live",
+        "label": "declares",
+        "animated": false
+      },
+      {
+        "from": "Pod",
+        "to": "Ready",
+        "label": "declares",
+        "animated": false
+      },
+      {
+        "from": "Live",
+        "to": "Kubelet",
+        "label": "fails -> kills container",
+        "animated": true
+      },
+      {
+        "from": "Kubelet",
+        "to": "Restart",
+        "label": "restartPolicy",
+        "animated": true
+      },
+      {
+        "from": "Ready",
+        "to": "Endpoints",
+        "label": "fails -> removed from",
+        "animated": true
+      },
+      {
+        "from": "Pod",
+        "to": "Logs",
+        "label": "crash diagnosis",
+        "animated": false,
+        "command": "kubectl logs"
+      },
+      {
+        "from": "Pod",
+        "to": "Debug",
+        "label": "no shell / distroless",
+        "animated": false,
+        "command": "kubectl debug"
+      }
+    ]
+  }
+}

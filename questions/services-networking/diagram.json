@@ -1,0 +1,87 @@
+{
+  "architecture": {
+    "title": "Topic primer: services-networking",
+    "description": "Ingress -> Service -> Endpoints -> Pod (via label selector) -> Deployment -> ReplicaSet, plus a NetworkPolicy attaching to the same selected Pods to restrict traffic.",
+    "nodes": [
+      {
+        "id": "Ing",
+        "label": "Ingress",
+        "type": "service",
+        "sub": "kubectl create ingress --rule=host/path=service:port"
+      },
+      {
+        "id": "Svc",
+        "label": "Service",
+        "type": "service",
+        "sub": "kubectl expose deployment --port"
+      },
+      {
+        "id": "Ep",
+        "label": "Endpoints",
+        "type": "service",
+        "sub": "auto-managed from selector matches"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Dep",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "RS",
+        "label": "ReplicaSet",
+        "type": "controller"
+      },
+      {
+        "id": "NP",
+        "label": "NetworkPolicy",
+        "type": "service",
+        "sub": "spec.podSelector, restricts ingress/egress"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Ing",
+        "to": "Svc",
+        "label": "routes via backend.service",
+        "animated": true
+      },
+      {
+        "from": "Svc",
+        "to": "Ep",
+        "label": "selector matches Pod labels",
+        "animated": true
+      },
+      {
+        "from": "Ep",
+        "to": "Pod",
+        "label": "tracks ready Pod IPs:port",
+        "animated": true
+      },
+      {
+        "from": "Dep",
+        "to": "RS",
+        "label": "owns",
+        "animated": true
+      },
+      {
+        "from": "RS",
+        "to": "Pod",
+        "label": "creates",
+        "animated": true,
+        "command": "spec.template labels"
+      },
+      {
+        "from": "NP",
+        "to": "Pod",
+        "label": "selects (same labels)",
+        "animated": false,
+        "command": "spec.podSelector"
+      }
+    ]
+  }
+}

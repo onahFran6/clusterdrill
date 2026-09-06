@@ -1,0 +1,15 @@
+%% Topic primer: state-persistence
+%% PersistentVolumeClaim binds to a PersistentVolume (static hostPath or dynamic via
+%% StorageClass provisioner), then a Pod mounts the claim as a volume.
+graph LR
+  SC["StorageClass\n(spec.provisioner, allowVolumeExpansion)"]
+  PV["PersistentVolume\n(kubectl apply -f pv.yaml, static hostPath; or dynamically provisioned)"]
+  PVC["PersistentVolumeClaim\n(spec.resources.requests.storage, spec.accessModes)"]
+  Pod["Pod / Deployment"]
+  Vol["volumeMounts\n(spec.volumes.persistentVolumeClaim.claimName)"]
+
+  SC -- "dynamic provisioning (spec.storageClassName)" --> PV
+  PVC -- "spec.storageClassName requests provisioning" --> SC
+  PV -- "binds (capacity + accessMode match)" --> PVC
+  PVC -- "referenced by claimName" --> Vol
+  Vol -- "volumeMounts.mountPath" --> Pod

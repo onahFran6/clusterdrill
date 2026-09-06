@@ -1,0 +1,71 @@
+{
+  "architecture": {
+    "title": "q110-31-crd-cel-cross-field-validation: CustomResourceDefinition",
+    "description": "Resources involved: CustomResourceDefinition",
+    "nodes": [
+      {
+        "id": "CustomResourceDefinition",
+        "label": "CustomResourceDefinition",
+        "type": "external"
+      },
+      {
+        "id": "Custom_Resource",
+        "label": "Custom Resource",
+        "type": "external"
+      }
+    ],
+    "edges": [
+      {
+        "from": "CustomResourceDefinition",
+        "to": "Custom_Resource",
+        "label": "registers Kind for",
+        "animated": true,
+        "command": "kubectl apply -f cr-instance.yaml"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q110-31-crd-cel-cross-field-validation: CustomResourceDefinition",
+    "description": "Resources involved: CustomResourceDefinition",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "CustomResourceDefinition",
+        "label": "CustomResourceDefinition",
+        "type": "external"
+      },
+      {
+        "id": "Custom_Resource",
+        "label": "Custom Resource",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl apply -f crd.yaml"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "Custom_Resource",
+        "label": "registers Kind for"
+      }
+    ]
+  }
+}

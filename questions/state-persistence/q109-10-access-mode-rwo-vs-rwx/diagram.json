@@ -1,0 +1,81 @@
+{
+  "architecture": {
+    "title": "q109-10-access-mode-rwo-vs-rwx: PersistentVolume, PersistentVolumeClaim",
+    "description": "Resources involved: PersistentVolume, PersistentVolumeClaim",
+    "nodes": [
+      {
+        "id": "PersistentVolume",
+        "label": "PersistentVolume",
+        "type": "storage"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "PersistentVolume",
+        "to": "PersistentVolumeClaim",
+        "label": "bound by",
+        "animated": true,
+        "command": "kubectl apply -f pv.yaml + pvc.yaml (capacity/accessMode match)"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q109-10-access-mode-rwo-vs-rwx: PersistentVolume, PersistentVolumeClaim",
+    "description": "Resources involved: PersistentVolume, PersistentVolumeClaim",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "PersistentVolume",
+        "label": "PersistentVolume",
+        "type": "storage"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      },
+      {
+        "id": "PV controller",
+        "label": "PV controller",
+        "type": "controller"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl apply -f pv.yaml + pvc.yaml (capacity/accessMode match)"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "PV controller",
+        "to": "API Server",
+        "label": "watches PersistentVolume objects"
+      },
+      {
+        "from": "PV controller",
+        "to": "API Server",
+        "label": "bound by PersistentVolumeClaim (kubectl apply -f pv.yaml + pvc.yaml (capacity/accessMode match))"
+      }
+    ]
+  }
+}

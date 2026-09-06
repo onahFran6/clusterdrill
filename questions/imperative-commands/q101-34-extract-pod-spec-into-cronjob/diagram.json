@@ -1,0 +1,187 @@
+{
+  "architecture": {
+    "title": "q101-34-extract-pod-spec-into-cronjob: Pod, CronJob",
+    "description": "Resources involved: Pod, CronJob",
+    "nodes": [
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Container",
+        "label": "Container",
+        "type": "pod"
+      },
+      {
+        "id": "Image",
+        "label": "Image",
+        "type": "pod"
+      },
+      {
+        "id": "CronJob",
+        "label": "CronJob",
+        "type": "controller"
+      },
+      {
+        "id": "Job",
+        "label": "Job",
+        "type": "controller"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Pod",
+        "to": "Container",
+        "label": "runs",
+        "animated": true
+      },
+      {
+        "from": "Container",
+        "to": "Image",
+        "label": "pulls",
+        "animated": true,
+        "command": "imagePullPolicy on kubelet's first run"
+      },
+      {
+        "from": "CronJob",
+        "to": "Job",
+        "label": "schedules",
+        "animated": true,
+        "command": "created on each scheduled tick"
+      },
+      {
+        "from": "Job",
+        "to": "Pod",
+        "label": "owns",
+        "animated": true
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q101-34-extract-pod-spec-into-cronjob: Pod, CronJob",
+    "description": "Resources involved: Pod, CronJob",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Container",
+        "label": "Container",
+        "type": "pod"
+      },
+      {
+        "id": "CronJob",
+        "label": "CronJob",
+        "type": "controller"
+      },
+      {
+        "id": "Job",
+        "label": "Job",
+        "type": "controller"
+      },
+      {
+        "id": "CronJob controller",
+        "label": "CronJob controller",
+        "type": "controller"
+      },
+      {
+        "id": "Job controller",
+        "label": "Job controller",
+        "type": "controller"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl run web --image=... / kubectl apply -f pod.yaml"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create cronjob ... --schedule=..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "CronJob controller",
+        "to": "API Server",
+        "label": "watches CronJob objects"
+      },
+      {
+        "from": "CronJob controller",
+        "to": "API Server",
+        "label": "schedules Job (created on each scheduled tick)"
+      },
+      {
+        "from": "Job controller",
+        "to": "API Server",
+        "label": "watches Job objects"
+      },
+      {
+        "from": "Job controller",
+        "to": "API Server",
+        "label": "owns Pod"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}

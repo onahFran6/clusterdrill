@@ -1,0 +1,6 @@
+{
+  // MD013 (line-length) is off: this repo writes one sentence per line by
+  // convention (CLAUDE.md house style), so prose lines run long on purpose.
+  "default": true,
+  "MD013": false
+}

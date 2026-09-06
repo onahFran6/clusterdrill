@@ -1,0 +1,305 @@
+name: PR quality gate
+
+# The full pre-merge quality gate for this repository's content and the
+# tools/ that police it. Every job here validates the supported install
+# path or a static-analysis category without touching any repository
+# secret - a fork's pull_request run gets the same behavior as a trusted
+# one. Privileged release work (publishing to Docker Hub) is entirely
+# separate and tag-triggered only; a fork's pull_request run can never
+# reach it.
+#
+# Third-party Actions and tool downloads below are pinned to a full
+# commit SHA or a verified release checksum, not a mutable tag - the
+# trailing `# vX` comment is only a human-readable label. To bump one:
+# `gh api repos/<owner>/<repo>/git/refs/tags/<new-tag> --jq .object.sha`
+# for an Action, or the release's own checksums file for a direct binary
+# download.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+
+      - name: Install Python dev dependencies
+        run: |
+          pip install -e '.[dev]'
+          pip install -r web/requirements-dev.txt
+
+      - name: Install JS dev dependencies
+        run: npm ci
+
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      # Without this, clusterdrill/tests/test_helm_chart.py skips itself
+      # entirely (helm not on PATH) rather than actually exercising the
+      # chart.
+      - name: Install Helm
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+
+      - name: ruff check
+        run: ruff check .
+
+      - name: yamllint
+        run: yamllint -c .yamllint.yml clusterdrill/manifests/*.yaml .github/ISSUE_TEMPLATE/*.yml
+
+      - name: ShellCheck
+        run: shellcheck -x -P lib deploy/entrypoint.sh tests/*.sh lib/*.sh
+
+      - name: ESLint
+        run: npm run lint:js
+
+      - name: markdownlint
+        run: npm run lint:md
+
+      - name: question-bank domain fragments
+        run: lib/load-domains.sh --check
+
+      - name: pytest (clusterdrill CLI)
+        run: pytest clusterdrill/tests
+
+      - name: pytest (web app)
+        run: pytest web/tests
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install gitleaks
+        run: |
+          curl --fail --location --output gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz"
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+          sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      # gitleaks auto-discovers .gitleaksignore (the documented baseline,
+      # see docs/adr/0003-secret-scanner-baseline.md) in its default
+      # lookup path "." - the repo root, same as this job's cwd.
+      - name: Secret scan
+        run: gitleaks detect --source . --no-git -v
+
+  container-build-and-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: hadolint
+        run: |
+          docker run --rm -i -v "$PWD/.hadolint.yaml:/.hadolint.yaml" \
+            hadolint/hadolint < Dockerfile
+
+      - name: Build image (no push - no registry credentials used)
+        run: docker build --tag clusterdrill:ci .
+
+      # Two passes, not one: CRITICAL-with-a-fix-available is the actual
+      # gate (0 findings as of this workflow's introduction - a real
+      # instance means "bump this dependency now"). HIGH is
+      # informational only - kubectl's own bundled Go dependencies
+      # currently carry several HIGH findings from CVEs fixed in newer
+      # kubectl releases than the pinned KUBECTL_VERSION supports, which
+      # isn't something a random content PR should be blocked on fixing.
+      # `scanners: vuln` deliberately excludes secret scanning: Trivy's
+      # secret detector flags every questions/**/setup.sh that seeds a
+      # kubernetes.io/dockerconfigjson-typed Secret on structure alone
+      # (same false-positive shape as gitleaks' generic-api-key rule,
+      # see docs/adr/0003-secret-scanner-baseline.md) - gitleaks (a
+      # separate job) already covers real secret-content scanning with
+      # a properly tuned baseline; Trivy's is not tuned for this and
+      # would just re-flag the same known-synthetic fixtures.
+      - name: Trivy vulnerability scan (blocking - CRITICAL with a fix available)
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: clusterdrill:ci
+          scanners: vuln
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Trivy vulnerability scan (informational - HIGH and CRITICAL, including unfixed)
+        if: always()
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: clusterdrill:ci
+          scanners: vuln
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "0"
+
+  disposable-cluster-smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Install kubectl
+        run: |
+          curl --fail --location --output kubectl \
+            "https://dl.k8s.io/release/v1.33.9/bin/linux/amd64/kubectl"
+          sudo install -m 0755 kubectl /usr/local/bin/kubectl
+
+      - name: Install Minikube
+        run: |
+          curl --fail --location --output minikube \
+            "https://storage.googleapis.com/minikube/releases/v1.35.0/minikube-linux-amd64"
+          sudo install -m 0755 minikube /usr/local/bin/minikube
+
+      - name: Install clusterdrill
+        run: pip install .
+
+      - name: clusterdrill local doctor
+        run: clusterdrill local doctor
+
+      - name: clusterdrill local init
+        run: clusterdrill local init
+
+      - name: Build the appliance image from this checkout
+        run: docker build --tag clusterdrill:dev .
+
+      - name: Load the image into the profile
+        run: minikube image load --profile clusterdrill clusterdrill:dev
+
+      - name: clusterdrill local install
+        run: clusterdrill local install --image clusterdrill:dev
+
+      - name: clusterdrill local smoke-test
+        run: clusterdrill local smoke-test
+
+      - name: clusterdrill local destroy
+        if: always()
+        run: clusterdrill local destroy --yes
+
+  # The optional Helm install path's own mechanics, separate from the job
+  # above since it needs a real published digest (the chart refuses a
+  # mutable clusterdrill:dev tag) rather than an image built from this
+  # checkout - and deliberately does not attempt a full login-flow smoke
+  # test, since the currently-published digest predates a later rename
+  # and its app code doesn't read the current source's password env var
+  # name (a known, separately-documented limitation, not something this
+  # job exists to catch). Covers install, upgrade, a health-endpoint
+  # check, and uninstall - what CI can validate for real without either
+  # problem.
+  helm-install-smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Install kubectl
+        run: |
+          curl --fail --location --output kubectl \
+            "https://dl.k8s.io/release/v1.33.9/bin/linux/amd64/kubectl"
+          sudo install -m 0755 kubectl /usr/local/bin/kubectl
+
+      - name: Install Minikube
+        run: |
+          curl --fail --location --output minikube \
+            "https://storage.googleapis.com/minikube/releases/v1.35.0/minikube-linux-amd64"
+          sudo install -m 0755 minikube /usr/local/bin/minikube
+
+      - name: Install Helm
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+
+      - name: Install clusterdrill
+        run: pip install .
+
+      - name: clusterdrill local init
+        run: clusterdrill local init
+
+      - name: clusterdrill local install --installer=helm
+        run: clusterdrill local install --installer=helm
+
+      - name: Verify the deployment is pinned by digest
+        run: |
+          kubectl --context clusterdrill -n clusterdrill-system rollout status deployment/clusterdrill-web --timeout=5m
+          RUNNING_IMAGE="$(kubectl --context clusterdrill -n clusterdrill-system get deployment clusterdrill-web -o jsonpath='{.spec.template.spec.containers[0].image}')"
+          echo "running image: ${RUNNING_IMAGE}"
+          case "$RUNNING_IMAGE" in *"@sha256:"*) ;; *) echo "not pinned by digest" >&2; exit 1 ;; esac
+
+      # Reuses cli.py's own start_service_url() (the same helper `clusterdrill
+      # local smoke-test` and `local url` already use) rather than a
+      # hand-rolled minikube-ssh/curl combination this workflow has never
+      # actually exercised - only the /healthz check, deliberately not the
+      # full login flow (see this job's own header comment for why).
+      - name: Health-check the endpoint
+        run: |
+          python3 -c "
+          import sys, urllib.request
+          from clusterdrill.cli import start_service_url
+          tunnel, url = start_service_url()
+          try:
+              with urllib.request.urlopen(f'{url}/healthz', timeout=20) as response:
+                  print(f'{url}/healthz -> HTTP {response.status}')
+                  assert response.status == 200
+          finally:
+              if tunnel.poll() is None:
+                  tunnel.terminate()
+                  tunnel.wait(timeout=5)
+          "
+
+      - name: helm upgrade (reapply, proves the upgrade path works)
+        run: |
+          DIGEST_IMAGE="$(python3 -c "from clusterdrill.release import resolve_default_image; print(resolve_default_image())")"
+          REPOSITORY="${DIGEST_IMAGE%@*}"
+          DIGEST="${DIGEST_IMAGE#*@}"
+          helm upgrade --install clusterdrill clusterdrill/helm/clusterdrill \
+            --kube-context clusterdrill --namespace clusterdrill-system --create-namespace \
+            --set "image.repository=${REPOSITORY}" --set "image.digest=${DIGEST}" \
+            --set auth.existingSecretName=clusterdrill-web-auth
+          kubectl --context clusterdrill -n clusterdrill-system rollout status deployment/clusterdrill-web --timeout=5m
+
+      - name: helm uninstall
+        run: |
+          helm uninstall clusterdrill --kube-context clusterdrill --namespace clusterdrill-system
+          # Cluster-scoped resources must be gone; the namespace/Secret
+          # were never chart-managed, so they're expected to remain -
+          # see helm/clusterdrill/README.md.
+          if kubectl --context clusterdrill get clusterrole clusterdrill-appliance >/dev/null 2>&1; then
+            echo "clusterrole should have been removed by helm uninstall" >&2
+            exit 1
+          fi
+          if kubectl --context clusterdrill get clusterrolebinding clusterdrill-appliance >/dev/null 2>&1; then
+            echo "clusterrolebinding should have been removed by helm uninstall" >&2
+            exit 1
+          fi
+
+      - name: clusterdrill local destroy
+        if: always()
+        run: clusterdrill local destroy --yes

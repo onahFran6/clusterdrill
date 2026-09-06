@@ -1,0 +1,81 @@
+{
+  "architecture": {
+    "title": "q104-07-pause-rollout-mid-update: Deployment, ReplicaSet",
+    "description": "Resources involved: Deployment, ReplicaSet",
+    "nodes": [
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "ReplicaSet",
+        "label": "ReplicaSet",
+        "type": "controller"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Deployment",
+        "to": "ReplicaSet",
+        "label": "owns",
+        "animated": true,
+        "command": "kubectl create deployment ... (controller creates on template change)"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q104-07-pause-rollout-mid-update: Deployment, ReplicaSet",
+    "description": "Resources involved: Deployment, ReplicaSet",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "ReplicaSet",
+        "label": "ReplicaSet",
+        "type": "controller"
+      },
+      {
+        "id": "Deployment controller",
+        "label": "Deployment controller",
+        "type": "controller"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create deployment ... (controller creates on template change)"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "Deployment controller",
+        "to": "API Server",
+        "label": "watches Deployment objects"
+      },
+      {
+        "from": "Deployment controller",
+        "to": "API Server",
+        "label": "owns ReplicaSet (kubectl create deployment ... (controller creates on template change))"
+      }
+    ]
+  }
+}

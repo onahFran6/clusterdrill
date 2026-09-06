@@ -1,0 +1,71 @@
+{
+  "architecture": {
+    "title": "q108-24-ingress-rewrite-target-annotation: Ingress, Service",
+    "description": "Resources involved: Ingress, Service",
+    "nodes": [
+      {
+        "id": "Ingress",
+        "label": "Ingress",
+        "type": "service"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Ingress",
+        "to": "Service",
+        "label": "routes to",
+        "animated": true,
+        "command": "kubectl create ingress --rule=\"host/path=svc:port\""
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q108-24-ingress-rewrite-target-annotation: Ingress, Service",
+    "description": "Resources involved: Ingress, Service",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Ingress",
+        "label": "Ingress",
+        "type": "service"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create ingress --rule=\"host/path=svc:port\""
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "Service",
+        "label": "routes to"
+      }
+    ]
+  }
+}
