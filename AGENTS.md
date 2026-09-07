@@ -20,7 +20,12 @@ history, or internal automation (bb-factory, agent-trunk, etc.) - none of that a
   `check.sh`, `ANSWER.md`); see `CONTRIBUTING.md` for the folder shape.
 - `tests/e2e/` - Playwright-based end-to-end tests, separate `requirements.txt` (browser
   binaries required, not installed by the default dev extras).
-- `deploy/` - Helm chart / manifests for deploying the appliance outside the CLI's own flow.
+- `deploy/` - the container image's own entrypoint script (`entrypoint.sh`, wired as the
+  Dockerfile's `ENTRYPOINT`). Not the appliance's install path - that's
+  `clusterdrill/manifests/local-appliance.yaml` and `clusterdrill/helm/clusterdrill/`.
+- `docs/` - `architecture.md` (module wiring, request flow, design rationale - a level below
+  the README's summary) and `adr/` (accepted architecture decision records). See
+  [Documentation](#documentation) below for when to update these.
 
 ## Licensing boundary
 
@@ -49,6 +54,16 @@ an actual CKAD exam session (see `CONTRIBUTING.md`). Source new questions from t
 
 Fill out `.github/PULL_REQUEST_TEMPLATE.md` for real, including the licensing-boundary checklist -
 don't skip checklist items.
+
+## Documentation
+
+`docs/architecture.md` describes module wiring, request flow, and design rationale (a level
+below README's summary); `docs/adr/` records accepted architecture decisions. When a change
+alters either of those - a new router/module, a changed request or grading flow, a new
+cluster-scoped object, a naming/metadata/RBAC decision - update `docs/architecture.md` (and add
+an ADR under `docs/adr/` for a real decision, not a routine change) in the same PR, not as a
+follow-up. Don't touch these docs for changes that don't affect the architecture they describe
+(a new question, a copy fix, a dependency bump).
 
 ## Commits & PRs
 
