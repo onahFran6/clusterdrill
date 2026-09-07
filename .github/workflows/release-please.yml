@@ -8,7 +8,10 @@ name: release-please
 # This workflow never touches real cloud credentials or infrastructure -
 # it only reads git history and writes to release-please-config.json's
 # own bookkeeping files (CHANGELOG.md, .release-please-manifest.json) and
-# GitHub's Releases/tags API.
+# GitHub's Releases/tags API - plus, once a release is created, kicks off
+# release-image.yml explicitly (see the step below for why that has to be
+# an explicit workflow_dispatch call rather than that tag push triggering
+# it automatically).
 #
 # Third-party Action pinned to a full commit SHA, not a mutable tag,
 # matching pr-quality-gate.yml's convention - the trailing `# vX` comment
@@ -23,13 +26,29 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+      - id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
           target-branch: main
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      # release-please-action pushes its tag using the default
+      # GITHUB_TOKEN, and GitHub explicitly does not let GITHUB_TOKEN-
+      # authored pushes cascade into triggering other workflows (a loop-
+      # prevention safeguard) - so release-image.yml's own `on: push:
+      # tags` would never fire on its own. workflow_dispatch is the
+      # documented exception to that restriction, so kick it off
+      # explicitly here instead, using release-please's own documented
+      # release_created/tag_name outputs.
+      - name: Trigger release-image workflow
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run release-image.yml --ref main -f tag="${{ steps.release.outputs.tag_name }}"
