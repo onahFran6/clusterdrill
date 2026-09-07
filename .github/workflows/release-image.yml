@@ -11,6 +11,14 @@ name: release-image
 # digest/chart defaults back into the source tree for the next `git
 # clone` to see.
 #
+# Can also be dispatched manually against any branch/tag combination to
+# test the build/push mechanics before a real release - e.g. `gh workflow
+# run release-image.yml --ref dev -f tag=v0.0.0-test1`. Image and chart
+# always get built and pushed for real either way; the wheel-upload and
+# manifest-update-PR steps automatically skip themselves when the given
+# tag has no matching GitHub Release, so a test dispatch can't leave a
+# stray PR or a bogus release_manifest.json entry behind.
+#
 # Third-party Actions pinned to a full commit SHA, not a mutable tag,
 # matching pr-quality-gate.yml's existing convention - the trailing `# vX`
 # comment is only a human-readable label. To bump: `gh api
@@ -34,6 +42,7 @@ jobs:
     outputs:
       digest: ${{ steps.build.outputs.digest }}
       version: ${{ steps.version.outputs.version }}
+      release_exists: ${{ steps.check_release.outputs.release_exists }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -43,6 +52,23 @@ jobs:
         env:
           TAG: ${{ inputs.tag }}
         run: echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      # Lets this workflow be dispatched against a throwaway tag on any
+      # branch (e.g. testing the build/push mechanics on dev) without
+      # requiring a real GitHub Release to exist first - image/chart
+      # always get built and pushed for real, but the wheel-upload and
+      # manifest-update-PR steps below only run when this tag corresponds
+      # to an actual release, never for a test dispatch.
+      - id: check_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "release_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "release_exists=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
@@ -139,17 +165,24 @@ jobs:
       - run: pip install build
       - run: python -m build
       - name: Attach wheel to the release-please-created GitHub Release
+        if: ${{ needs.build-and-push-image.outputs.release_exists == 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload "${{ inputs.tag }}" dist/*.whl
+      - name: Skip wheel upload (no matching GitHub Release for this tag)
+        if: ${{ needs.build-and-push-image.outputs.release_exists != 'true' }}
+        run: echo "No GitHub Release found for tag '${{ inputs.tag }}' - skipping wheel upload (this looks like a test/dry-run dispatch, not a real release)."
 
   # Records the published digest and chart defaults back into the source
   # tree - opens a PR against main rather than pushing directly, so a
   # human reviews/merges it. The image and chart are already live on
   # Docker Hub by the time this PR exists; nothing above waits on its
-  # merge.
+  # merge. Skipped entirely for a test/dry-run dispatch (no matching
+  # GitHub Release) - a throwaway test tag has no business landing in
+  # release_manifest.json or spawning a real PR against main.
   open-manifest-update-pr:
     needs: build-and-push-image
+    if: ${{ needs.build-and-push-image.outputs.release_exists == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
