@@ -13,7 +13,7 @@ image:
   # `clusterdrill local install` already enforces for the raw-manifest
   # path (see cli.py's local_install()).
   repository: "docker.io/w00dson/clusterdrill"
-  digest: "sha256:8a67b911bbe6b13fce75c1261aec9ba111b6932f5df8ed878cc278000cfbe496"
+  digest: "sha256:e3e833617e8e53ca8a2498cbe2d70fd85cbb45b5b360a39f62ace0cb9f719c7f"
 
 # Name of an existing Secret (created by the CLI or an operator before
 # `helm install`/`helm upgrade` runs) with a `password` key. The chart
