@@ -22,7 +22,7 @@ history, or internal automation (bb-factory, agent-trunk, etc.) - none of that a
   binaries required, not installed by the default dev extras).
 - `deploy/` - the container image's own entrypoint script (`entrypoint.sh`, wired as the
   Dockerfile's `ENTRYPOINT`). Not the appliance's install path - that's
-  `clusterdrill/manifests/local-appliance.yaml` and `clusterdrill/helm/clusterdrill/`.
+  `clusterdrill/manifests/local-appliance.yaml` and `clusterdrill/helm/clusterdrill-chart/`.
 - `docs/` - `architecture.md` (module wiring, request flow, design rationale - a level below
   the README's summary) and `adr/` (accepted architecture decision records). See
   [Documentation](#documentation) below for when to update these.

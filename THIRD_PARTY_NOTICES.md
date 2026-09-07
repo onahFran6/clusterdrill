@@ -88,7 +88,7 @@ make the compiled program GPL.
 
 ## Helm chart dependencies
 
-`clusterdrill/helm/clusterdrill/` is an original chart with no
+`clusterdrill/helm/clusterdrill-chart/` is an original chart with no
 vendored templates or subcharts - it renders the same MIT-licensed
 resources `clusterdrill/manifests/local-appliance.yaml` does, packaging
 them differently. It has no third-party dependency of its own to

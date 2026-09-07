@@ -33,10 +33,10 @@ ROOT = Path(__file__).resolve().parents[1]
 # clusterdrill - unlike WEB_DIR below, which still needs ROOT.
 MANIFESTS_DIR = Path(__file__).resolve().parent / "manifests"
 MANIFEST = MANIFESTS_DIR / "local-appliance.yaml"
-# Optional Helm install path - see helm/clusterdrill/README.md for the
-# full contract. Packaged the same way as MANIFESTS_DIR above, not
+# Optional Helm install path - see helm/clusterdrill-chart/README.md for
+# the full contract. Packaged the same way as MANIFESTS_DIR above, not
 # resolved relative to ROOT.
-HELM_CHART_DIR = Path(__file__).resolve().parent / "helm" / "clusterdrill"
+HELM_CHART_DIR = Path(__file__).resolve().parent / "helm" / "clusterdrill-chart"
 HELM_RELEASE_NAME = "clusterdrill"
 HELM_SECRET_NAME = "clusterdrill-web-auth"
 # Must match web/users.py's own _USER_LABEL_SELECTOR - this package isn't
@@ -616,7 +616,7 @@ def local_install(args: argparse.Namespace) -> int:
 def local_install_helm(args: argparse.Namespace) -> int:
     """The optional Helm install path - same preflight, image resolution,
     and password rules as local_install above, but hands the rendered
-    resources to `helm upgrade --install` against helm/clusterdrill/
+    resources to `helm upgrade --install` against helm/clusterdrill-chart/
     instead of a direct `kubectl apply`.
 
     The chart never creates the namespace or the password Secret itself
@@ -787,7 +787,7 @@ def build_parser() -> argparse.ArgumentParser:
     install.add_argument(
         "--installer", choices=("manifests", "helm"), default="manifests",
         help="'manifests' (default) applies clusterdrill/manifests/local-appliance.yaml directly; "
-             "'helm' uses the optional Helm chart instead - see helm/clusterdrill/README.md",
+             "'helm' uses the optional Helm chart instead - see helm/clusterdrill-chart/README.md",
     )
     install.set_defaults(handler=local_install)
     url = commands.add_parser("url", help="open and supervise the local service URL")
