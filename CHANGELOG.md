@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.3](https://github.com/onahFran6/clusterdrill/compare/v0.1.2...v0.1.3) (2026-09-07)
+
+
+### Features
+
+* let release-image.yml be safely dry-run against non-release tags ([f0b10e7](https://github.com/onahFran6/clusterdrill/commit/f0b10e71427f4504a70e47646b809278e7a34c8a))
+
+
+### Bug Fixes
+
+* add --repo flag to release-image trigger call ([bc5ef06](https://github.com/onahFran6/clusterdrill/commit/bc5ef06181431709cccbc1ffb08e2173225b7ee6))
+* exclude auto-generated CHANGELOG.md from markdownlint ([23a221b](https://github.com/onahFran6/clusterdrill/commit/23a221b944f6ac18e2b0cd4e6e0b6aa4bcb831d1))
+
 ## [0.1.2](https://github.com/onahFran6/clusterdrill/compare/v0.1.1...v0.1.2) (2026-09-07)
 
 
