@@ -160,6 +160,28 @@ create access to Namespaces, ClusterRoles/ClusterRoleBindings,
 ServiceAccounts, Secrets, Deployments, and Services in your current kubectl
 context.
 
+### Getting an image to install
+
+Both paths below need an `image.repository`/digest. There is exactly one
+published digest (`docker.io/w00dson/clusterdrill@sha256:2b6b2979775c49a71742f7867a38a059f9723f11c14abbffea3fb1e7922b873e`,
+recorded in `clusterdrill/release_manifest.json`), and per
+[Release policy](#release-policy) it predates recent naming/architecture
+changes and **does not reflect current source** - don't default to it.
+
+Instead, build from your own checkout (same as [Quick start](#quick-start)'s
+`clusterdrill:dev`) and push it somewhere your cluster can actually pull
+from - unlike the Minikube path, there's no `minikube image load` shortcut
+here, so it needs a real registry your cluster has access to:
+
+```sh
+docker build --platform linux/amd64 --tag <your-registry>/clusterdrill:dev .   # match your cluster's node arch
+docker push <your-registry>/clusterdrill:dev
+docker inspect --format='{{index .RepoDigests 0}}' <your-registry>/clusterdrill:dev
+# -> <your-registry>/clusterdrill@sha256:<the digest you just pushed>
+```
+
+Use that repository and digest below.
+
 ### Recommended: the Helm chart, standalone
 
 The chart at `clusterdrill/helm/clusterdrill/` is cluster-agnostic by
@@ -173,8 +195,8 @@ kubectl -n clusterdrill-system create secret generic clusterdrill-web-auth \
 
 helm install clusterdrill clusterdrill/helm/clusterdrill \
   --namespace clusterdrill-system \
-  --set image.repository=docker.io/w00dson/clusterdrill \
-  --set image.digest=sha256:<the-released-digest> \
+  --set image.repository=<your-registry>/clusterdrill \
+  --set image.digest=sha256:<the digest from above> \
   --set auth.existingSecretName=clusterdrill-web-auth
 ```
 
@@ -201,7 +223,7 @@ and there's no CLI command to render it outside the Minikube flow, so
 substitute them yourself:
 
 ```sh
-sed -e "s|\${CLUSTERDRILL_IMAGE}|docker.io/w00dson/clusterdrill@sha256:<the-released-digest>|" \
+sed -e "s|\${CLUSTERDRILL_IMAGE}|<your-registry>/clusterdrill@sha256:<the digest from above>|" \
     -e "s|\${CLUSTERDRILL_PASSWORD}|$(openssl rand -base64 24 | tr -d '=+/')|" \
     -e "s|\${CLUSTERDRILL_VERSION}|dev|" \
     clusterdrill/manifests/local-appliance.yaml | kubectl apply -f -
