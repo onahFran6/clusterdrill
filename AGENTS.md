@@ -72,5 +72,9 @@ reference where applicable, one concern per commit. Use the `good-commits` skill
 (`~/.claude/skills/good-commits/`) when committing or opening a PR for atomic-commit splitting,
 message quality, and PR description structure.
 
+Every commit merged to `main` needs a Conventional Commits prefix (`feat:`, `fix:`, `chore:`,
+`docs:`, `refactor:`, `test:`, `ci:`, etc.) - `release-please` parses these to compute the next
+version and changelog entry, and silently drops anything without one.
+
 **Commit mode: confirm** - show the proposed commit split and message(s), and the drafted PR
 description, before running `git commit` / `gh pr create`, on every branch, no exceptions.
