@@ -28,13 +28,13 @@ packages = ["clusterdrill"]
 clusterdrill = [
     "release_manifest.json",
     "manifests/*.yaml",
-    "helm/clusterdrill/Chart.yaml",
-    "helm/clusterdrill/values.yaml",
-    "helm/clusterdrill/values.schema.json",
-    "helm/clusterdrill/README.md",
-    "helm/clusterdrill/templates/*.yaml",
-    "helm/clusterdrill/templates/*.tpl",
-    "helm/clusterdrill/templates/NOTES.txt",
+    "helm/clusterdrill-chart/Chart.yaml",
+    "helm/clusterdrill-chart/values.yaml",
+    "helm/clusterdrill-chart/values.schema.json",
+    "helm/clusterdrill-chart/README.md",
+    "helm/clusterdrill-chart/templates/*.yaml",
+    "helm/clusterdrill-chart/templates/*.tpl",
+    "helm/clusterdrill-chart/templates/NOTES.txt",
 ]
 
 [tool.ruff]

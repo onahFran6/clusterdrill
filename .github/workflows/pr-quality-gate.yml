@@ -279,7 +279,7 @@ jobs:
           DIGEST_IMAGE="$(python3 -c "from clusterdrill.release import resolve_default_image; print(resolve_default_image())")"
           REPOSITORY="${DIGEST_IMAGE%@*}"
           DIGEST="${DIGEST_IMAGE#*@}"
-          helm upgrade --install clusterdrill clusterdrill/helm/clusterdrill \
+          helm upgrade --install clusterdrill clusterdrill/helm/clusterdrill-chart \
             --kube-context clusterdrill --namespace clusterdrill-system --create-namespace \
             --set "image.repository=${REPOSITORY}" --set "image.digest=${DIGEST}" \
             --set auth.existingSecretName=clusterdrill-web-auth
@@ -290,7 +290,7 @@ jobs:
           helm uninstall clusterdrill --kube-context clusterdrill --namespace clusterdrill-system
           # Cluster-scoped resources must be gone; the namespace/Secret
           # were never chart-managed, so they're expected to remain -
-          # see helm/clusterdrill/README.md.
+          # see helm/clusterdrill-chart/README.md.
           if kubectl --context clusterdrill get clusterrole clusterdrill-appliance >/dev/null 2>&1; then
             echo "clusterrole should have been removed by helm uninstall" >&2
             exit 1

@@ -1,4 +1,4 @@
-"""Static checks that clusterdrill/helm/clusterdrill (the optional Helm
+"""Static checks that clusterdrill/helm/clusterdrill-chart (the optional Helm
 install path) is RBAC- and shape-equivalent to
 clusterdrill/manifests/local-appliance.yaml (the primary, baseline
 manifest path) - same approach as test_manifest.py's own checks, applied
@@ -31,7 +31,7 @@ REPRESENTATIVE_VALUES = [
 
 pytestmark = pytest.mark.skipif(
     shutil.which("helm") is None,
-    reason="helm is not installed - install it to run these chart tests (see helm/clusterdrill/README.md)",
+    reason="helm is not installed - install it to run these chart tests (see helm/clusterdrill-chart/README.md)",
 )
 
 

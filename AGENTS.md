@@ -22,7 +22,7 @@ history, or internal automation (bb-factory, agent-trunk, etc.) - none of that a
   binaries required, not installed by the default dev extras).
 - `deploy/` - the container image's own entrypoint script (`entrypoint.sh`, wired as the
   Dockerfile's `ENTRYPOINT`). Not the appliance's install path - that's
-  `clusterdrill/manifests/local-appliance.yaml` and `clusterdrill/helm/clusterdrill/`.
+  `clusterdrill/manifests/local-appliance.yaml` and `clusterdrill/helm/clusterdrill-chart/`.
 - `docs/` - `architecture.md` (module wiring, request flow, design rationale - a level below
   the README's summary) and `adr/` (accepted architecture decision records). See
   [Documentation](#documentation) below for when to update these.
@@ -71,6 +71,10 @@ Match this repo's existing `git log` style: one line, present tense/imperative, 
 reference where applicable, one concern per commit. Use the `good-commits` skill
 (`~/.claude/skills/good-commits/`) when committing or opening a PR for atomic-commit splitting,
 message quality, and PR description structure.
+
+Every commit merged to `main` needs a Conventional Commits prefix (`feat:`, `fix:`, `chore:`,
+`docs:`, `refactor:`, `test:`, `ci:`, etc.) - `release-please` parses these to compute the next
+version and changelog entry, and silently drops anything without one.
 
 **Commit mode: confirm** - show the proposed commit split and message(s), and the drafted PR
 description, before running `git commit` / `gh pr create`, on every branch, no exceptions.

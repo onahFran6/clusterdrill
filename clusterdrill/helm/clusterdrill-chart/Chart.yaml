@@ -1,5 +1,5 @@
 apiVersion: v2
-name: clusterdrill
+name: clusterdrill-chart
 description: >-
   A dedicated, disposable CKAD/Kubernetes practice appliance. Installs only
   into its own single-instance dedicated cluster environment - this is not
