@@ -12,8 +12,8 @@ image:
   # refuses to install a mutable image reference, the same rule
   # `clusterdrill local install` already enforces for the raw-manifest
   # path (see cli.py's local_install()).
-  repository: ""
-  digest: ""
+  repository: "docker.io/w00dson/clusterdrill"
+  digest: "sha256:f04959a19fc845ce80aac86eb7be03d6b99883f1017e9247cda6f0f0750699cc"
 
 # Name of an existing Secret (created by the CLI or an operator before
 # `helm install`/`helm upgrade` runs) with a `password` key. The chart
