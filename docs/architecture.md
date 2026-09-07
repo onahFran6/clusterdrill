@@ -232,7 +232,23 @@ recommended path today rather than the resolved default.
 object set (Namespace, ServiceAccount, Secret, ClusterRole,
 ClusterRoleBinding, Deployment, Service) - `clusterdrill/tests/test_helm_chart.py`
 enforces byte-for-byte metadata/RBAC parity between them, per
-[ADR 0002](adr/0002-kubernetes-metadata-conventions.md).
+[ADR 0002](adr/0002-kubernetes-metadata-conventions.md). They differ in one
+place tests don't pin down: the raw manifest's Service is `ClusterIP` (it's
+built around `local url`'s `minikube service` tunnel), while the chart's is
+`NodePort` (`clusterdrill/helm/clusterdrill/templates/service.yaml`) - it's
+meant to be reachable directly once installed somewhere `local url` can't
+reach.
+
+Both renderings are themselves cluster-agnostic - nothing in either YAML
+assumes Minikube. What's Minikube-locked is the CLI wrapper around them:
+`PROFILE = "clusterdrill"` (`cli.py:18`) and `profile_kubectl()`
+(`cli.py:134-141`) hardcode every `install`/`url`/`smoke-test`/`destroy`
+kubectl call to `--context clusterdrill`, and `install-helm` does the same
+with `--kube-context` (`cli.py:659`) - there is no `--context`/`--kubeconfig`
+flag on any subcommand. Installing onto a cluster the CLI didn't create
+means driving the Helm chart or the raw manifest directly instead of
+through `clusterdrill local install` - see
+[README's Installing on a cluster you already have](../README.md#installing-on-a-cluster-you-already-have).
 
 `deploy/entrypoint.sh` is unrelated to either of those: it is the container
 image's own `ENTRYPOINT` (wired in `Dockerfile`), not part of the CLI's

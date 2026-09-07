@@ -5,9 +5,11 @@ graded against live cluster state, run against a real Kubernetes cluster
 (a local Minikube appliance, or any dedicated disposable cluster you point
 it at).
 
+- [Which install path fits you?](#which-install-path-fits-you)
 - [Quick start](#quick-start)
 - [Supported-cluster contract](#supported-cluster-contract)
 - [Login, upgrade, and removal](#login-upgrade-and-removal)
+- [Installing on a cluster you already have](#installing-on-a-cluster-you-already-have)
 - [Architecture](#architecture)
 - [Security limits](#security-limits)
 - [Troubleshooting](#troubleshooting)
@@ -15,6 +17,14 @@ it at).
 - [Layout](#layout)
 - [Licensing](#licensing)
 - [Contributing](#contributing)
+
+## Which install path fits you?
+
+| Your situation | Where to go |
+| --- | --- |
+| No cluster yet, just want to try ClusterDrill on your own laptop | [Quick start](#quick-start) below - creates a disposable local Minikube profile for you. |
+| No cluster yet, want a real disposable cluster (e.g. for a workshop or classroom, not just a local trial) | [`clusterdrill-lab`](https://github.com/onahFran6/clusterdrill-lab) - a separate repository. It uses Terraform to provision a disposable cloud VM and a bootstrap script to install Kubernetes plus a pinned ClusterDrill release on it automatically. Needs its own prerequisites (AWS credentials, Terraform >= 1.5.0) and isn't tested or maintained from this repository - see its own README. |
+| You already have your own dedicated, disposable Kubernetes cluster (self-managed, kubeadm, a cloud-managed cluster, etc.) and just want to install ClusterDrill onto it | [Installing on a cluster you already have](#installing-on-a-cluster-you-already-have) - `clusterdrill local install` doesn't apply here, see why in that section. |
 
 ## Quick start
 
@@ -91,9 +101,10 @@ the code:
   ever attempts a real mutation.
 
 Only the local Minikube appliance is documented and tested end to end
-today. Nothing in principle stops `--image`/manual manifest application
-against another dedicated, disposable cluster that satisfies the same
-contract, but that path isn't validated by this project's own tests.
+today. Already have a dedicated, disposable cluster that satisfies the same
+contract? See [Installing on a cluster you already have](#installing-on-a-cluster-you-already-have),
+which isn't validated by this project's own tests the way the Minikube flow
+is, but works.
 
 ### Storage compatibility profiles
 
@@ -134,6 +145,75 @@ RBAC/Deployment/Service shape (`clusterdrill/tests/test_helm_chart.py`
 enforces this equivalence). See that chart's own README for what it
 does and does not let you configure, and for `helm upgrade`/`helm uninstall`
 usage directly (without going through the CLI).
+
+## Installing on a cluster you already have
+
+**`clusterdrill local install` (and every other `clusterdrill local ...`
+subcommand) only ever targets the dedicated `clusterdrill` Minikube
+profile, and cannot be pointed at another cluster or kubectl context.** If
+you already have your own dedicated, disposable Kubernetes cluster, don't
+reach for the CLI at all; use one of the two paths below directly instead.
+
+Either path needs the same access this project's own [Supported-cluster
+contract](#supported-cluster-contract) requires from the Minikube profile:
+create access to Namespaces, ClusterRoles/ClusterRoleBindings,
+ServiceAccounts, Secrets, Deployments, and Services in your current kubectl
+context.
+
+### Recommended: the Helm chart, standalone
+
+The chart at `clusterdrill/helm/clusterdrill/` is cluster-agnostic by
+design - it's what `clusterdrill local install --installer=helm` itself
+runs, just without the Minikube-profile requirement:
+
+```sh
+kubectl create namespace clusterdrill-system
+kubectl -n clusterdrill-system create secret generic clusterdrill-web-auth \
+  --from-literal=password="$(openssl rand -base64 24 | tr -d '=+/')"
+
+helm install clusterdrill clusterdrill/helm/clusterdrill \
+  --namespace clusterdrill-system \
+  --set image.repository=docker.io/w00dson/clusterdrill \
+  --set image.digest=sha256:<the-released-digest> \
+  --set auth.existingSecretName=clusterdrill-web-auth
+```
+
+Its Service is a `NodePort` on 8000, so once installed you reach it
+directly, no CLI tunnel needed:
+
+```sh
+kubectl get svc -n clusterdrill-system clusterdrill   # find the NodePort
+# then browse http://<any-node-ip>:<the-nodeport>
+# or, if node IPs aren't directly reachable (a typical managed/cloud cluster):
+kubectl -n clusterdrill-system port-forward svc/clusterdrill 8000:8000
+```
+
+Remove it with `helm uninstall clusterdrill --namespace clusterdrill-system`.
+See [`clusterdrill/helm/clusterdrill/README.md`](clusterdrill/helm/clusterdrill/README.md)
+for the full picture: what's fixed vs. configurable, and `helm upgrade`.
+
+### Fallback: the raw manifest, applied by hand
+
+`clusterdrill/manifests/local-appliance.yaml` is also cluster-agnostic, but
+it's a template with three placeholders the CLI normally fills in for you
+(`${CLUSTERDRILL_IMAGE}`, `${CLUSTERDRILL_PASSWORD}`, `${CLUSTERDRILL_VERSION}`),
+and there's no CLI command to render it outside the Minikube flow, so
+substitute them yourself:
+
+```sh
+sed -e "s|\${CLUSTERDRILL_IMAGE}|docker.io/w00dson/clusterdrill@sha256:<the-released-digest>|" \
+    -e "s|\${CLUSTERDRILL_PASSWORD}|$(openssl rand -base64 24 | tr -d '=+/')|" \
+    -e "s|\${CLUSTERDRILL_VERSION}|dev|" \
+    clusterdrill/manifests/local-appliance.yaml | kubectl apply -f -
+```
+
+Unlike the Helm chart, this manifest's Service is `ClusterIP` (it's designed
+around `clusterdrill local url`'s tunnel, which only exists for the Minikube
+path), so reach it with `kubectl -n clusterdrill-system port-forward
+svc/clusterdrill 8000:8000` instead. This path also isn't exercised
+end-to-end by this project's own tests the way the Minikube flow is - prefer
+the Helm chart above unless you have a specific reason not to. Remove it
+with `kubectl delete -f <the-same-rendered-manifest>`.
 
 ## Architecture
 
