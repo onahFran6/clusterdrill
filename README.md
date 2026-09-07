@@ -139,7 +139,7 @@ other kubectl context is touched. Add `--yes` to skip the interactive
 confirmation.
 
 **Optional Helm install path**: `clusterdrill local install --installer=helm`
-deploys the exact same appliance via the chart at `clusterdrill/helm/clusterdrill/`
+deploys the exact same appliance via the chart at `clusterdrill/helm/clusterdrill-chart/`
 instead of applying the raw manifest directly - both render the same
 RBAC/Deployment/Service shape (`clusterdrill/tests/test_helm_chart.py`
 enforces this equivalence). See that chart's own README for what it
@@ -162,16 +162,17 @@ context.
 
 ### Getting an image to install
 
-Both paths below need an `image.repository`/digest. There is exactly one
-published digest (`docker.io/w00dson/clusterdrill@sha256:2b6b2979775c49a71742f7867a38a059f9723f11c14abbffea3fb1e7922b873e`,
-recorded in `clusterdrill/release_manifest.json`), and per
-[Release policy](#release-policy) it predates recent naming/architecture
-changes and **does not reflect current source** - don't default to it.
+Both paths below need an `image.repository`/digest - **but the Helm
+chart's own published defaults already cover the common case once a
+version has shipped through the automated pipeline** described in
+[Release policy](#release-policy): its `values.yaml` ships pre-filled
+with that release's real repository/digest, so most readers can skip
+straight to [Recommended: the Helm chart, standalone](#recommended-the-helm-chart-standalone)
+below with no `--set image.*` flags at all.
 
-Instead, build from your own checkout (same as [Quick start](#quick-start)'s
-`clusterdrill:dev`) and push it somewhere your cluster can actually pull
-from - unlike the Minikube path, there's no `minikube image load` shortcut
-here, so it needs a real registry your cluster has access to:
+Only build and push your own image if you want to test unreleased
+source, or need a custom registry your cluster can pull from - unlike
+the Minikube path, there's no `minikube image load` shortcut here:
 
 ```sh
 docker build --platform linux/amd64 --tag <your-registry>/clusterdrill:dev .   # match your cluster's node arch
@@ -180,25 +181,38 @@ docker inspect --format='{{index .RepoDigests 0}}' <your-registry>/clusterdrill:
 # -> <your-registry>/clusterdrill@sha256:<the digest you just pushed>
 ```
 
-Use that repository and digest below.
+Use that repository and digest with the `--set image.*` overrides shown
+below.
 
 ### Recommended: the Helm chart, standalone
 
-The chart at `clusterdrill/helm/clusterdrill/` is cluster-agnostic by
-design - it's what `clusterdrill local install --installer=helm` itself
-runs, just without the Minikube-profile requirement:
+The chart at `clusterdrill/helm/clusterdrill-chart/` is cluster-agnostic
+by design - it's what `clusterdrill local install --installer=helm`
+itself runs, just without the Minikube-profile requirement. Once a
+version has shipped through the pipeline described in
+[Release policy](#release-policy), it's also published as an OCI chart
+with that release's image already baked in as the default, so installing
+needs no `--set image.*` flags at all:
 
 ```sh
 kubectl create namespace clusterdrill-system
 kubectl -n clusterdrill-system create secret generic clusterdrill-web-auth \
   --from-literal=password="$(openssl rand -base64 24 | tr -d '=+/')"
 
-helm install clusterdrill clusterdrill/helm/clusterdrill \
+helm install clusterdrill oci://registry-1.docker.io/w00dson/clusterdrill-chart \
+  --version <version> \
   --namespace clusterdrill-system \
-  --set image.repository=<your-registry>/clusterdrill \
-  --set image.digest=sha256:<the digest from above> \
   --set auth.existingSecretName=clusterdrill-web-auth
 ```
+
+(`<version>` is whichever release has shipped through this pipeline - see
+`clusterdrill/release_manifest.json` or the
+[GitHub Releases page](https://github.com/onahFran6/clusterdrill/releases)
+for the latest. Until a version has gone through it, install from a
+local checkout instead with `helm install clusterdrill
+clusterdrill/helm/clusterdrill-chart`, adding `--set
+image.repository=...`/`--set image.digest=...` to point at a self-built
+image as described above.)
 
 Its Service is a `NodePort` on 8000, so once installed you reach it
 directly, no CLI tunnel needed:
@@ -211,7 +225,7 @@ kubectl -n clusterdrill-system port-forward svc/clusterdrill 8000:8000
 ```
 
 Remove it with `helm uninstall clusterdrill --namespace clusterdrill-system`.
-See [`clusterdrill/helm/clusterdrill/README.md`](clusterdrill/helm/clusterdrill/README.md)
+See [`clusterdrill/helm/clusterdrill-chart/README.md`](clusterdrill/helm/clusterdrill-chart/README.md)
 for the full picture: what's fixed vs. configurable, and `helm upgrade`.
 
 ### Fallback: the raw manifest, applied by hand
@@ -220,12 +234,15 @@ for the full picture: what's fixed vs. configurable, and `helm upgrade`.
 it's a template with three placeholders the CLI normally fills in for you
 (`${CLUSTERDRILL_IMAGE}`, `${CLUSTERDRILL_PASSWORD}`, `${CLUSTERDRILL_VERSION}`),
 and there's no CLI command to render it outside the Minikube flow, so
-substitute them yourself:
+substitute them yourself. Once a version has shipped through the
+pipeline described in [Release policy](#release-policy), use its
+published digest; otherwise substitute a self-built image as described
+above:
 
 ```sh
-sed -e "s|\${CLUSTERDRILL_IMAGE}|<your-registry>/clusterdrill@sha256:<the digest from above>|" \
+sed -e "s|\${CLUSTERDRILL_IMAGE}|docker.io/w00dson/clusterdrill@sha256:<the published digest>|" \
     -e "s|\${CLUSTERDRILL_PASSWORD}|$(openssl rand -base64 24 | tr -d '=+/')|" \
-    -e "s|\${CLUSTERDRILL_VERSION}|dev|" \
+    -e "s|\${CLUSTERDRILL_VERSION}|<version>|" \
     clusterdrill/manifests/local-appliance.yaml | kubectl apply -f -
 ```
 
@@ -305,7 +322,7 @@ machine.
   (no cluster-admin binding, no wildcard API group, no directly-exposed
   terminal Service) guard the shape of the manifest going forward, but
   they don't replace that review. This applies equally to the optional
-  Helm chart (`clusterdrill/helm/clusterdrill/`) - `test_helm_chart.py`
+  Helm chart (`clusterdrill/helm/clusterdrill-chart/`) - `test_helm_chart.py`
   proves it renders byte-for-byte the same RBAC rules as the manifest,
   so the same outstanding review covers both install paths at once, not
   a second, separate review per path.
@@ -341,8 +358,13 @@ version. **It does not reflect the current source tree.** Always pass
 [Quick start](#quick-start)) unless you specifically want that
 historical artifact.
 
-Once a real release matching current source exists, the documented flow
-will be:
+This repo now has automated release tooling: `release-please` computes
+each version and changelog from Conventional Commits merged to `main`,
+and `.github/workflows/release-image.yml` builds and publishes a real
+multi-arch image plus an OCI Helm chart for every version it tags. As of
+this writing, no version has shipped through that pipeline yet, so the
+old manually-published image above remains the only real one. Once a
+version has:
 
 ```sh
 pipx install clusterdrill==<version>
@@ -352,7 +374,8 @@ clusterdrill local install          # no --image needed
 clusterdrill local url
 ```
 
-`local install` resolves its own image automatically from the installed
+will resolve and deploy that version's real, pipeline-built image
+automatically. `local install` resolves its own image from the installed
 package version, pairing each published version with an immutable,
 digest-pinned image reference recorded in the package's own
 `release_manifest.json` (see `clusterdrill/release.py`) - installing a
@@ -361,9 +384,13 @@ upgrade, `pipx upgrade clusterdrill` (or
 `pipx install clusterdrill==<newer-version> --force`), then re-run
 `clusterdrill local install` to roll the running appliance forward.
 
-No dedicated Helm chart exists yet; raw manifests
-(`clusterdrill/manifests/local-appliance.yaml`, rendered by the CLI) are
-the only supported install path today.
+The Helm chart at `clusterdrill/helm/clusterdrill-chart/` is also
+published by the same pipeline, as an OCI chart
+(`oci://registry-1.docker.io/w00dson/clusterdrill-chart`) with that
+release's image already baked in as the default - see
+[Installing on a cluster you already have](#installing-on-a-cluster-you-already-have)
+for the install command. Until a version has shipped through the
+pipeline, install the chart from a local checkout instead.
 
 ## Layout
 

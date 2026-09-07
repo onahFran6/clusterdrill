@@ -58,6 +58,11 @@ values-driven:
 
 ## Install
 
+Once a version has shipped through `.github/workflows/release-image.yml`
+(see the practice-bank repository's own README "Release policy" section),
+this chart is published as an OCI artifact with that release's image
+already baked in as the default - no `--set image.*` flags needed:
+
 ```sh
 # 1. Create the namespace and password Secret first (or let the CLI do
 #    both steps for you - see below).
@@ -65,11 +70,10 @@ kubectl create namespace clusterdrill-system
 kubectl -n clusterdrill-system create secret generic clusterdrill-web-auth \
   --from-literal=password="$(openssl rand -base64 24 | tr -d '=+/')"
 
-# 2. Install the chart, pointing at the released digest.
-helm install clusterdrill . \
+# 2. Install the published chart.
+helm install clusterdrill oci://registry-1.docker.io/w00dson/clusterdrill-chart \
+  --version <version> \
   --namespace clusterdrill-system \
-  --set image.repository=docker.io/w00dson/clusterdrill \
-  --set image.digest=sha256:<the-released-digest> \
   --set auth.existingSecretName=clusterdrill-web-auth
 ```
 
@@ -78,6 +82,20 @@ profile:
 
 ```sh
 clusterdrill local install --installer=helm
+```
+
+### Developing this chart itself
+
+Working from a local checkout (this chart hasn't been rebuilt/published
+yet, or you're testing a chart-template change) needs the image pinned
+by hand instead:
+
+```sh
+helm install clusterdrill . \
+  --namespace clusterdrill-system \
+  --set image.repository=docker.io/w00dson/clusterdrill \
+  --set image.digest=sha256:<the-digest-to-test> \
+  --set auth.existingSecretName=clusterdrill-web-auth
 ```
 
 ## Verifying this chart matches the raw manifest
@@ -99,11 +117,15 @@ review regardless of which install path renders it.
 ## Upgrade and uninstall
 
 ```sh
-helm upgrade clusterdrill . --namespace clusterdrill-system --reuse-values \
-  --set image.digest=sha256:<the-new-digest>
+helm upgrade clusterdrill oci://registry-1.docker.io/w00dson/clusterdrill-chart \
+  --version <newer-version> --namespace clusterdrill-system --reuse-values
 
 helm uninstall clusterdrill --namespace clusterdrill-system
 ```
+
+(Substitute `.` and `--set image.digest=sha256:<the-new-digest>` instead
+if you're working from a local checkout, as in "Developing this chart
+itself" above.)
 
 `helm uninstall` removes the namespace-scoped resources this chart
 created plus the cluster-scoped ClusterRole/ClusterRoleBinding - nothing

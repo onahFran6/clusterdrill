@@ -216,7 +216,7 @@ for how to run it.
 | `bootstrap` | Installs the Minikube binary itself, only after explicit acknowledgement. |
 | `init` | Creates or reuses the dedicated `clusterdrill` Minikube profile; reads Docker's available CPU/memory (`docker_capacity()`) to pick resource defaults. |
 | `install` | Renders `manifests/local-appliance.yaml` (`render_manifest()`) with the resolved image/password/version and applies it - or, with `--installer=helm`, calls `install-helm` instead. |
-| `install-helm` | Renders and installs the Helm chart at `helm/clusterdrill/` with equivalent values. |
+| `install-helm` | Renders and installs the Helm chart at `helm/clusterdrill-chart/` with equivalent values. |
 | `url` | Opens a `minikube service` tunnel and supervises it in the foreground. |
 | `smoke-test` | Confirms the deployed `/healthz` endpoint responds `ok`. |
 | `destroy` | Deletes only the `clusterdrill` Minikube profile. |
@@ -228,16 +228,22 @@ for why `--image clusterdrill:dev` (built from your own checkout) is the
 recommended path today rather than the resolved default.
 
 `clusterdrill/manifests/local-appliance.yaml` and
-`clusterdrill/helm/clusterdrill/` are two independent renderings of the same
+`clusterdrill/helm/clusterdrill-chart/` are two independent renderings of the same
 object set (Namespace, ServiceAccount, Secret, ClusterRole,
 ClusterRoleBinding, Deployment, Service) - `clusterdrill/tests/test_helm_chart.py`
 enforces byte-for-byte metadata/RBAC parity between them, per
 [ADR 0002](adr/0002-kubernetes-metadata-conventions.md). They differ in one
 place tests don't pin down: the raw manifest's Service is `ClusterIP` (it's
 built around `local url`'s `minikube service` tunnel), while the chart's is
-`NodePort` (`clusterdrill/helm/clusterdrill/templates/service.yaml`) - it's
+`NodePort` (`clusterdrill/helm/clusterdrill-chart/templates/service.yaml`) - it's
 meant to be reachable directly once installed somewhere `local url` can't
 reach.
+
+The chart is also independently published as an OCI artifact
+(`oci://registry-1.docker.io/w00dson/clusterdrill-chart`, built by
+`.github/workflows/release-image.yml` on every release tag) - a real
+external distribution channel now exists alongside the CLI-driven path,
+not just cluster-agnostic in principle.
 
 Both renderings are themselves cluster-agnostic - nothing in either YAML
 assumes Minikube. What's Minikube-locked is the CLI wrapper around them:
