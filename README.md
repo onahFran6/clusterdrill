@@ -137,6 +137,10 @@ usage directly (without going through the CLI).
 
 ## Architecture
 
+See [`docs/architecture.md`](docs/architecture.md) for the deep technical
+dive (request flow, module wiring, design rationale) behind the summary
+below.
+
 - **App**: a single FastAPI process (`web/app.py`), server-rendered Jinja2
   HTML plus a light sprinkle of vanilla JS - no SPA framework, no build
   step.
@@ -285,7 +289,9 @@ practice-bank/
   tests/
     bootstrap-minikube_test.sh # self-test for bootstrap-minikube.sh against faked minikube/kubectl binaries
     e2e/                       # real browser-level end-to-end tests
-  docs/adr/                   # naming and metadata-convention decision records
+  docs/
+    architecture.md            # module wiring, request flow, design rationale
+    adr/                       # naming and metadata-convention decision records
   .github/
     CODEOWNERS                # routes question/lib/governance changes for review
     PULL_REQUEST_TEMPLATE.md  # MIT/GPL boundary checklist
