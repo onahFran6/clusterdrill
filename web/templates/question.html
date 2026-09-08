@@ -208,11 +208,11 @@
            the server-side {{ tab }} value below. -->
       <nav class="tabs" id="content-tabs">
         <a class="tab {{ 'active' if tab == 'task' else '' }}" data-tab="task" href="/questions/{{ question.id }}?tab=task">Task</a>
-        <a class="tab {{ 'active' if tab == 'hint' else '' }}" data-tab="hint" href="/questions/{{ question.id }}?tab=hint">Hint</a>
         {% if not is_exam_session %}
+          <a class="tab {{ 'active' if tab == 'hint' else '' }}" data-tab="hint" href="/questions/{{ question.id }}?tab=hint">Hint</a>
           <a class="tab {{ 'active' if tab == 'solution' else '' }}" data-tab="solution" href="/questions/{{ question.id }}?tab=solution">Solution</a>
+          <a class="tab {{ 'active' if tab == 'diagram' else '' }}" data-tab="diagram" href="/questions/{{ question.id }}?tab=diagram">Diagram</a>
         {% endif %}
-        <a class="tab {{ 'active' if tab == 'diagram' else '' }}" data-tab="diagram" href="/questions/{{ question.id }}?tab=diagram">Diagram</a>
       </nav>
 
       <div class="tab-content">
@@ -307,7 +307,7 @@
       <div class="checklist-header">
         <h2>Grading checklist</h2>
         <div class="actions">
-          {% if can_reset %}
+          {% if can_reset and (not is_exam_session or provision_error) %}
             <button id="reset-btn" type="button" class="btn btn-secondary">Reset</button>
           {% endif %}
           {% if not is_exam_session %}

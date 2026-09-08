@@ -323,6 +323,20 @@ async def test_exam_session_question_page_hides_the_solution_tab(client, fake_ba
     assert 'data-tab="solution"' not in res.text
 
 
+async def test_exam_session_question_page_hides_the_hint_and_diagram_tabs(client, fake_bank):
+    # A real exam gives no in-question help either - same posture as the
+    # solution tab above, just less sensitive content, so it's enforced at
+    # the nav level rather than also redacting hint_html/diagram content
+    # server-side (unlike the solution tab, which never even computes
+    # answer_html in exam mode - see question_view.py).
+    session_store.set_active(ActiveSession(mode="exam", topic=None, question_ids=["qT01-question"]))
+
+    res = await client.get("/questions/qT01-question")
+
+    assert 'data-tab="hint"' not in res.text
+    assert 'data-tab="diagram"' not in res.text
+
+
 async def test_exam_session_requesting_the_solution_tab_falls_back_to_task(client, fake_bank):
     session_store.set_active(ActiveSession(mode="exam", topic=None, question_ids=["qT01-question"]))
 
@@ -332,20 +346,48 @@ async def test_exam_session_requesting_the_solution_tab_falls_back_to_task(clien
     assert 'data-tab="task"' in res.text
 
 
-async def test_exam_session_question_page_still_has_reset(client, fake_bank):
-    # Deferred grading only removes grading feedback - resetting your own
-    # environment is unrelated and stays available. fake_bank's questions
-    # never ship a setup.sh (module docstring), so Reset is absent for
-    # that reason regardless of mode - prove it's absent for *that* reason
-    # here, not because exam mode removes it too, by giving this one
-    # question a setup.sh and confirming Reset reappears.
+async def test_exam_session_question_page_hides_reset_when_setup_succeeded(client, fake_bank):
+    # Reset used to stay visible in every mode once a question shipped a
+    # setup.sh, regardless of exam mode - but Reset's only legitimate use
+    # during an exam is recovering from a broken auto-provision (see the
+    # provision-error test below), not letting a candidate discard
+    # progress/rebuild their environment on a whim. fake_bank's questions
+    # never ship a setup.sh (module docstring) - give this one a real,
+    # successful setup.sh so provision_error stays None and Reset is hidden
+    # for the exam-mode reason this test is actually about, not because
+    # can_reset itself is false.
     question = fake_bank.get("qT01-question")
     question.path.joinpath("setup.sh").write_text("#!/usr/bin/env bash\necho ok\n")
     session_store.set_active(ActiveSession(mode="exam", topic=None, question_ids=["qT01-question"]))
 
     res = await client.get("/questions/qT01-question")
 
+    assert 'id="reset-btn"' not in res.text
+
+
+async def test_exam_session_question_page_shows_reset_when_provisioning_failed(
+    client, fake_bank, monkeypatch,
+):
+    # Mirrors test_view_question_surfaces_a_failed_auto_provision above -
+    # run_setup is mocked so no real subprocess/cluster call happens.
+    # Reset must reappear here even in exam mode: it's the only way to
+    # retry a broken auto-provision, per the provision-error banner
+    # (question.html) that explicitly tells the candidate to click it.
+    question = fake_bank.get("qT01-question")
+    question.path.joinpath("setup.sh").write_text("#!/usr/bin/env bash\necho ok\n")
+    monkeypatch.setattr(
+        question_view,
+        "run_setup",
+        lambda *a, **k: ResetResult(ok=False, output="", error="cluster unreachable"),
+    )
+    question_view._auto_provisioned_qids.clear()
+    session_store.set_active(ActiveSession(mode="exam", topic=None, question_ids=["qT01-question"]))
+
+    res = await client.get("/questions/qT01-question")
+
     assert 'id="reset-btn"' in res.text
+
+    question_view._auto_provisioned_qids.clear()
 
 
 async def test_non_exam_session_question_page_still_has_check_button_and_solution_tab(client, fake_bank):
@@ -355,3 +397,5 @@ async def test_non_exam_session_question_page_still_has_check_button_and_solutio
 
     assert 'id="check-btn"' in res.text
     assert 'data-tab="solution"' in res.text
+    assert 'data-tab="hint"' in res.text
+    assert 'data-tab="diagram"' in res.text
