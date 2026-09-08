@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/onahFran6/clusterdrill/compare/v0.1.3...v0.1.4) (2026-09-08)
+
+
+### Features
+
+* validate digest before opening the manifest-update PR ([348e025](https://github.com/onahFran6/clusterdrill/commit/348e025d731c05a03143dc1f36e626626e50c867))
+
 ## [0.1.3](https://github.com/onahFran6/clusterdrill/compare/v0.1.2...v0.1.3) (2026-09-07)
 
 
