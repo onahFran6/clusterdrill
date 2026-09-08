@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/onahFran6/clusterdrill/compare/v0.1.4...v0.1.5) (2026-09-08)
+
+
+### Bug Fixes
+
+* skip Helm smoke test gracefully when no digest exists yet for this version ([2626767](https://github.com/onahFran6/clusterdrill/commit/26267677c884d4299df2795bcfbe7a07d9fb863c))
+
 ## [0.1.4](https://github.com/onahFran6/clusterdrill/compare/v0.1.3...v0.1.4) (2026-09-08)
 
 
