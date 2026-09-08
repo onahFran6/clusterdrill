@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.6](https://github.com/onahFran6/clusterdrill/compare/v0.1.5...v0.1.6) (2026-09-08)
+
+
+### Features
+
+* alias kubectl to k in the practice-work terminal ([fe10d37](https://github.com/onahFran6/clusterdrill/commit/fe10d37bc2f9071d76f40dedc45c98b20d9d2db7))
+
+
+### Bug Fixes
+
+* hide hint/diagram tabs and gate reset button during exams ([acac470](https://github.com/onahFran6/clusterdrill/commit/acac4700fb03cda55882d27611387a02ed0d844e))
+
 ## [0.1.5](https://github.com/onahFran6/clusterdrill/compare/v0.1.4...v0.1.5) (2026-09-08)
 
 
