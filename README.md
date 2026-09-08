@@ -358,13 +358,14 @@ version. **It does not reflect the current source tree.** Always pass
 [Quick start](#quick-start)) unless you specifically want that
 historical artifact.
 
-This repo now has automated release tooling: `release-please` computes
-each version and changelog from Conventional Commits merged to `main`,
-and `.github/workflows/release-image.yml` builds and publishes a real
-multi-arch image plus an OCI Helm chart for every version it tags. As of
-this writing, no version has shipped through that pipeline yet, so the
-old manually-published image above remains the only real one. Once a
-version has:
+This repo has automated release tooling: `release-please` computes each
+version and changelog from Conventional Commits merged to `main`, and
+`.github/workflows/release-image.yml` builds and publishes a real
+multi-arch image plus an OCI Helm chart for every version it tags - see
+[`MAINTAINING.md`](MAINTAINING.md) for exactly how the two fit together.
+Every version from `0.1.1` onward has gone through this pipeline for
+real; the historical-image caveat above is specific to `0.1.0`, the one
+manually-published exception. From `0.1.1` onward:
 
 ```sh
 pipx install clusterdrill==<version>
@@ -374,7 +375,7 @@ clusterdrill local install          # no --image needed
 clusterdrill local url
 ```
 
-will resolve and deploy that version's real, pipeline-built image
+resolves and deploys that version's real, pipeline-built image
 automatically. `local install` resolves its own image from the installed
 package version, pairing each published version with an immutable,
 digest-pinned image reference recorded in the package's own
