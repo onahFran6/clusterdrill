@@ -114,6 +114,22 @@ traces back to an automated push/PR-open by `github-actions[bot]`, this
 is almost certainly why - check for a `workflow_dispatch` handoff or an
 inline validation step before assuming something's newly broken.
 
+## A separate, unrelated reason `helm-install-smoke-test` sometimes skips itself
+
+This one isn't about `GITHUB_TOKEN` - it's about timing. `release-please`'s
+own standing release PR bumps `pyproject.toml`'s version *before*
+`release-image.yml` has built anything for that version. On that PR (and
+briefly on `main` right after it merges, until the follow-up
+digest-recording PR lands), no published digest exists yet for the
+version that's currently checked out. The Helm chart correctly refuses a
+mutable `clusterdrill:dev` fallback, so this job is structurally unable
+to pass in that window - not a one-off bug, a permanent, expected
+consequence of the version bump happening before the build. Rather than
+red-X every release-please PR forever, `pr-quality-gate.yml`'s
+`helm-install-smoke-test` job checks for this up front and skips itself
+cleanly (with a plain log message) instead of failing. If you see it
+skipped rather than passed, that's this - not something to chase.
+
 ## Testing the pipeline without touching a real release
 
 `release-image.yml` can be run by hand against any branch with a
