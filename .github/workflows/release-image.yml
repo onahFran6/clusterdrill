@@ -192,6 +192,27 @@ jobs:
         with:
           ref: main
 
+      # This PR's own content (a digest string, a repository string) is
+      # too narrow and mechanical to warrant pr-quality-gate.yml's full
+      # Minikube/Helm smoke tests - and that workflow structurally can't
+      # run on a PR opened by this job anyway (see the comment on the
+      # "Open PR against main" step below). Validate for real here
+      # instead: the digest must be well-formed AND actually pullable,
+      # not just a plausible-looking string, before it ever reaches a PR
+      # a human might merge.
+      - name: Validate the digest before recording it
+        env:
+          DIGEST: ${{ needs.build-and-push-image.outputs.digest }}
+        run: |
+          if ! [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::Digest '$DIGEST' is not a well-formed sha256 digest - refusing to record it." >&2
+            exit 1
+          fi
+          if ! docker manifest inspect "docker.io/w00dson/clusterdrill@${DIGEST}" >/dev/null; then
+            echo "::error::docker.io/w00dson/clusterdrill@${DIGEST} is not pullable - refusing to record it." >&2
+            exit 1
+          fi
+
       - name: Record the published digest and chart defaults
         env:
           VERSION: ${{ needs.build-and-push-image.outputs.version }}
@@ -226,6 +247,14 @@ jobs:
           values_path.write_text(text)
           PY
 
+      # This step opens the PR using the default GITHUB_TOKEN, which means
+      # GitHub will NOT run pr-quality-gate.yml's `pull_request` check on
+      # it (the same loop-prevention restriction documented at the top of
+      # release-please.yml, applied here to PR-open events instead of tag
+      # pushes) - the PR will always show as having no real CI run of its
+      # own. That's expected, not a bug to chase again: the "Validate the
+      # digest before recording it" step above is this PR's actual
+      # verification, done before the PR exists rather than after.
       - name: Open PR against main
         env:
           VERSION: ${{ needs.build-and-push-image.outputs.version }}
@@ -240,4 +269,4 @@ jobs:
           git push origin "$BRANCH"
           gh pr create --base main --head "$BRANCH" \
             --title "chore: record published image digest for ${VERSION}" \
-            --body "Records the image digest and chart defaults published by \`release-image.yml\` for ${VERSION}. The image and chart are already live on Docker Hub - this just updates the source tree to match."
+            --body "Records the image digest and chart defaults published by \`release-image.yml\` for ${VERSION}. The image and chart are already live on Docker Hub, and the digest was confirmed pullable before this PR was opened (see the workflow run) - this just updates the source tree to match. Note: this PR will not show a real pr-quality-gate.yml run of its own (GITHUB_TOKEN-opened PRs don't trigger new workflow runs) - that's expected, not a failure to investigate."
