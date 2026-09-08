@@ -394,20 +394,6 @@ def question_context(qid: str, tab: str = "task", user_id: Optional[str] = None)
     if is_exam_session and tab == "solution":
         tab = "task"
 
-    # Deferred grading: a real exam gives no
-    # interim feedback and, per this ticket's own explicit call, no peek
-    # at the reference solution mid-attempt either - a candidate shouldn't
-    # be able to see how a task is meant to be solved before submitting.
-    # tab is forced away from "solution" (a stale bookmark/link, or a
-    # forged ?tab=solution query param) rather than merely hiding the tab
-    # in the nav - and answer_html/discovery_path_html below are never
-    # even computed from the real ANSWER.md in that case, so the real
-    # solution text never reaches the rendered page at all (not just
-    # hidden client-side, where view-source would still reveal it).
-    is_exam_session = session_mode == "exam"
-    if is_exam_session and tab == "solution":
-        tab = "task"
-
     task_html, hint_html = "", ""
     if question.question_md.exists():
         task_html, hint_html = split_hint(question.question_md.read_text(), qid, user_id)
