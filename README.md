@@ -40,7 +40,7 @@ cd <this-repository>
 
 # Installs the clusterdrill CLI from this checkout (no PyPI package
 # published yet - see Release policy below).
-pipx install ./practice-bank        # or: pip install ./practice-bank
+pipx install .                      # or: pip install .
 
 clusterdrill local doctor           # checks prerequisites, changes nothing
 clusterdrill local init             # creates the clusterdrill Minikube profile
@@ -48,7 +48,7 @@ clusterdrill local init             # creates the clusterdrill Minikube profile
 # Build the appliance image from this exact checkout, so what you install
 # matches the source you have (see Release policy for why this is the
 # recommended path today, not the resolve-a-published-image default).
-docker build --platform linux/arm64 --tag clusterdrill:dev practice-bank
+docker build --platform linux/arm64 --tag clusterdrill:dev .
 minikube image load --profile clusterdrill clusterdrill:dev
 
 clusterdrill local install --image clusterdrill:dev
@@ -163,11 +163,11 @@ context.
 ### Getting an image to install
 
 Both paths below need an `image.repository`/digest - **but the Helm
-chart's own published defaults already cover the common case once a
-version has shipped through the automated pipeline** described in
-[Release policy](#release-policy): its `values.yaml` ships pre-filled
-with that release's real repository/digest, so most readers can skip
-straight to [Recommended: the Helm chart, standalone](#recommended-the-helm-chart-standalone)
+chart's own published defaults already cover the common case**: its
+`values.yaml` ships pre-filled with each release's real repository/digest
+(see [Release policy](#release-policy) for how that pipeline works), so
+most readers can skip straight to
+[Recommended: the Helm chart, standalone](#recommended-the-helm-chart-standalone)
 below with no `--set image.*` flags at all.
 
 Only build and push your own image if you want to test unreleased
@@ -188,11 +188,11 @@ below.
 
 The chart at `clusterdrill/helm/clusterdrill-chart/` is cluster-agnostic
 by design - it's what `clusterdrill local install --installer=helm`
-itself runs, just without the Minikube-profile requirement. Once a
-version has shipped through the pipeline described in
-[Release policy](#release-policy), it's also published as an OCI chart
-with that release's image already baked in as the default, so installing
-needs no `--set image.*` flags at all:
+itself runs, just without the Minikube-profile requirement. It's also
+published as an OCI chart, by the pipeline described in
+[Release policy](#release-policy), with each release's image already
+baked in as the default, so installing needs no `--set image.*` flags at
+all:
 
 ```sh
 kubectl create namespace clusterdrill-system
@@ -205,11 +205,11 @@ helm install clusterdrill oci://registry-1.docker.io/w00dson/clusterdrill-chart 
   --set auth.existingSecretName=clusterdrill-web-auth
 ```
 
-(`<version>` is whichever release has shipped through this pipeline - see
+(`<version>` is any published release - see
 `clusterdrill/release_manifest.json` or the
 [GitHub Releases page](https://github.com/onahFran6/clusterdrill/releases)
-for the latest. Until a version has gone through it, install from a
-local checkout instead with `helm install clusterdrill
+for the latest. To test unreleased source instead, install from a local
+checkout with `helm install clusterdrill
 clusterdrill/helm/clusterdrill-chart`, adding `--set
 image.repository=...`/`--set image.digest=...` to point at a self-built
 image as described above.)
@@ -234,10 +234,9 @@ for the full picture: what's fixed vs. configurable, and `helm upgrade`.
 it's a template with three placeholders the CLI normally fills in for you
 (`${CLUSTERDRILL_IMAGE}`, `${CLUSTERDRILL_PASSWORD}`, `${CLUSTERDRILL_VERSION}`),
 and there's no CLI command to render it outside the Minikube flow, so
-substitute them yourself. Once a version has shipped through the
-pipeline described in [Release policy](#release-policy), use its
-published digest; otherwise substitute a self-built image as described
-above:
+substitute them yourself. Use any published release's digest (see
+[Release policy](#release-policy)), or substitute a self-built image as
+described above to test unreleased source:
 
 ```sh
 sed -e "s|\${CLUSTERDRILL_IMAGE}|docker.io/w00dson/clusterdrill@sha256:<the published digest>|" \
@@ -273,7 +272,7 @@ below.
   namespace - "store progress as Kubernetes objects, not database rows,"
   with no separate database dependency. There is no project-owned Custom
   Resource Definition: no domain is confirmed as owned by this project yet
-  (see `practice-bank/docs/adr/0001-naming-standard.md`), so state uses
+  (see `docs/adr/0001-naming-standard.md`), so state uses
   the core ConfigMap/Secret API instead of a custom type.
 - **Terminal**: an embedded `ttyd` + `tmux` terminal, reverse-proxied
   through the app's own routes (never exposed on its own port), giving a
@@ -387,16 +386,15 @@ upgrade, `pipx upgrade clusterdrill` (or
 
 The Helm chart at `clusterdrill/helm/clusterdrill-chart/` is also
 published by the same pipeline, as an OCI chart
-(`oci://registry-1.docker.io/w00dson/clusterdrill-chart`) with that
+(`oci://registry-1.docker.io/w00dson/clusterdrill-chart`) with each
 release's image already baked in as the default - see
 [Installing on a cluster you already have](#installing-on-a-cluster-you-already-have)
-for the install command. Until a version has shipped through the
-pipeline, install the chart from a local checkout instead.
+for the install command.
 
 ## Layout
 
 ```text
-practice-bank/
+clusterdrill/
   questions/
     <topic>/
       domains.fragment.yaml   # this topic's question metadata (domain, difficulty, resource kinds)
