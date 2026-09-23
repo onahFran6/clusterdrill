@@ -385,3 +385,10 @@ questions:
     points: 5
     requirements:
       min_nodes: 1
+  - id: q110-56-helm-list-all-namespaces-failed-filter
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
