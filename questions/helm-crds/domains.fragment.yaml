@@ -406,3 +406,10 @@ questions:
     points: 5
     requirements:
       min_nodes: 1
+  - id: q110-59-helm-uninstall-keep-history-reinstate
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
