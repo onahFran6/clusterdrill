@@ -364,3 +364,10 @@ questions:
     points: 5
     requirements:
       min_nodes: 1
+  - id: q110-53-helm-set-nested-and-set-string
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, Ingress, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
