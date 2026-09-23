@@ -413,3 +413,10 @@ questions:
     points: 5
     requirements:
       min_nodes: 1
+  - id: q110-60-helm-values-precedence-three-way
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
