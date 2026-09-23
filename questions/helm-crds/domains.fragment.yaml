@@ -350,3 +350,10 @@ questions:
     points: 5
     requirements:
       min_nodes: 1
+  - id: q110-51-helm-named-template-label-fix
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
