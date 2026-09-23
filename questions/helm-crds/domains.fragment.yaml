@@ -378,3 +378,10 @@ questions:
     points: 5
     requirements:
       min_nodes: 1
+  - id: q110-55-helm-recover-stuck-pending-upgrade
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
