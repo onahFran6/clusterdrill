@@ -399,3 +399,10 @@ questions:
     points: 5
     requirements:
       min_nodes: 1
+  - id: q110-58-helm-template-zero-cluster-contact
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
