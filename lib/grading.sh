@@ -129,6 +129,24 @@ kget() {
   kubectl get "$kind" "$name" -o "jsonpath=$jsonpath" "$@" 2>/dev/null
 }
 
+# newest_pod_name <namespace> <label-selector>
+#   newest_pod_name q001 app=image-rollout
+# Prints the name of the most-recently-created pod matching the selector.
+# `kubectl get pods -l ... -o jsonpath='{.items[0]...}'` is not safe right
+# after a rollout: list ordering is not guaranteed to reflect recency, so a
+# check immediately after `kubectl rollout status` returns can still grab
+# the outgoing pod (which can exist for up to its termination grace period
+# after the Deployment-level rollout conditions are already satisfied)
+# instead of the new one. Exported so check.sh's `bash -c` subshells (a new
+# bash process, not inheriting unexported shell functions) can call it too.
+newest_pod_name() {
+  local namespace="$1" selector="$2"
+  kubectl get pods -n "$namespace" -l "$selector" \
+    --sort-by=.metadata.creationTimestamp \
+    -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null | tail -1
+}
+export -f newest_pod_name
+
 # check_criterion "<description>" <command...>
 # Runs <command...>, records PASS/FAIL, and prints a stable, line-oriented
 # format the web UI parses for its live per-criterion checklist:
