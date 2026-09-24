@@ -26,21 +26,28 @@ fi
 check_criterion "both 'writer' and 'sidecar' volumeMounts reference the shared 'shared-data' volume (not the 'shared-dat' decoy), container identity unchanged" \
   [ "$MOUNTS_FIXED" = "1" ]
 
-# Poll for a stable Running/2-ready snapshot rather than a single read, since
-# a just-fixed pod takes a moment past apply to actually reach Running, and
-# an old crash-looping pod can also flap through transient states.
-POD_HEALTHY=0
+# Running/2-ready alone is NOT sufficient proof the volumes are actually
+# connected: busybox's `tail -f /var/sidecar/metrics.log` doesn't crash or
+# exit just because its target never appears on a disconnected decoy volume
+# - it just idles silently, so a still-broken mount can stay Running/Ready
+# forever (a real false positive this check.sh used to have). The real
+# proof is content: 'writer' keeps appending to metrics.log on the SHARED
+# volume every 5s, so if 'sidecar' is mounted to the correct volume, that
+# content shows up on its side too. Poll since 'writer' needs a moment to
+# write its first line after the pod (re)starts.
+CONTENT_OK=0
 for _ in $(seq 1 24); do
   PHASE="$(kget pod metrics-pair '{.status.phase}' -n "$QUESTION_ID")"
   READY_FLAGS="$(kget pod metrics-pair '{.status.containerStatuses[*].ready}' -n "$QUESTION_ID")"
   READY_COUNT="$(echo "$READY_FLAGS" | tr ' ' '\n' | grep -c '^true$' 2>/dev/null || true)"
-  if [ "$PHASE" = "Running" ] && [ "$READY_COUNT" = "2" ]; then
-    POD_HEALTHY=1
+  SIDECAR_CONTENT="$(kubectl exec metrics-pair -c sidecar -n "$QUESTION_ID" -- cat /var/sidecar/metrics.log 2>/dev/null)"
+  if [ "$PHASE" = "Running" ] && [ "$READY_COUNT" = "2" ] && echo "$SIDECAR_CONTENT" | grep -q "metric"; then
+    CONTENT_OK=1
     break
   fi
   sleep 5
 done
-check_criterion "Pod 'metrics-pair' is Running with 2/2 containers ready" \
-  [ "$POD_HEALTHY" = "1" ]
+check_criterion "Pod 'metrics-pair' is Running 2/2 ready and 'sidecar' actually sees 'writer's live metrics.log content through the shared volume (not a disconnected decoy)" \
+  [ "$CONTENT_OK" = "1" ]
 
 print_score
