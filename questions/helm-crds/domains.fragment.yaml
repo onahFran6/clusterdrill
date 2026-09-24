@@ -350,3 +350,73 @@ questions:
     points: 5
     requirements:
       min_nodes: 1
+  - id: q110-51-helm-named-template-label-fix
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-52-helm-install-pinned-version-new-namespace
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-53-helm-set-nested-and-set-string
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, Ingress, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-54-helm-upgrade-install-atomic-rollback
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-55-helm-recover-stuck-pending-upgrade
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-56-helm-list-all-namespaces-failed-filter
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-57-helm-get-values-past-revision
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-58-helm-template-zero-cluster-contact
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-59-helm-uninstall-keep-history-reinstate
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q110-60-helm-values-precedence-three-way
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1

@@ -44,4 +44,8 @@ EOF
 
 kubectl wait --for=condition=Failed job/data-migration -n "$QUESTION_ID" --timeout=60s || true
 
+# Clean up any pre-existing output file from a previous run of this question.
+WORK_DIR="$(question_workdir "$QUESTION_ID")"
+rm -f "$WORK_DIR/failure-reason.txt"
+
 echo "setup.sh: $QUESTION_ID ready (Job 'data-migration' has failed, leaving failed Pods to investigate)"

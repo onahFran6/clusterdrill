@@ -24,23 +24,28 @@ CLUSTERDRILL_LABEL_KEY="clusterdrill-question"
 # defaults for the rest, adding the ResourceQuota alone would break nearly
 # every question's setup.sh the moment it tries to create a plain pod.
 #
-# Sizing rationale (checked against every question that *does* specify
-# resources, including the one outlier - q104-19's HPA demo, whose
-# reference answer sets minReplicas=4 at 100m cpu request each = 400m):
-#   - requests.cpu=600m / requests.memory=320Mi: what actually gates how
-#     many concurrent users' pods the scheduler can place on a 2 vCPU/2GB
-#     node at once (~3 full-quota namespaces' worth) - this is the real
-#     abuse-prevention ceiling.
-#   - limits.cpu=1200m / limits.memory=640Mi: looser ceiling for bursty
-#     workloads (CPU limits are CFS-throttled, not OOM-killed, when
-#     oversubscribed at the node level, so some looseness here is safe).
-#   - pods=12: high enough that q104-19's HPA maxReplicas=12 isn't
-#     artificially blocked by pod *count* specifically (requests.cpu
-#     becomes the practical scaling ceiling before pod count does, which
-#     is a realistic teaching moment, not a broken one - kubectl autoscale
-#     itself, the thing check.sh actually grades, is unaffected either way
-#     since creating an HPA object isn't itself constrained by a compute
-#     ResourceQuota).
+# Sizing rationale: every hard limit is sized to admit exactly pods=12
+# default-sized (LimitRange defaultRequest/default) containers at once -
+# pods=12 is the real ceiling (sized for q104-19's HPA maxReplicas=12
+# demo, and for a maxSurge=100% rolling update on a 6-replica Deployment,
+# which transiently needs up to 12 pods), so requests/limits must not cap
+# out earlier than that:
+#   - requests.cpu=600m / requests.memory=768Mi = 12 * defaultRequest
+#     (50m/64Mi) - what actually gates how many concurrent users' pods
+#     the scheduler can place on a 2 vCPU/2GB node at once.
+#   - limits.cpu=2400m / limits.memory=1536Mi = 12 * default limit
+#     (200m/128Mi) - looser ceiling for bursty workloads (CPU limits are
+#     CFS-throttled, not OOM-killed, when oversubscribed at the node
+#     level, so some looseness here is safe).
+# requests.memory was previously 320Mi (= 5 * 64Mi) - silently capped
+# every default-resource namespace at 5 concurrent pods, well below
+# pods=12, and broke any question whose Deployment(s) need more than 5
+# default-sized pods at once (confirmed via lib/verify-question.sh --all
+# against several deployments-strategies questions using >5 replicas
+# with no explicit resources: block). kubectl autoscale itself, the
+# thing q104-19's check.sh actually grades, was never affected either
+# way - creating an HPA object isn't constrained by a compute
+# ResourceQuota - so this fix has no effect on that question's grading.
 #
 # NOT applied to every namespace: q105-12-limitrange-defaults and
 # q105-21-limitrange-min-max-bounds are themselves CKAD questions about
@@ -64,9 +69,9 @@ spec:
   hard:
     pods: "12"
     requests.cpu: "600m"
-    requests.memory: "320Mi"
-    limits.cpu: "1200m"
-    limits.memory: "640Mi"
+    requests.memory: "768Mi"
+    limits.cpu: "2400m"
+    limits.memory: "1536Mi"
 ---
 apiVersion: v1
 kind: LimitRange
@@ -123,6 +128,24 @@ kget() {
   shift 3
   kubectl get "$kind" "$name" -o "jsonpath=$jsonpath" "$@" 2>/dev/null
 }
+
+# newest_pod_name <namespace> <label-selector>
+#   newest_pod_name q001 app=image-rollout
+# Prints the name of the most-recently-created pod matching the selector.
+# `kubectl get pods -l ... -o jsonpath='{.items[0]...}'` is not safe right
+# after a rollout: list ordering is not guaranteed to reflect recency, so a
+# check immediately after `kubectl rollout status` returns can still grab
+# the outgoing pod (which can exist for up to its termination grace period
+# after the Deployment-level rollout conditions are already satisfied)
+# instead of the new one. Exported so check.sh's `bash -c` subshells (a new
+# bash process, not inheriting unexported shell functions) can call it too.
+newest_pod_name() {
+  local namespace="$1" selector="$2"
+  kubectl get pods -n "$namespace" -l "$selector" \
+    --sort-by=.metadata.creationTimestamp \
+    -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null | tail -1
+}
+export -f newest_pod_name
 
 # check_criterion "<description>" <command...>
 # Runs <command...>, records PASS/FAIL, and prints a stable, line-oriented

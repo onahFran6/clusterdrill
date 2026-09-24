@@ -32,4 +32,8 @@ kubectl wait --for=condition=Ready pod/heartbeat -n "$QUESTION_ID" --timeout=60s
 # and a couple of recent ones accumulate.
 sleep 10
 
+# Clean up any pre-existing output file from a previous run of this question.
+WORK_DIR="$(question_workdir "$QUESTION_ID")"
+rm -f "$WORK_DIR/heartbeat-recent.txt"
+
 echo "setup.sh: $QUESTION_ID ready"

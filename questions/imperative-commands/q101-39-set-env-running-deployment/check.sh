@@ -17,7 +17,7 @@ check_criterion "Deployment 'report-worker' template has env FEATURE_FLAG=beta" 
 check_criterion "Deployment 'report-worker' rollout completes with the new env var and the running pod actually resolves FEATURE_FLAG=beta" \
   bash -c "
     kubectl rollout status deployment/report-worker -n '$QUESTION_ID' --timeout=60s >/dev/null 2>&1 || exit 1
-    POD=\$(kubectl get pods -n '$QUESTION_ID' -l app=report-worker -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+    POD=\$(newest_pod_name '$QUESTION_ID' app=report-worker)
     [ -n \"\$POD\" ] || exit 1
     kubectl exec -n '$QUESTION_ID' \"\$POD\" -- sh -c 'echo \$FEATURE_FLAG' 2>/dev/null | grep -qx 'beta'
   "

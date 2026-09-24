@@ -39,8 +39,14 @@ git clone <this-repository>
 cd <this-repository>
 
 # Installs the clusterdrill CLI from this checkout (no PyPI package
-# published yet - see Release policy below).
-pipx install .                      # or: pip install .
+# published yet - see Release policy below). Prefer pipx: it puts
+# `clusterdrill` on PATH for you. If you only have pip, use the
+# python -m form (bare `pip` is often missing on macOS) and then put
+# the user scripts directory on PATH before the next commands.
+pipx install .                      # preferred
+# or:
+# python3 -m pip install .
+# export PATH="$(python3 -m site --user-base)/bin:$PATH"   # macOS/Linux user install
 
 clusterdrill local doctor           # checks prerequisites, changes nothing
 clusterdrill local init             # creates the clusterdrill Minikube profile
@@ -333,6 +339,7 @@ show up directly in its output with a specific fix.
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
+| `zsh: command not found: clusterdrill` (or the same from bash) | CLI never installed, or a user-level `pip` install put the script somewhere not on `PATH` | From the checkout: `pipx install .`, or `python3 -m pip install .` then `export PATH="$(python3 -m site --user-base)/bin:$PATH"`. Confirm with `command -v clusterdrill`. |
 | `local doctor` reports Docker not healthy | Docker Desktop/Engine isn't running | Start Docker, then re-run `local doctor`. |
 | `local doctor` flags the wrong driver or node count | An existing `clusterdrill` profile was created some other way | `clusterdrill local destroy && clusterdrill local init`. |
 | `local doctor` reports no default StorageClass | The profile's default provisioner was removed or never installed | `clusterdrill local destroy && clusterdrill local init` to recreate it. |
