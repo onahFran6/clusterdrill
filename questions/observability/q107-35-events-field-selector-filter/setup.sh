@@ -42,4 +42,8 @@ EOF
 # Warning event before the candidate connects.
 sleep 15
 
+# Clean up any pre-existing output file from a previous run of this question.
+WORK_DIR="$(question_workdir "$QUESTION_ID")"
+rm -f "$WORK_DIR/broken-app-warnings.txt"
+
 echo "setup.sh: $QUESTION_ID ready (healthy-app Running, broken-app generating ImagePull Warning events)"

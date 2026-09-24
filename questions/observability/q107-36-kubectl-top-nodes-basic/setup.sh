@@ -12,4 +12,8 @@ kubectl label namespace "$QUESTION_ID" "clusterdrill-question=$QUESTION_ID" --ov
 apply_default_resource_limits "$QUESTION_ID"
 grant_user_namespace_access "$QUESTION_ID" "${CLUSTERDRILL_USER_ID:-}"
 
+# Clean up any pre-existing output file from a previous run of this question.
+WORK_DIR="$(question_workdir "$QUESTION_ID")"
+rm -f "$WORK_DIR/node-usage.txt"
+
 echo "setup.sh: $QUESTION_ID ready"

@@ -47,4 +47,8 @@ spec:
       image: busybox:1.36
 EOF
 
+# Clean up any pre-existing output file from a previous run of this question.
+WORK_DIR="$(question_workdir "$QUESTION_ID")"
+rm -f "$WORK_DIR/fleet-images.txt"
+
 echo "setup.sh: $QUESTION_ID ready"
