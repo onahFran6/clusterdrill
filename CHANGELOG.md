@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.8](https://github.com/onahFran6/clusterdrill/compare/v0.1.7...v0.1.8) (2026-09-27)
+
+
+### Bug Fixes
+
+* resolve RBAC escalation blocker and audit the full question bank ([d6dd29c](https://github.com/onahFran6/clusterdrill/commit/d6dd29cc68d8a0bd26551d1bf6bfa8dbc1c5bc5f))
+* resolve RBAC escalation blocker and audit the full question bank ([8b9a94c](https://github.com/onahFran6/clusterdrill/commit/8b9a94c3caf39b0946461df96b3c070a1742e0a3))
+
 ## [0.1.7](https://github.com/onahFran6/clusterdrill/compare/v0.1.6...v0.1.7) (2026-09-24)
 
 
