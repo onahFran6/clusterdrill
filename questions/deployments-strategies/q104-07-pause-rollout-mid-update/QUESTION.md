@@ -1,14 +1,13 @@
-# q104-07: Pause a Deployment before rolling out a change
+# q104-07: Queue an image change without starting the rollout
 
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q104-07-pause-rollout-mid-update`
 
-`setup.sh` already created a Deployment named `notifications` (image `nginx:1.24-alpine`, 4
-replicas) in namespace `q104-07-pause-rollout-mid-update`, fully rolled out and healthy.
+A Deployment named `notifications` (image `nginx:1.24-alpine`, 4 replicas) already exists
+in namespace `q104-07-pause-rollout-mid-update`, fully rolled out and healthy.
 
 Pause the `notifications` Deployment's rollouts, then update its container image to
-`nginx:1.25-alpine`. Because the Deployment is paused, no new ReplicaSet should actually start
-rolling out yet - the live pods must keep running the old image until someone resumes it. Leave
-the Deployment paused when you're done.
+`nginx:1.25-alpine`. Leave the Deployment paused when you're done: the live pods must keep
+running the old image, and no new ReplicaSet should scale up for the new image yet.
 
 ## Hint
 

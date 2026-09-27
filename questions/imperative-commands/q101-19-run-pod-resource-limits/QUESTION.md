@@ -1,16 +1,14 @@
-# q101-19: Create a pod with CPU/memory requests and limits imperatively
+# q101-19: Create a Pod with CPU and memory requests and limits
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-19-run-pod-resource-limits`
 
-In namespace `q101-19-run-pod-resource-limits`, create a pod named `sized-app` running image
-`nginx:1.25-alpine` whose single container has these resource settings:
+In namespace `q101-19-run-pod-resource-limits`, create a Pod named `sized-app` running image
+`nginx:1.25-alpine` whose single container has:
 
 - requests: `cpu=100m`, `memory=64Mi`
 - limits: `cpu=250m`, `memory=128Mi`
 
-Use a single imperative `kubectl run` command (an inline `--overrides` JSON patch is the
-imperative way to set fields `kubectl run` has no dedicated flag for) - no manifest authored by
-hand.
+Use a single imperative `kubectl run` command - no manifest authored by hand.
 
 ## Hint
 

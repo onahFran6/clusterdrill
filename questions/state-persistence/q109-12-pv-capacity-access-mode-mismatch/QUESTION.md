@@ -2,17 +2,17 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q109-12-pv-capacity-access-mode-mismatch`
 
-`setup.sh` already created:
+You will find:
 
-- a PersistentVolume named `q109-12-small-pv` (capacity `500Mi`, access mode
-  `ReadWriteOnce`, storage class name `manual-q109-12`, `hostPath`-backed)
+- a PersistentVolume named `q109-12-small-pv` (capacity `500Mi`, access mode `ReadWriteOnce`,
+  storage class name `manual-q109-12`, `hostPath`-backed)
 - a PersistentVolumeClaim named `oversized-claim` in namespace
   `q109-12-pv-capacity-access-mode-mismatch` requesting `2Gi` against storage class
-  `manual-q109-12`, stuck `Pending` because no PV in that storage class offers enough capacity
+  `manual-q109-12`, stuck `Pending`
 
-Fix `oversized-claim` so it binds to `q109-12-small-pv`, by changing only the claim's requested
-storage size to something the PV can actually satisfy. Do not modify the PersistentVolume, and
-do not lower the request below `100Mi` (the application needs at least that much).
+Fix `oversized-claim` so it binds to `q109-12-small-pv`. Change only the claim's requested
+storage size to something the PV can satisfy. Do not modify the PersistentVolume, and do not
+request less than `100Mi`.
 
 ## Hint
 

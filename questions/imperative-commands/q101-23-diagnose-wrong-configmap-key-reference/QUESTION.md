@@ -1,24 +1,23 @@
-# q101-23-diagnose-wrong-configmap-key-reference: Diagnose and fix a pod stuck in CreateContainerConfigError from a bad envFrom key
+# q101-23: Fix a Pod stuck in CreateContainerConfigError
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-23-diagnose-wrong-configmap-key-reference`
 
-`setup.sh` already created a ConfigMap named `app-settings` (keys `LOG_LEVEL=info` and
-`MAX_CONNECTIONS=100`) and a Pod named `settings-reader` with a single container also named
-`settings-reader`, image `nginx:1.25-alpine`.
+In namespace `q101-23-diagnose-wrong-configmap-key-reference` you'll find a ConfigMap named
+`app-settings` (keys `LOG_LEVEL=info` and `MAX_CONNECTIONS=100`) and a Pod named
+`settings-reader` (container also named `settings-reader`, image `nginx:1.25-alpine`). The Pod is
+not starting.
 
-The pod is not starting. Diagnose why using `kubectl describe pod/settings-reader` and/or
-`kubectl get events`, then fix it imperatively (delete and recreate the pod - for example with
-`kubectl run ... --dry-run=client -o yaml` piped through an edit, or `kubectl replace --force -f -`)
-so that:
+Investigate with `kubectl describe pod/settings-reader` and/or `kubectl get events`, then fix it
+imperatively (delete and recreate is fine) so that:
 
-- The pod is named `settings-reader`, its container is named `settings-reader`, running the same
-  image, in namespace `q101-23-diagnose-wrong-configmap-key-reference`.
+- The Pod is named `settings-reader`, its container is named `settings-reader`, running the same
+  image, in this namespace.
 - The container still loads every key from ConfigMap `app-settings` via `envFrom`.
-- The container still has one extra, explicitly named environment variable that sources its value
-  from ConfigMap `app-settings` via `valueFrom.configMapKeyRef` (do not replace it with a hardcoded
-  literal value) - just pointed at the correct key so the container actually starts.
-- The pod reaches `Running` and `Ready`, and a shell into the container shows the fixed environment
-  variable resolving to the correct value.
+- The container still has one extra, explicitly named environment variable sourced from
+  ConfigMap `app-settings` via `valueFrom.configMapKeyRef` (not a hardcoded literal) - pointed at
+  a key that actually exists, so the container starts.
+- The Pod reaches `Running` and `Ready`, and a shell into the container shows that extra
+  environment variable resolving to the correct value.
 
 ## Hint
 

@@ -5,19 +5,17 @@
 Create a Pod named `migrated-app` with a shared `emptyDir` volume named
 `status-vol` and two containers:
 
-- An **init container** named `run-migration` (image `busybox:1.36`) that
-  mounts `status-vol` at `/status` and simulates running a one-time
-  database migration by writing a marker file when it completes, e.g.
+- An init container named `run-migration` (image `busybox:1.36`) that mounts
+  `status-vol` at `/status` and simulates a one-time migration by writing a
+  marker file when it completes, e.g.
   `sh -c "echo migrated > /status/migration.done"`.
 - A main container named `main` (image `busybox:1.36`) that also mounts
-  `status-vol` at `/status` and runs a command that reads the marker file
-  the init container left behind before continuing, e.g.
-  `sh -c "cat /status/migration.done && sleep 3600"`.
+  `status-vol` at `/status` and runs a command that reads the marker before
+  continuing, e.g. `sh -c "cat /status/migration.done && sleep 3600"`.
 
-Because init containers run to completion before any main container
-starts, `main` is guaranteed the migration has finished by the time it
-reads `/status/migration.done` - a common CKAD pattern for gating app
-startup on a one-time setup step.
+Because init containers finish before any main container starts, `main` is
+guaranteed the migration has completed by the time it reads
+`/status/migration.done`.
 
 The Pod must have exactly one init container.
 

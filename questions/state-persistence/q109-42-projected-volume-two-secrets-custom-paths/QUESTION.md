@@ -2,8 +2,7 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q109-42-projected-volume-two-secrets-custom-paths`
 
-`setup.sh` already created two Secrets in namespace
-`q109-42-projected-volume-two-secrets-custom-paths`:
+Two Secrets already exist in namespace `q109-42-projected-volume-two-secrets-custom-paths`:
 
 - `db-credentials` with key `password` (value `hunter2`)
 - `api-credentials` with key `token` (value `abc123`)

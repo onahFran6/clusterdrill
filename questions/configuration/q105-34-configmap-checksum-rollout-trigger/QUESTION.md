@@ -1,33 +1,27 @@
-# q105-34-configmap-checksum-rollout-trigger: Force a rollout when a mounted ConfigMap changes, using a checksum annotation
+# q105-34: Roll out workers after ConfigMap content changes
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-34-configmap-checksum-rollout-trigger`
 
-`setup.sh` already created a ConfigMap named `app-config` (key `GREETING`) and a Deployment named
-`worker` (2 replicas) whose pod template mounts `app-config` as a volume at `/etc/app`. Each
-`worker` container copies `/etc/app/GREETING` to `/var/run/baked-greeting` **once, at container
-startup**, then just sleeps - it never re-reads the file again, so a live kubelet volume-sync
-update to the mounted file has no effect on a pod that is already running.
+A ConfigMap named `app-config` (key `GREETING`) and a Deployment named `worker` (2 replicas)
+exist in namespace `q105-34-configmap-checksum-rollout-trigger`. Each `worker` container mounts
+`app-config` at `/etc/app`, copies `/etc/app/GREETING` to `/var/run/baked-greeting` once at
+startup, then sleeps - it never re-reads the file. The pod template carries an annotation
+`checksum/config` that teams update when `app-config` changes so a fresh rollout starts.
 
-The pod template also carries an annotation `checksum/config`, whose entire purpose is to change
-- and thereby force a fresh rollout - whenever `app-config`'s contents change. Since the
-Deployment was last rolled out, someone updated `app-config`'s `GREETING` key to `hello-v2`, but
-never recomputed or repatched the annotation. Because the pod template itself never changed,
-nothing forced a rollout, and the two currently-running `worker` pods are still serving
-`hello-v1`, baked in at their last startup.
+Someone already updated `app-config`'s `GREETING` to `hello-v2`, but the running pods still serve
+`hello-v1` from their last startup.
 
 Fix this **without modifying `app-config` itself**:
 
 1. Recompute the sha256 checksum of `app-config`'s current `data`
-   (`kubectl get configmap app-config -o jsonpath='{.data}' | sha256sum` is one way to get it).
-2. Update the `worker` Deployment's pod template annotation `checksum/config` to that new
-   checksum value, so the pod template hash changes and a genuine new rollout is triggered.
+   (`kubectl get configmap app-config -o jsonpath='{.data}' | sha256sum` is one way).
+2. Update the `worker` Deployment's pod template annotation `checksum/config` to that new value
+   so a rollout is triggered.
 3. Let the rollout finish.
 
-When you are done: the `worker` Deployment's pod template annotation `checksum/config` must equal
-the current sha256 checksum of `app-config`'s `data`; exactly one new rollout must have happened
-(the Deployment should own exactly two ReplicaSets - the original plus the one you triggered, no
-more); and every ready `worker` pod's `/var/run/baked-greeting` must contain `hello-v2` from its
-fresh startup.
+When done: `checksum/config` must equal the current sha256 of `app-config`'s `data`; the
+Deployment should own exactly two ReplicaSets (the original plus the one you triggered); and
+every ready `worker` pod's `/var/run/baked-greeting` must contain `hello-v2`.
 
 ## Hint
 

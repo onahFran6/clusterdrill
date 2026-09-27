@@ -14,9 +14,7 @@ Create a Pod named `app` with:
   `until nslookup user-db; do sleep 2; done` as its command.
 - A main container named `main` (image `nginx:1.27-alpine`).
 
-The main container must not start until the init container's DNS check
-succeeds - this is the classic "wait for a dependency" init container
-pattern.
+The main container must not start until the init container's DNS check succeeds.
 
 ## Hint
 

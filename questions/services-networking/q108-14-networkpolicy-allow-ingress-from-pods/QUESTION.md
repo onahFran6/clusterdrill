@@ -2,7 +2,7 @@
 
 **Domain:** Services and Networking · **Points:** 7 · **Namespace:** `q108-14-networkpolicy-allow-ingress-from-pods`
 
-`setup.sh` already created two Deployments in namespace
+Two Deployments already exist in namespace
 `q108-14-networkpolicy-allow-ingress-from-pods`:
 
 - `payments-api` (pod-template label `app=payments-api`, container port `8080`) - the service to
@@ -12,15 +12,15 @@
 
 Create a NetworkPolicy named `payments-api-allow-frontend` in this namespace that:
 
-- applies to pods matching `app=payments-api` (this is the policy's `podSelector`)
+- applies to pods matching `app=payments-api`
 - allows **ingress** traffic only from pods matching `app=web-frontend`
 - restricts the allowed traffic to TCP port `8080`
 
-Traffic from any other pod (or from outside the allowed source) to `payments-api` should not match
-this policy's ingress rule.
+Traffic from any other pod to `payments-api` should not match this policy's ingress rule.
 
 ## Hint
 
 Search kubernetes.io/docs for **"NetworkPolicy resource"** - the NetworkPolicy concept page's
 example manifest shows an `ingress[].from[].podSelector` combined with an `ingress[].ports` entry,
-which together scope both *who* can connect and *which port* they can reach.
+which together scope both who can connect and which port they can reach. The policy's own
+`podSelector` is what selects `payments-api`.

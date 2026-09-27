@@ -280,8 +280,11 @@ layers three independent mechanisms, each answering a different question:
    cluster-admin, and only in multi-user mode - see `app.py`'s lifespan
    step 4 above.
 3. **What can this account's own terminal actually reach?**
-   `grant_user_namespace_access` grants a namespace-scoped Role+RoleBinding
-   to that one ServiceAccount for that one namespace, and `ttyd_manager.py`
+   `grant_user_namespace_access` RoleBinds the built-in `admin` ClusterRole
+   into that one namespace for that one ServiceAccount (creating a local
+   wildcard Role is forbidden by Kubernetes RBAC escalation checks against
+   the least-privilege appliance identity - the appliance ClusterRole
+   therefore also holds `bind` on `admin`), and `ttyd_manager.py`
    points that user's terminal at a kubeconfig authenticating as that
    ServiceAccount - instead of the app's own admin kubeconfig, which
    `check.sh`/`setup.sh` themselves still use, unaffected. Without this

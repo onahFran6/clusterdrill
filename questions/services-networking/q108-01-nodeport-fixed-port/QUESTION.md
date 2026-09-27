@@ -2,8 +2,8 @@
 
 **Domain:** Services and Networking · **Points:** 5 · **Namespace:** `q108-01-nodeport-fixed-port`
 
-`setup.sh` already created a Deployment named `metrics-agent` (image `httpd:2.4-alpine`, 2 replicas,
-container port `80`, pod-template label `app=metrics-agent`) in namespace
+A Deployment named `metrics-agent` (image `httpd:2.4-alpine`, 2 replicas,
+container port `80`, pod-template label `app=metrics-agent`) already exists in namespace
 `q108-01-nodeport-fixed-port`.
 
 Write a Service manifest named `metrics-agent-svc` that:

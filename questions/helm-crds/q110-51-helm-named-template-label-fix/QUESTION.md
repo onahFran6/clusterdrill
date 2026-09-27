@@ -2,19 +2,17 @@
 
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-51-helm-named-template-label-fix`
 
-`setup.sh` staged a chart named `webapp` at
-`questions/helm-crds/q110-51-helm-named-template-label-fix/chart`. Its `templates/_helpers.tpl`
-defines one named template, `webapp.labels`, and both `templates/deployment.yaml` and
-`templates/configmap.yaml` render their `metadata.labels` by calling
-`{{ include "webapp.labels" . }}` - a single shared block, not labels written out twice.
+A local Helm chart named `webapp` is on disk at
+`questions/helm-crds/q110-51-helm-named-template-label-fix/chart` (relative to
+`practice-bank/`). `templates/_helpers.tpl` defines a named template `webapp.labels`, and both
+`templates/deployment.yaml` and `templates/configmap.yaml` set `metadata.labels` via
+`{{ include "webapp.labels" . }}`. Neither resource currently gets an
+`app.kubernetes.io/version` label.
 
-The named template is incomplete: it does not emit an `app.kubernetes.io/version` label at all,
-so neither resource gets one. Fix `templates/_helpers.tpl` so `webapp.labels` adds
-`app.kubernetes.io/version: {{ .Chart.AppVersion }}` to its output, then install the chart into
-namespace `q110-51-helm-named-template-label-fix` under release name `demo`. Because both
-templates already call the shared block, fixing it in one place must make the label show up on
-**both** the Deployment (`demo-webapp`) and the ConfigMap (`demo-config`) - `Chart.yaml` sets
-`appVersion: "2.3.1"`.
+Fix `templates/_helpers.tpl` so `webapp.labels` emits
+`app.kubernetes.io/version: {{ .Chart.AppVersion }}`, then install the chart into this namespace
+as release `demo`. The label must appear on both Deployment `demo-webapp` and ConfigMap
+`demo-config` (`Chart.yaml` sets `appVersion: "2.3.1"`).
 
 ## Hint
 

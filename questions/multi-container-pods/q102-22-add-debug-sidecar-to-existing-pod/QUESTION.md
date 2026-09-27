@@ -1,4 +1,4 @@
-# q102-22-add-debug-sidecar-to-existing-pod: Add a debug sidecar container to an existing running Pod's spec
+# q102-22: Add a debug sidecar to a running Deployment
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q102-22-add-debug-sidecar-to-existing-pod`
 
@@ -11,9 +11,9 @@ named `net-debug` (image `busybox:1.36`) with command
 `["sh", "-c", "sleep 3600"]`, without removing or renaming the existing
 `billing-api` container. Then wait for the rollout to complete.
 
-The `billing-api` Deployment must end up with exactly two containers in its
-pod template - `billing-api` and `net-debug` - and the resulting Pod must be
-`Running` with 2/2 containers ready.
+The Deployment must end up with exactly two containers in its pod template -
+`billing-api` and `net-debug` - and the resulting Pod must be `Running` with
+2/2 containers ready.
 
 ## Hint
 

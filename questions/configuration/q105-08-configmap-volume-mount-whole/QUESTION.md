@@ -2,8 +2,8 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-08-configmap-volume-mount-whole`
 
-`setup.sh` already created a ConfigMap named `app-config` with two keys, `app.properties` and
-`logging.properties`, plus a running pod named `report-service` (image `nginx:1.25-alpine`), in
+A ConfigMap named `app-config` already exists with two keys, `app.properties` and
+`logging.properties`, plus a running Pod named `report-service` (image `nginx:1.25-alpine`), in
 namespace `q105-08-configmap-volume-mount-whole`.
 
 Edit the pod so its container mounts the **entire** `app-config` ConfigMap as a volume at

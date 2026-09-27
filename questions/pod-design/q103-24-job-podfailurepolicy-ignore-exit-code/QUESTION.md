@@ -2,35 +2,27 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-24-job-podfailurepolicy-ignore-exit-code`
 
-`setup.sh` already created two Jobs in namespace `q103-24-job-podfailurepolicy-ignore-exit-code`,
-both with a single container named `loader` and `restartPolicy: Never`:
+Two Jobs already exist in namespace `q103-24-job-podfailurepolicy-ignore-exit-code`, both with a
+single container named `loader` and `restartPolicy: Never`:
 
-- `code42-loader` - its container always exits with code `42`. In this pipeline, exit code `42`
-  means "there was nothing new to load this run" - it is expected, non-retryable business logic,
-  not a real failure. Right now the Job has no `.spec.podFailurePolicy`, so it retries this
-  "nothing to do" exit like any other failure, wasting every attempt in `.spec.backoffLimit`
-  before finally giving up.
-- `flaky-loader` - its container always exits with a different, genuinely transient error code.
-  This Job **should** keep retrying normally up to its `.spec.backoffLimit`, the same as any
-  ordinary failing Job. Right now it already has a `.spec.podFailurePolicy` rule, but that rule is
-  far too broad (it matches *any* nonzero exit code) and terminates the Job on the very first
-  failed pod, before backoffLimit gets a chance to do its job.
+- `code42-loader` always exits `42`. That code means there was nothing new to load and must not
+  be retried. The Job currently retries it until `.spec.backoffLimit` is used up.
+- `flaky-loader` exits with a different, transient code and **should** keep retrying up to
+  `.spec.backoffLimit`. Its current `.spec.podFailurePolicy` matches any nonzero exit and ends
+  the Job on the first failed pod.
 
 Fix `.spec.podFailurePolicy` on both Jobs so that:
 
-1. `code42-loader`: a pod that exits with code `42` makes the Job fail immediately
-   (`action: FailJob`) via a matching `onExitCodes` rule, without spawning any additional retry
-   pods.
-2. `flaky-loader`: pods that exit with any code other than `42` are **not** matched by any
-   `FailJob` rule, so the Job keeps retrying them normally until `.spec.backoffLimit` is
-   exhausted, exactly like default Job failure handling.
+1. `code42-loader`: exit code `42` fails the Job immediately (`action: FailJob`) via a matching
+   `onExitCodes` rule, without extra retry pods.
+2. `flaky-loader`: exits other than `42` are not matched by a `FailJob` rule, so the Job retries
+   them until `.spec.backoffLimit` is exhausted.
 
-Do not change either Job's `backoffLimit`, container image, or command - only
-`.spec.podFailurePolicy`. Both Jobs' pod templates must remain `restartPolicy: Never` (required
-for `podFailurePolicy` to apply).
+Do not change either Job's `backoffLimit`, container image, or command. Both pod templates must
+stay `restartPolicy: Never`.
 
 ## Hint
 
 Search kubernetes.io/docs for **"job pod failure policy"** - the Jobs concept page's "Pod failure
 policy" section shows the `.spec.podFailurePolicy` field, its `onExitCodes` rules, and why
-`restartPolicy: Never` is required.
+`restartPolicy: Never` is required for the policy to apply.

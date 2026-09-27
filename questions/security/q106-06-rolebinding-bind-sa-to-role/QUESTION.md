@@ -2,7 +2,7 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q106-06-rolebinding-bind-sa-to-role`
 
-`setup.sh` already created, in namespace `q106-06-rolebinding-bind-sa-to-role`:
+Namespace `q106-06-rolebinding-bind-sa-to-role` already has:
 
 - a Role named `configmap-reader` (grants `get`/`list` on `configmaps`)
 - a ServiceAccount named `config-watcher`

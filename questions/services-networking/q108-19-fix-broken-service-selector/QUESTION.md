@@ -2,10 +2,10 @@
 
 **Domain:** Services and Networking · **Points:** 7 · **Namespace:** `q108-19-fix-broken-service-selector`
 
-`setup.sh` already created a Deployment named `notification-worker` (image `httpd:2.4-alpine`, 2
-replicas, container port `80`) in namespace `q108-19-fix-broken-service-selector`, along with a
-Service named `notification-worker-svc` that is supposed to front it. A support ticket reports
-that the Service resolves but every request times out.
+A Deployment named `notification-worker` (image `httpd:2.4-alpine`, 2
+replicas, container port `80`) already exists in namespace `q108-19-fix-broken-service-selector`,
+along with a Service named `notification-worker-svc` that is supposed to front it. The Service
+resolves, but every request times out.
 
 Investigate why `notification-worker-svc` has no ready endpoints even though the Deployment's pods
 are `Running`, then fix the root cause **on the Service** (do not change the Deployment's

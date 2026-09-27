@@ -1,9 +1,8 @@
-# q105-49-downwardapi-volume-podinfo: Expose pod labels and annotations as files via a Downward API volume
+# q105-49-downwardapi-volume-podinfo: Expose pod labels and annotations as files
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 6 · **Namespace:** `q105-49-downwardapi-volume-podinfo`
 
-`setup.sh` has not created any pod for you in namespace `q105-49-downwardapi-volume-podinfo` -
-author the manifest yourself.
+No Pod exists yet in namespace `q105-49-downwardapi-volume-podinfo` - author the manifest yourself.
 
 Create a Pod named `metadata-exporter`, image `busybox:1.36`, container command `sleep 3600`,
 with:

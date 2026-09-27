@@ -2,17 +2,17 @@
 
 **Domain:** Application Observability and Maintenance · **Points:** 5 · **Namespace:** `q107-47-terminationmessagepolicy-fallback-to-logs`
 
-`setup.sh` already created a Pod named `batch-runner` (image `busybox:1.36`) whose container keeps
-failing, printing `custom failure: disk quota exceeded` to stderr each time - but it never writes
-to `/dev/termination-log`, so with the default `terminationMessagePolicy` (`File`), Kubernetes
-reports an empty termination message even though the real reason is right there in the container's
-own log output. Fix `batch-runner` so its termination message falls back to the container's log
-output on failure, without changing the command or image, and confirm the reported message
-actually contains `custom failure: disk quota exceeded`.
+A Pod named `batch-runner` (image `busybox:1.36`) already exists. Its container keeps failing and
+prints `custom failure: disk quota exceeded` each time, but the reported termination message is
+empty.
+
+Make the termination message fall back to the container's log output on failure, without changing
+the command or image. The reported message must contain `custom failure: disk quota exceeded`.
 
 ## Hint
 
 Search kubernetes.io/docs for **"customizing the termination message"** - the pod failure
 debugging page covers `terminationMessagePolicy: FallbackToLogsOnError`, which uses the last chunk
 of a container's own log output as its termination message when nothing was written to
-`/dev/termination-log` and the container exited with an error.
+`/dev/termination-log` and the container exited with an error. The default policy is `File`, so
+an empty termination file means an empty `Message:` even when the error is in the container log.

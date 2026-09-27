@@ -2,10 +2,10 @@
 
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q104-08-resume-paused-rollout`
 
-`setup.sh` already created a Deployment named `reporting` (3 replicas) in namespace
-`q104-08-resume-paused-rollout`. The Deployment is currently **paused**, and its pod template's
+A Deployment named `reporting` (3 replicas) already exists in namespace
+`q104-08-resume-paused-rollout`. The Deployment is currently paused, and its pod template's
 image has already been changed to `nginx:1.25-alpine` while paused, but the live pods are still
-serving the old `nginx:1.24-alpine` image because nothing has resumed the rollout yet.
+serving the old `nginx:1.24-alpine` image because the rollout has not been resumed.
 
 Resume `reporting` so the pending image change actually rolls out, and confirm all 3 replicas
 become ready on the new image.

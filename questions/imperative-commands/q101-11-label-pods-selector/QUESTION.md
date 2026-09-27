@@ -1,12 +1,12 @@
-# q101-11: Label existing pods without recreating them
+# q101-11: Label existing Pods without recreating them
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-11-label-pods-selector`
 
-`setup.sh` already created two pods in namespace `q101-11-label-pods-selector`: `batch-a` and
-`batch-b`, both with the existing label `role=worker`.
+Two Pods named `batch-a` and `batch-b` already exist in namespace
+`q101-11-label-pods-selector`, both with the label `role=worker`.
 
-Using imperative `kubectl label` commands (one per pod, or a single command with a selector - your
-choice), add the label `env=staging` to both pods **without deleting or recreating either pod**.
+Add the label `env=staging` to both Pods without deleting or recreating either one. Imperative
+`kubectl label` is fine (one command per Pod, or a single command with a selector).
 
 ## Hint
 

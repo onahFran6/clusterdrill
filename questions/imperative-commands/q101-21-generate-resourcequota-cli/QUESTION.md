@@ -1,4 +1,4 @@
-# q101-21: Generate a ResourceQuota from the CLI, not a manifest
+# q101-21: Generate a ResourceQuota from the CLI
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-21-generate-resourcequota-cli`
 

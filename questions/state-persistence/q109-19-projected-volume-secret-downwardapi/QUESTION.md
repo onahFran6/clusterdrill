@@ -2,8 +2,8 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q109-19-projected-volume-secret-downwardapi`
 
-`setup.sh` already created a Secret named `api-creds` with a key `token` containing `s3cr3t`, in
-namespace `q109-19-projected-volume-secret-downwardapi`.
+A Secret named `api-creds` with a key `token` containing `s3cr3t` already exists in namespace
+`q109-19-projected-volume-secret-downwardapi`.
 
 Create a Pod named `combo-app` (image `busybox:1.36`, command `sleep 3600`) with a single
 **projected volume** named `combo`, mounted at `/etc/combo`, that combines two sources:

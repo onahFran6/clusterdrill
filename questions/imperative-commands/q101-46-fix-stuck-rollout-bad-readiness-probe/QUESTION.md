@@ -1,17 +1,16 @@
-# q101-46-fix-stuck-rollout-bad-readiness-probe: Diagnose and fix a Deployment stuck at 0 ready replicas from a bad readiness probe path
+# q101-46: Unstick a Deployment whose Pods never become Ready
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-46-fix-stuck-rollout-bad-readiness-probe`
 
-`setup.sh` already created a Deployment named `web-front` (image `nginx:1.25-alpine`, 3 replicas)
-in namespace `q101-46-fix-stuck-rollout-bad-readiness-probe`. Every pod is `Running` but none of
-them ever turn `Ready`, so the Deployment never finishes rolling out.
+A Deployment named `web-front` (image `nginx:1.25-alpine`, 3 replicas) already exists in
+namespace `q101-46-fix-stuck-rollout-bad-readiness-probe`. Every Pod is `Running` but none ever
+turn `Ready`, so the Deployment never finishes rolling out.
 
-Diagnose why using `kubectl describe pod` on one of `web-front`'s pods and/or `kubectl get events`,
-then fix it imperatively - `kubectl set` has no subcommand for editing probes, so generate the
-Deployment's manifest with a client-side dry run (or use `kubectl edit`), fix the readiness probe's
-HTTP path so it points at a path nginx actually serves (`/`), and apply it - so that:
+Investigate with `kubectl describe pod` on one of `web-front`'s Pods and/or `kubectl get events`,
+then fix it imperatively so that:
 
 - `web-front` keeps the same image, replica count, and container name.
+- The readiness probe's HTTP path points at a path nginx actually serves (`/`).
 - `web-front` reaches `status.readyReplicas=3`.
 
 ## Hint

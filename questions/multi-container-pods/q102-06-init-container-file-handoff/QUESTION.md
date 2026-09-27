@@ -12,9 +12,8 @@ Create a Pod named `configured-app` in this namespace with:
   `/config/app.conf` and then keeps the container running, e.g.
   `sh -c "cat /config/app.conf && sleep 3600"`.
 
-The init container must run to completion and produce the config file
-*before* the main container starts, demonstrating how init containers can
-prepare data for the main workload via a shared volume.
+The init container must run to completion and produce the config file before
+the main container starts.
 
 ## Hint
 

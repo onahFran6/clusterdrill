@@ -2,8 +2,6 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q109-14-emptydir-shared-sidecar-writer-reader`
 
-`setup.sh` created namespace `q109-14-emptydir-shared-sidecar-writer-reader` but no resources yet.
-
 Create a Pod named `relay` with two containers that share one `emptyDir` volume named
 `shared-data`, both mounting it at `/data`:
 
@@ -12,8 +10,7 @@ Create a Pod named `relay` with two containers that share one `emptyDir` volume 
 - container `reader` (image `busybox:1.36`) just sleeps (e.g. for an hour) so it can be
   exec'd into later.
 
-The grader will exec into the `reader` container and run `cat /data/msg.txt`, expecting
-the output to be exactly `hello`.
+`cat /data/msg.txt` inside the `reader` container must print exactly `hello`.
 
 ## Hint
 

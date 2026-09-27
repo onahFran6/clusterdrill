@@ -2,13 +2,14 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-10-create-secret-generic`
 
-In namespace `q101-10-create-secret-generic`, create a generic Secret named `db-creds` using an
-imperative `kubectl` command with these two keys:
+In namespace `q101-10-create-secret-generic`, create a generic Secret named `db-creds` with
+these two keys:
 
 - `username=admin`
 - `password=S3cr3t!`
 
-No YAML file authored by hand, and don't base64-encode the values yourself - let `kubectl` do it.
+Use an imperative `kubectl` command - no hand-written YAML, and do not base64-encode the values
+yourself.
 
 ## Hint
 

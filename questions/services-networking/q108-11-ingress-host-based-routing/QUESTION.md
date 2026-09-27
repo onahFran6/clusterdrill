@@ -2,7 +2,7 @@
 
 **Domain:** Services and Networking · **Points:** 7 · **Namespace:** `q108-11-ingress-host-based-routing`
 
-`setup.sh` already created two Deployments and their matching ClusterIP Services in namespace
+Two Deployments and their matching ClusterIP Services already exist in namespace
 `q108-11-ingress-host-based-routing`:
 
 - `blog` (Service `blog-svc`, port `80`)

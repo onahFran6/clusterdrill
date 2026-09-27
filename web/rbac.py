@@ -18,7 +18,8 @@ Design:
       would need active refresh wired into ttyd's spawned shell, which is
       real complexity for a threat model (a fellow admin-provisioned lab
       user, not an untrusted public actor) that doesn't need it.
-    - Per-namespace access (Role+RoleBinding) is granted by lib/grading.sh's
+    - Per-namespace access (RoleBinding to the built-in `admin`
+      ClusterRole) is granted by lib/grading.sh's
       grant_user_namespace_access, called from every question's setup.sh -
       not from here, since it needs to happen namespace-by-namespace as
       each one is created, not once per user.
@@ -131,18 +132,42 @@ def ensure_system_bootstrap() -> None:
         "apiVersion": "rbac.authorization.k8s.io/v1",
         "kind": "ClusterRole",
         "metadata": {"name": CLUSTER_ROLE_NAME},
+        # Verbs must stay within what clusterdrill-appliance already holds -
+        # a bare "*" here fails Kubernetes RBAC escalation checks when the
+        # web SA tries to create this ClusterRole at startup (it only has
+        # the enumerated verbs from local-appliance.yaml, not "*").
         "rules": [
             {
                 "apiGroups": ["rbac.authorization.k8s.io"],
                 "resources": ["clusterroles", "clusterrolebindings"],
-                "verbs": ["*"],
+                "verbs": [
+                    "get", "list", "watch", "create", "update", "patch",
+                    "delete", "deletecollection",
+                ],
             },
-            {"apiGroups": [""], "resources": ["persistentvolumes"], "verbs": ["*"]},
-            {"apiGroups": ["storage.k8s.io"], "resources": ["storageclasses"], "verbs": ["*"]},
+            {
+                "apiGroups": [""],
+                "resources": ["persistentvolumes"],
+                "verbs": [
+                    "get", "list", "watch", "create", "update", "patch",
+                    "delete", "deletecollection",
+                ],
+            },
+            {
+                "apiGroups": ["storage.k8s.io"],
+                "resources": ["storageclasses"],
+                "verbs": [
+                    "get", "list", "watch", "create", "update", "patch",
+                    "delete", "deletecollection",
+                ],
+            },
             {
                 "apiGroups": ["apiextensions.k8s.io"],
                 "resources": ["customresourcedefinitions"],
-                "verbs": ["*"],
+                "verbs": [
+                    "get", "list", "watch", "create", "update", "patch",
+                    "delete", "deletecollection",
+                ],
             },
             # Read-only: q107-13-debug-node-shell needs `kubectl get nodes`
             # to find the node name for `kubectl debug node/<name>` - the

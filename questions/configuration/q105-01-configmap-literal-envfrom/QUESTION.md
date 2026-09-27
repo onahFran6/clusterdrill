@@ -2,7 +2,7 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-01-configmap-literal-envfrom`
 
-`setup.sh` already created a running pod named `catalog-app` (image `nginx:1.25-alpine`) in
+A running Pod named `catalog-app` (image `nginx:1.25-alpine`) already exists in
 namespace `q105-01-configmap-literal-envfrom`.
 
 Create a ConfigMap named `catalog-env` with two literal keys:

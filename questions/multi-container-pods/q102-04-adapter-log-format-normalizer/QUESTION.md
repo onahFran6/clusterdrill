@@ -7,22 +7,19 @@ named `producer` (image `busybox:1.36`) that continuously appends raw lines
 like `LEVEL=info MSG=hello` to `/data/raw.log`. The volume backing `/data` is
 an `emptyDir` named `shared-data`.
 
-A monitoring system needs these logs as JSON lines instead. Because you
-cannot add a container to a running Pod in place, delete and recreate the
-`app` Pod, keeping the existing `producer` container's image, volume, and
-command unchanged, and add a second container named `adapter` (image
-`busybox:1.36`) that:
+A monitoring system needs these logs as JSON lines instead. You cannot add a
+container to a running Pod in place - delete and recreate `app`, keeping
+`producer`'s image, volume, and command unchanged, and add a second container
+named `adapter` (image `busybox:1.36`) that:
 
 - Mounts the same `shared-data` volume at `/data`.
 - Continuously reads `/data/raw.log` and writes normalized JSON lines (for
   example `{"level":"info","msg":"hello"}`) to `/data/normalized.log`. The
-  exact transformation does not need to be perfect - the important part is
-  that the adapter container reads from `raw.log` and writes to
-  `normalized.log`.
+  exact transformation does not need to be perfect - the adapter must read
+  from `raw.log` and write to `normalized.log`.
 
-The Pod must end up with exactly two containers: `producer` and `adapter`,
-both mounting `shared-data` at `/data` - a classic adapter pattern that
-converts one container's output into the format another consumer expects.
+The Pod must end up with exactly two containers: `producer` and `adapter`, both
+mounting `shared-data` at `/data`.
 
 ## Hint
 

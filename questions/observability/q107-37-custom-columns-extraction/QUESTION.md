@@ -2,12 +2,11 @@
 
 **Domain:** Application Observability and Maintenance · **Points:** 5 · **Namespace:** `q107-37-custom-columns-extraction`
 
-`setup.sh` already created three Pods in this namespace: `fleet-alpha` (`nginx:1.24-alpine`),
-`fleet-beta` (`nginx:1.25-alpine`), and `fleet-gamma` (`busybox:1.36`). Using a single
-`kubectl get pods` command with `-o custom-columns` (not `-o json`/`jsonpath` piped through another
-tool), produce a two-column report of each pod's name and container image with no header row, and
-redirect it into a file at `$HOME/practice-work/q107-37-custom-columns-extraction/fleet-images.txt`
-on the terminal host.
+Three Pods already exist in this namespace: `fleet-alpha` (`nginx:1.24-alpine`), `fleet-beta`
+(`nginx:1.25-alpine`), and `fleet-gamma` (`busybox:1.36`). Using a single `kubectl get pods`
+command with `-o custom-columns` (not `-o json` or `jsonpath` piped through another tool), write
+a two-column report of each pod's name and container image, with no header row, to
+`$HOME/practice-work/q107-37-custom-columns-extraction/fleet-images.txt` on the terminal host.
 
 ## Hint
 

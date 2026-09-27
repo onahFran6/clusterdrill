@@ -2,8 +2,8 @@
 
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q104-04-rollout-undo-to-revision`
 
-`setup.sh` already created a Deployment named `billing` in namespace
-`q104-04-rollout-undo-to-revision` and rolled it through three revisions:
+A Deployment named `billing` already exists in namespace
+`q104-04-rollout-undo-to-revision` and has been rolled through three revisions:
 
 - revision 1: image `nginx:1.23-alpine`
 - revision 2: image `nginx:1.24-alpine`

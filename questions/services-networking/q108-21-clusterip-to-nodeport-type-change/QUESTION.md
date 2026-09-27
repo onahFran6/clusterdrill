@@ -1,10 +1,10 @@
-# q108-21-clusterip-to-nodeport-type-change: Convert a ClusterIP Service to NodePort with a fixed port
+# q108-21: Convert a ClusterIP Service to NodePort with a fixed port
 
 **Domain:** Services and Networking · **Points:** 5 · **Namespace:** `q108-21-clusterip-to-nodeport-type-change`
 
-`setup.sh` already created a Deployment named `catalog-api` (image `hashicorp/http-echo`, 2
+A Deployment named `catalog-api` (image `hashicorp/http-echo`, 2
 replicas, container port `5678`) and a Service named `catalog-api-svc` of type `ClusterIP`
-targeting port `5678`, in namespace `q108-21-clusterip-to-nodeport-type-change`.
+targeting port `5678` already exist in namespace `q108-21-clusterip-to-nodeport-type-change`.
 
 Without deleting or recreating `catalog-api-svc`, change it so that:
 

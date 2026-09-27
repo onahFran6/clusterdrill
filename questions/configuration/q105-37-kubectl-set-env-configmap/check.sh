@@ -30,11 +30,17 @@ check_criterion "Deployment 'web-frontend' sources DARK_MODE and BETA_UI from Co
 
 check_criterion "Running pod for web-frontend reports DARK_MODE=true and BETA_UI=false, and ConfigMap 'feature-flags' is unchanged" \
   bash -c '
-    pod="$(kubectl get pods -n "'"$QUESTION_ID"'" -l app=web-frontend -o jsonpath="{.items[0].metadata.name}" 2>/dev/null)"
+    # Prefer the newest pod - items[0] can still be the terminating
+    # predecessor right after kubectl set env triggers a rollout.
+    pod="$(newest_pod_name "'"$QUESTION_ID"'" "app=web-frontend")"
     [ -n "$pod" ] || exit 1
-    dark="$(kubectl exec -n "'"$QUESTION_ID"'" "$pod" -- sh -c "echo \$DARK_MODE" 2>/dev/null)"
+    # Brief settle so kubectl exec can attach to the new container.
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+      dark="$(kubectl exec -n "'"$QUESTION_ID"'" "$pod" -- printenv DARK_MODE 2>/dev/null)" && break
+      sleep 1
+    done
     [ "$dark" = "true" ] || exit 1
-    beta="$(kubectl exec -n "'"$QUESTION_ID"'" "$pod" -- sh -c "echo \$BETA_UI" 2>/dev/null)"
+    beta="$(kubectl exec -n "'"$QUESTION_ID"'" "$pod" -- printenv BETA_UI 2>/dev/null)"
     [ "$beta" = "false" ] || exit 1
     d="$(kubectl get configmap feature-flags -n "'"$QUESTION_ID"'" -o jsonpath="{.data.DARK_MODE}" 2>/dev/null)"
     [ "$d" = "true" ] || exit 1

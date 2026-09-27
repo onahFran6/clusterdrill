@@ -2,9 +2,9 @@
 
 **Domain:** Services and Networking · **Points:** 7 · **Namespace:** `q108-12-ingress-tls`
 
-`setup.sh` already created a Deployment `secure-app` and a matching ClusterIP Service
+A Deployment `secure-app` and a matching ClusterIP Service
 `secure-app-svc` (port `80`), plus a `kubernetes.io/tls` Secret named `secure-app-tls` (a
-self-signed cert/key pair for host `secure.ckad.example.com`) - all in namespace
+self-signed cert/key pair for host `secure.ckad.example.com`), already exist in namespace
 `q108-12-ingress-tls`.
 
 Create an Ingress named `secure-ingress` in this namespace, using IngressClass `nginx`, that:

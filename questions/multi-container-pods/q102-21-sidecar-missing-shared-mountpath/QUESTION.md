@@ -1,22 +1,21 @@
-# q102-21-sidecar-missing-shared-mountpath: Sidecar container missing volumeMount entirely
+# q102-21: Let a sidecar see the shared audit log
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q102-21-sidecar-missing-shared-mountpath`
 
-A pod named `audit-logger` already exists in this namespace with two containers.
+A Pod named `audit-logger` already exists in this namespace with two containers.
 The main container `app` continuously appends timestamped lines to
-`/var/log/audit/app.log`, backed by an `emptyDir` volume named `audit-vol` that
-is correctly mounted at `/var/log/audit`. The sidecar container `shipper` is
-supposed to tail and "ship" that same log file, but its `volumeMounts` section
-is missing entirely - it never sees the log file, so it just loops printing
+`/var/log/audit/app.log`, backed by an `emptyDir` volume named `audit-vol`
+mounted at `/var/log/audit`. The sidecar `shipper` is supposed to tail and
+ship that same log file, but it never sees it - it loops printing
 `waiting for file`.
 
-Fix the `shipper` container so it can see the log file: add a `volumeMount` to
-`shipper` referencing the existing `audit-vol` volume at mountPath
-`/var/log/audit`. Do not change the `app` container, its volume, or its mount.
+Fix `shipper` so it can read the log: it must mount the existing `audit-vol`
+volume at `/var/log/audit`. Do not change the `app` container, its volume, or
+its mount.
 
-The pod must end up `Running` with both containers ready (2/2), and
+The Pod must end up `Running` with both containers ready (2/2), and
 `kubectl exec` into `shipper` must be able to `cat /var/log/audit/app.log`
-successfully.
+successfully. Recreating the Pod is fine.
 
 ## Hint
 

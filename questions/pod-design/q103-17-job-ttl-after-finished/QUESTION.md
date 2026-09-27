@@ -6,11 +6,9 @@ In namespace `q103-17-job-ttl-after-finished`, create a Job named `self-cleaning
 
 - uses image `busybox:1.36`
 - runs the command `echo done`
-- is automatically deleted by the Kubernetes TTL controller `10` seconds after it finishes
-  (successfully or not), using `.spec.ttlSecondsAfterFinished`
+- is automatically deleted `10` seconds after it finishes, using `.spec.ttlSecondsAfterFinished`
 
-`check.sh` waits for the Job to complete and then confirms it is removed on its own - you should
-not delete it yourself.
+Do not delete the Job yourself. It must disappear on its own after it completes.
 
 ## Hint
 

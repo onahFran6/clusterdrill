@@ -1,31 +1,26 @@
-# q102-47-readonlyrootfs-sidecar-needs-scratch-volume: readOnlyRootFilesystem sidecar can never write its lock file
+# q102-47: Give a readOnlyRootFilesystem sidecar a writable scratch volume
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q102-47-readonlyrootfs-sidecar-needs-scratch-volume`
 
 A Pod named `hardened-lock-app` already exists in this namespace with two
 containers:
 
-- `app` (busybox:1.36) - unrelated to this bug, just idles.
+- `app` (busybox:1.36) - idles.
 - `lock-manager` (busybox:1.36) - hardened with
-  `securityContext.readOnlyRootFilesystem: true` (a real, common security
-  baseline - do not remove it), and repeatedly tries to write a small lock
-  file to `/tmp/lock.txt` as part of its normal operation.
+  `securityContext.readOnlyRootFilesystem: true` (do not remove it), and
+  repeatedly tries to write a lock file to `/tmp/lock.txt`.
 
-`lock-manager` has no writable volume mounted anywhere, so every write
-attempt against its read-only root filesystem fails with
-`Read-only file system`. The container catches that error and loops rather
-than crashing, so `kubectl get pod hardened-lock-app` shows `2/2 Running`
-the whole time, masking that `lock-manager` can never actually write its
-lock file.
+`kubectl get pod hardened-lock-app` shows `2/2 Running`, but `lock-manager`
+never successfully writes its lock file - every write against the read-only
+root filesystem fails.
 
 Fix `lock-manager` by adding a dedicated writable `emptyDir` volume named
-`scratch`, mounted at `/tmp`, so it has somewhere to write while the rest
-of its filesystem stays read-only. Do not remove
-`readOnlyRootFilesystem: true`, and do not change either container's image
-or command, or touch `app`. This field is immutable on a running Pod -
-delete and recreate `hardened-lock-app` with the fix applied, keeping
-every other field unchanged. Once fixed, `/tmp/lock.txt` inside
-`lock-manager` must contain exactly `locked`.
+`scratch`, mounted at `/tmp`, so it has somewhere to write while the rest of
+its filesystem stays read-only. Do not remove `readOnlyRootFilesystem: true`,
+and do not change either container's image or command, or touch `app`. This
+field is immutable on a running Pod - delete and recreate `hardened-lock-app`
+with the fix applied, keeping every other field unchanged. Once fixed,
+`/tmp/lock.txt` inside `lock-manager` must contain exactly `locked`.
 
 ## Hint
 

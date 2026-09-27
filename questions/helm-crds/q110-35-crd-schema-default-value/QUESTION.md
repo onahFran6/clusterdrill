@@ -2,19 +2,14 @@
 
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-35-crd-schema-default-value`
 
-`setup.sh` already registered a CustomResourceDefinition `queues.jobs.clusterdrill.io` (kind
-`Queue`, plural `queues`, group `jobs.clusterdrill.io/v1`, namespaced) whose schema requires
-`spec.name` (string) but leaves `spec.priority` (integer) **optional with no default** - so an
-instance that omits `spec.priority` simply has no `priority` field at all afterward, and every
-consumer has to handle that missing-field case itself.
+A CustomResourceDefinition `queues.jobs.clusterdrill.io` (kind *Queue*, plural `queues`, group
+`jobs.clusterdrill.io/v1`, namespaced) is registered. Its schema requires `spec.name` (string)
+and leaves `spec.priority` (integer) optional with no default.
 
-Patch the CRD so `spec.priority`'s schema carries `default: 5` (keep it optional - do not add it
-to `required`). Do not change `spec.name`'s schema.
-
-Once the schema is fixed, create an instance named `batch-job` in namespace
-`q110-35-crd-schema-default-value` with only `spec.name: "batch-job"` set - **do not set
-`spec.priority` yourself** - and confirm the API server fills in `spec.priority: 5`
-automatically.
+Patch the CRD so `spec.priority` defaults to `5` while staying optional (do not add it to
+`required`). Leave `spec.name`'s schema unchanged. Then create a *Queue* named `batch-job` in
+this namespace with only `spec.name: "batch-job"` - do not set `spec.priority` yourself - and
+confirm the API server fills in `spec.priority: 5`.
 
 ## Hint
 

@@ -2,7 +2,7 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-20-guaranteed-qos-class`
 
-`setup.sh` already created a running pod named `critical-job` (image `nginx:1.25-alpine`) in
+A running Pod named `critical-job` (image `nginx:1.25-alpine`) already exists in
 namespace `q105-20-guaranteed-qos-class`, with a CPU request of `200m` and a higher CPU limit of
 `500m` - a `Burstable` pod today.
 

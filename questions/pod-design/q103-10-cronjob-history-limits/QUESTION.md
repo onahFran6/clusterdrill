@@ -2,14 +2,13 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-10-cronjob-history-limits`
 
-`setup.sh` already created a CronJob named `audit-scan` in namespace `q103-10-cronjob-history-limits`,
-running every minute. By default it keeps far more finished Jobs around than you need, cluttering
-`kubectl get jobs` output.
+A CronJob named `audit-scan` already exists in namespace `q103-10-cronjob-history-limits`,
+running every minute.
 
 Edit `audit-scan` so that it retains at most:
 
 - `2` completed (successful) Jobs (`.spec.successfulJobsHistoryLimit`)
-- `0` failed Jobs - failed runs should not be kept around at all (`.spec.failedJobsHistoryLimit`)
+- `0` failed Jobs (`.spec.failedJobsHistoryLimit`)
 
 Do not change the schedule or container image.
 
@@ -17,4 +16,4 @@ Do not change the schedule or container image.
 
 Search kubernetes.io/docs for **"cronjob jobs history limit"** - the CronJob concept page's "Jobs
 history limits" section shows the `successfulJobsHistoryLimit` and `failedJobsHistoryLimit`
-fields and their defaults.
+fields and their defaults. The defaults keep far more finished Jobs than this task allows.

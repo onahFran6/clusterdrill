@@ -2,10 +2,8 @@
 
 **Domain:** Application Observability and Maintenance · **Points:** 5 · **Namespace:** `q107-02-readiness-httpget-basic`
 
-`setup.sh` already created a pod named `catalog-api` (image `nginx:1.25-alpine`, listening on
-container port `80`) in namespace `q107-02-readiness-httpget-basic`. It has no readiness probe, so
-Kubernetes has no way to tell whether the app inside is actually ready to serve traffic versus
-merely running.
+A pod named `catalog-api` (image `nginx:1.25-alpine`, listening on container port `80`) already
+exists in namespace `q107-02-readiness-httpget-basic`. It has no readiness probe.
 
 Edit the pod so it has a `readinessProbe` that:
 
@@ -20,4 +18,5 @@ name to add the probe).
 
 Search kubernetes.io/docs for **"configure liveness readiness startup probes"** - the same page
 that documents `livenessProbe` also covers `readinessProbe`'s identical field shape and how it
-differs in effect (removed from Service endpoints, not restarted).
+differs in effect (removed from Service endpoints, not restarted). A running container with no
+readiness probe gives Kubernetes no signal for whether the app is ready to serve traffic.

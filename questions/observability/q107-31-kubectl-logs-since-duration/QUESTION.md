@@ -2,15 +2,15 @@
 
 **Domain:** Application Observability and Maintenance · **Points:** 5 · **Namespace:** `q107-31-kubectl-logs-since-duration`
 
-`setup.sh` already created a pod named `heartbeat` (image `busybox:1.36`) in this namespace. It
-printed one line (`old-line-before-cutoff`) right at startup, then has been printing
-`recent-heartbeat` every couple of seconds since.
+A pod named `heartbeat` (image `busybox:1.36`) already exists in this namespace. It printed one
+line (`old-line-before-cutoff`) at startup, then has been printing `recent-heartbeat` every couple
+of seconds since.
 
-Using a single `kubectl logs` command with a **time-window** flag (not `--tail`), retrieve only
-the log lines from roughly the last 5 seconds, and redirect that output into a file at
+Using a single `kubectl logs` command with a time-window flag (not `--tail`), save only the log
+lines from roughly the last 5 seconds to
 `$HOME/practice-work/q107-31-kubectl-logs-since-duration/heartbeat-recent.txt` on the terminal
-host (not inside the pod). The resulting file must contain only `recent-heartbeat` lines - the
-old startup line must not appear.
+host (not inside the pod). The file must contain only `recent-heartbeat` lines. The old startup
+line must not appear.
 
 ## Hint
 

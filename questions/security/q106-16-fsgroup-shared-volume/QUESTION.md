@@ -3,8 +3,7 @@
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q106-16-fsgroup-shared-volume`
 
 Two containers in the same pod need to read and write the same files in a shared `emptyDir`
-volume, even though each container runs as a different non-root UID. The cleanest fix is a shared
-supplementary group applied to the volume, not matching UIDs.
+volume, even though each container runs as a different non-root UID.
 
 Create a pod named `shared-writer` in namespace `q106-16-fsgroup-shared-volume` with:
 
@@ -13,8 +12,10 @@ Create a pod named `shared-writer` in namespace `q106-16-fsgroup-shared-volume` 
   - container `writer` (image `busybox:1.36`, command `sleep 3600`)
   - container `reader` (image `busybox:1.36`, command `sleep 3600`)
 
+Do not solve this by giving both containers the same UID.
+
 ## Hint
 
 Search kubernetes.io/docs for **"configure a security context for a pod or container"** - the
 "Configure volume permission and ownership change policy for Pods" section covers `fsGroup` and
-how it applies to mounted volumes.
+how it applies a shared supplementary group to mounted volumes.

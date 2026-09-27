@@ -1,11 +1,11 @@
-# q108-41-ingress-wildcard-host-routing: Route every tenant subdomain with a wildcard Ingress host
+# q108-41: Route every tenant subdomain with a wildcard Ingress host
 
 **Domain:** Services and Networking · **Points:** 5 · **Namespace:** `q108-41-ingress-wildcard-host-routing`
 
-`setup.sh` already created a Deployment and a Service named `tenant-portal-svc` (port `80`) in
-namespace `q108-41-ingress-wildcard-host-routing`. Every tenant of this SaaS product gets their own
-subdomain (`acme.tenants.example.com`, `globex.tenants.example.com`, and so on), and all of them
-must route to the same backend.
+A Deployment and a Service named `tenant-portal-svc` (port `80`) already exist in namespace
+`q108-41-ingress-wildcard-host-routing`. Every tenant gets their own subdomain
+(`acme.tenants.example.com`, `globex.tenants.example.com`, and so on), and all of them must route
+to the same backend.
 
 Create an Ingress named `tenant-portal-ingress` that:
 

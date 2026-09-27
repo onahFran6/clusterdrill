@@ -2,17 +2,15 @@
 
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-34-helm-set-list-index-values`
 
-`setup.sh` staged a local Helm chart named `router` on disk at
-`questions/helm-crds/q110-34-helm-set-list-index-values/chart` (relative to the
-`practice-bank/` directory). The chart's default `values.yaml` declares `hosts` as a list with
-one entry, `["default.example.com"]`, and templates a ConfigMap whose `hosts` key joins the list
-with commas.
+A local Helm chart named `router` is on disk at
+`questions/helm-crds/q110-34-helm-set-list-index-values/chart` (relative to `practice-bank/`).
+Its default `values.yaml` sets `hosts` to a one-element list, and a ConfigMap key `hosts` joins
+that list with commas.
 
-Install this chart into namespace `q110-34-helm-set-list-index-values` under release
-name `demo`, overriding `hosts` at install time (via `--set`, not a values file) to a **list of
-two** entries, in this exact order: `api.example.com`, then `admin.example.com` - use `--set`'s
-`hosts[0]=...,hosts[1]=...` index syntax to set individual list elements directly on the command
-line.
+Install the chart into this namespace as release `demo`, overriding `hosts` at install time
+(command-line `--set`, not a values file) to exactly two entries in this order:
+`api.example.com`, then `admin.example.com`. ConfigMap `demo-router` must end up with
+`hosts: api.example.com,admin.example.com`.
 
 ## Hint
 

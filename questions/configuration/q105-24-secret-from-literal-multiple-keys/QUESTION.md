@@ -1,21 +1,20 @@
-# q105-24-secret-from-literal-multiple-keys: Create a multi-key Secret from literals and mount only one key
+# q105-24: Create a multi-key Secret so a waiting Pod can start
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-24-secret-from-literal-multiple-keys`
 
-`setup.sh` already applied a pod named `dbclient` (image `nginx:1.25-alpine`) in namespace
-`q105-24-secret-from-literal-multiple-keys`. The pod is stuck in `ContainerCreating` because it
-mounts one key (`password`) of a Secret named `db-creds` as a file at `/etc/db/password` via
-`subPath`, and that Secret does not exist yet.
+A Pod named `dbclient` (image `nginx:1.25-alpine`) already exists in namespace
+`q105-24-secret-from-literal-multiple-keys`. It is stuck in `ContainerCreating` because it expects
+a Secret named `db-creds` and needs the Secret's `password` key available as a file at
+`/etc/db/password` - but that Secret does not exist yet.
 
-Create the Secret `db-creds` imperatively from two literals:
+Create the Secret `db-creds` from two literals:
 
 - `username=admin`
 - `password=S3cr3t!`
 
-Once the Secret exists with both keys, the pod's existing volume/subPath configuration will let
-it start on its own - do not edit the pod. Only the `password` key must ever appear as a file or
-environment variable anywhere in the pod; `username` must not be exposed inside the container at
-all (no file, no env var).
+Once the Secret exists with both keys, the pod should start on its own - do not edit the pod.
+Only the `password` key must appear as a file inside the container; `username` must not be
+exposed inside the container at all (no file, no env var).
 
 ## Hint
 

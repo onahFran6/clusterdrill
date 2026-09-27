@@ -2,16 +2,12 @@
 
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-36-crd-categories-field-kubectl-get-all`
 
-`setup.sh` already registered a CustomResourceDefinition `widgets.catalog.clusterdrill.io`
-(kind `Widget`, plural `widgets`, group `catalog.clusterdrill.io/v1`, namespaced) and created an
-instance named `gadget-1` in namespace `q110-36-crd-categories-field-kubectl-get-all`. Running
-`kubectl get all -n q110-36-crd-categories-field-kubectl-get-all` does **not** list `gadget-1` -
-`kubectl get all` only shows resource kinds whose CRD declares itself a member of the `all`
-category, and this CRD's `spec.names.categories` is currently empty.
+A CustomResourceDefinition `widgets.catalog.clusterdrill.io` (kind *Widget*, plural `widgets`,
+group `catalog.clusterdrill.io/v1`, namespaced) is registered, and a *Widget* named `gadget-1`
+exists in this namespace. `kubectl get all` in this namespace does not list that instance.
 
-Patch the CRD so `spec.names.categories` includes `all`, so `kubectl get all` in this namespace
-starts listing `Widget` instances alongside Pods, Services, and everything else it already
-covers. Do not touch the existing `gadget-1` instance.
+Patch the CRD so *Widget* is included in the `all` category (`spec.names.categories`), then
+confirm `kubectl get all` lists *Widget* instances. Leave `gadget-1` unchanged.
 
 ## Hint
 

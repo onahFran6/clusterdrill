@@ -1,21 +1,15 @@
-# q101-20: Generate a manifest to set a field `kubectl run` can't set directly
+# q101-20: Create a Pod with restartPolicy Never
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-20-generate-pod-restart-policy`
 
-`kubectl run` defaults a bare pod to `restartPolicy: Always`, and offers no flag to change it -
-you can only get `Never` or `OnFailure` by generating the YAML and editing it before creating the
-object (this is exactly the "generator + edit" pattern the exam expects you to know, not a
-one-liner flag).
+In namespace `q101-20-generate-pod-restart-policy`, create a Pod named `one-shot-task` that:
 
-In namespace `q101-20-generate-pod-restart-policy`:
+- runs image `busybox:1.36`
+- runs the command `echo done`
+- has `spec.restartPolicy` set to `Never`
 
-1. Use `kubectl run` with a client-side dry run to generate the YAML for a pod named
-   `one-shot-task`, image `busybox:1.36`, command `echo done`.
-2. Edit the generated YAML so `spec.restartPolicy` is `Never`.
-3. Create the pod for real from that edited YAML.
-
-The grader only checks the live object's final state - `restartPolicy: Never`, the right name,
-image, and command - not which editor or intermediate file you used.
+Generate a manifest first (client-side dry run is fine), edit it as needed, then create the Pod
+from the edited YAML. The grader only checks the live object's final state.
 
 ## Hint
 

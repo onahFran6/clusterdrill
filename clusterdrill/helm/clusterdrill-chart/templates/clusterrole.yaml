@@ -43,6 +43,13 @@ rules:
 - apiGroups: ["rbac.authorization.k8s.io"]
   resources: ["clusterrolebindings", "clusterroles", "rolebindings", "roles"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+# Keep in sync with clusterdrill/manifests/local-appliance.yaml - bind so
+# grant_user_namespace_access / per-user ClusterRoleBindings can attach
+# pre-existing ClusterRoles without escalating via wildcard Role rules.
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterroles"]
+  verbs: ["bind"]
+  resourceNames: ["admin", "clusterdrill-cluster-scoped-access"]
 - apiGroups: ["storage.k8s.io"]
   resources: ["storageclasses"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]

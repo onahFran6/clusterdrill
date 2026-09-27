@@ -2,8 +2,8 @@
 
 **Domain:** Services and Networking · **Points:** 6 · **Namespace:** `q108-03-headless-service-dns`
 
-`setup.sh` already created a Deployment named `cache-node` (image `redis:7-alpine`, 3 replicas,
-container port `6379`, pod-template label `app=cache-node`) in namespace
+A Deployment named `cache-node` (image `redis:7-alpine`, 3 replicas,
+container port `6379`, pod-template label `app=cache-node`) already exists in namespace
 `q108-03-headless-service-dns`.
 
 The application team wants DNS lookups against the Service name to return the individual pod IPs

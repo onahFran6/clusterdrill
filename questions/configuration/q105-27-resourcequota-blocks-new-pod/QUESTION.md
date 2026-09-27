@@ -1,4 +1,4 @@
-# q105-27-resourcequota-blocks-new-pod: Diagnose a ResourceQuota blocking a new pod and right-size requests
+# q105-27: Diagnose a ResourceQuota blocking a new Pod and right-size requests
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-27-resourcequota-blocks-new-pod`
 

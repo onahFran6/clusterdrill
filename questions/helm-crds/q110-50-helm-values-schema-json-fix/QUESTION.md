@@ -2,17 +2,14 @@
 
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-50-helm-values-schema-json-fix`
 
-`setup.sh` staged a local Helm chart named `worker-pool` on disk at
-`questions/helm-crds/q110-50-helm-values-schema-json-fix/chart` (relative to the
-`practice-bank/` directory). Its `values.schema.json` declares `replicaCount` as an integer with
-`"maximum": 3` - a limit set back when this chart's workload was small. The team now needs to
-scale it to `5` replicas for a traffic spike, but `helm install ... --set replicaCount=5` is
-rejected outright before anything even reaches the cluster: `values don't meet the
-specifications of the schema(s)`.
+A local Helm chart named `worker-pool` is on disk at
+`questions/helm-crds/q110-50-helm-values-schema-json-fix/chart` (relative to `practice-bank/`).
+Its `values.schema.json` declares `replicaCount` as an integer with `"maximum": 3`. Installing
+with `--set replicaCount=5` is rejected before anything reaches the cluster.
 
-Raise `values.schema.json`'s `replicaCount.maximum` to `10` (leave every other field in the
-schema alone), then install the chart into namespace `q110-50-helm-values-schema-json-fix` under
-release name `demo` with `--set replicaCount=5`.
+Raise `values.schema.json`'s `replicaCount.maximum` to `10` (leave every other schema field
+alone), then install the chart into this namespace as release `demo` with
+`--set replicaCount=5`.
 
 ## Hint
 

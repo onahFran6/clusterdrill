@@ -8,13 +8,13 @@ container in a pod**: `max.cpu: 500m`, `max.memory: 512Mi`.
 
 A pod manifest is sitting on disk at `~/multi-app.yaml` with two containers, `primary` and
 `helper`, each requesting **and** limiting `cpu: 300m` / `memory: 300Mi`. Applying it as-is is
-rejected: even though `300m`/`300Mi` might look reasonable per container, the LimitRange's
-`type: Pod` bound applies to the **total** across both containers (`600m` CPU, `600Mi` memory
-combined), which exceeds `pod-aggregate-limits`' `500m`/`512Mi` pod-level max.
+rejected: the LimitRange's `type: Pod` bound applies to the **total** across both containers
+(`600m` CPU, `600Mi` memory combined), which exceeds `pod-aggregate-limits`' `500m`/`512Mi`
+pod-level max.
 
 Edit `~/multi-app.yaml` so the **sum** of both containers' CPU limits is at most `500m`, and the
 **sum** of both containers' memory limits is at most `512Mi` (for example, `250m`/`256Mi` each).
-Apply it as a pod named `multi-app`; both containers must reach `Running` (`2/2` ready).
+Apply it as a Pod named `multi-app`; both containers must reach `Running` (`2/2` ready).
 
 ## Hint
 

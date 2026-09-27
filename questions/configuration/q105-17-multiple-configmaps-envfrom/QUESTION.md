@@ -2,18 +2,18 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-17-multiple-configmaps-envfrom`
 
-`setup.sh` already created two ConfigMaps in namespace `q105-17-multiple-configmaps-envfrom`:
+Two ConfigMaps already exist in namespace `q105-17-multiple-configmaps-envfrom`:
 
 - `db-config` with key `DB_HOST=db.internal`
 - `cache-config` with key `CACHE_HOST=cache.internal`
 
-...and a running pod named `api-gateway` (image `nginx:1.25-alpine`) with no environment
+A running Pod named `api-gateway` (image `nginx:1.25-alpine`) is also there, with no environment
 configuration yet.
 
-Edit the pod so its container bulk-imports the keys from **both** ConfigMaps via `envFrom`, so
-the container ends up with both `DB_HOST=db.internal` and `CACHE_HOST=cache.internal` available
-as environment variables at the same time. The pod will need to be recreated for the change to
-take effect.
+Edit the pod so its container ends up with both `DB_HOST=db.internal` and
+`CACHE_HOST=cache.internal` available as environment variables at the same time, importing every
+key from both ConfigMaps without listing the keys one by one. The pod will need to be recreated
+for the change to take effect.
 
 ## Hint
 

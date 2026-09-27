@@ -1,8 +1,8 @@
-# q101-35-create-configmap-from-file: Create a ConfigMap from a file on disk
+# q101-35: Create a ConfigMap from a file on disk
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-35-create-configmap-from-file`
 
-`setup.sh` already dropped a file at `~/practice-work/q101-35-create-configmap-from-file/app.properties`
+A file already exists at `~/practice-work/q101-35-create-configmap-from-file/app.properties`
 containing:
 
 ```
@@ -12,7 +12,7 @@ cache.enabled=true
 
 In namespace `q101-35-create-configmap-from-file`, create a ConfigMap named `app-props` whose data
 comes from that file, using a single imperative `kubectl create configmap --from-file` command (no
-manifest authored by hand) - the ConfigMap's key must be the file's own basename (`app.properties`),
+manifest authored by hand). The ConfigMap's key must be the file's own basename (`app.properties`),
 with the file's exact contents as the value.
 
 ## Hint

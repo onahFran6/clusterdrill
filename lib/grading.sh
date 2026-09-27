@@ -246,7 +246,7 @@ batch_cleanup() {
 # (separate namespaces, separate quotas), but every terminal session still
 # shared the same cluster-admin kubeconfig, so alice's shell could still run
 # `kubectl get pods -n <bobs-namespace>` directly. This grants a namespace-
-# scoped Role+RoleBinding to that one user's ServiceAccount
+# scoped RoleBinding to that one user's ServiceAccount
 # (system:serviceaccount:clusterdrill-system:<user_id>, provisioned by
 # web/rbac.py) - full access *within this one namespace only*, nothing
 # cluster-wide. ttyd_manager.py points that user's terminal at a kubeconfig
@@ -260,13 +260,14 @@ batch_cleanup() {
 # where the terminal already only has the one trusted operator's own
 # kubeconfig.
 #
-# Deliberately wildcard (apiGroups/resources: "*") rather than an
-# enumerated resource list: the isolation boundary here is the *namespace*
-# (this Role only exists in this one namespace), not resource-type
-# filtering - enumerating every kind a CKAD question might ever touch and
-# keeping that list in sync as questions are added would be a maintenance
-# trap for no real security benefit, since anything this Role reaches is
-# already confined to this one namespace either way.
+# Binds the built-in `admin` ClusterRole into this one namespace (RoleBinding
+# + ClusterRole = those rules, namespace-scoped). We deliberately do *not*
+# create a local Role with apiGroups/resources/verbs wildcards: the
+# appliance ServiceAccount is least-privilege, and Kubernetes RBAC
+# escalation rules forbid it from creating a Role that grants permissions
+# it does not itself hold. Binding a pre-existing ClusterRole only needs
+# the `bind` verb on that ClusterRole (granted on clusterdrill-appliance
+# in local-appliance.yaml). The isolation boundary remains the namespace.
 grant_user_namespace_access() {
   local namespace="$1" user_id="$2"
   if [[ -z "$namespace" ]]; then
@@ -276,16 +277,14 @@ grant_user_namespace_access() {
   if [[ -z "$user_id" ]]; then
     return 0
   fi
+  # roleRef is immutable - drop any prior binding (e.g. from an older
+  # grant_user_namespace_access that pointed at a local Role) so apply can
+  # recreate it against ClusterRole/admin.
+  kubectl delete rolebinding clusterdrill-system-access-binding \
+    -n "$namespace" --ignore-not-found >/dev/null
+  kubectl delete role clusterdrill-system-access \
+    -n "$namespace" --ignore-not-found >/dev/null
   kubectl apply -n "$namespace" -f - <<EOF >/dev/null
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: clusterdrill-system-access
-rules:
-  - apiGroups: ["*"]
-    resources: ["*"]
-    verbs: ["*"]
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -295,8 +294,8 @@ subjects:
     name: ${user_id}
     namespace: clusterdrill-system
 roleRef:
-  kind: Role
-  name: clusterdrill-system-access
+  kind: ClusterRole
+  name: admin
   apiGroup: rbac.authorization.k8s.io
 EOF
 }

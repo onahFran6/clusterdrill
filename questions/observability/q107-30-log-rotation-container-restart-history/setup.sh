@@ -40,7 +40,7 @@ spec:
           echo \$n > /state/count
           echo "run number \$n"
           if [ "\$n" -lt 3 ]; then
-            echo "fatal: dependency unavailable" >&2
+            echo "fatal: dependency unavailable"
             exit 1
           else
             echo "migration complete"

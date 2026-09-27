@@ -2,31 +2,22 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-38-job-command-args-split-fix`
 
-`setup.sh` wrote a pod manifest to
-`~/practice-work/q103-38-job-command-args-split-fix/word-counter.yaml` in your terminal's working
-directory, but never applied it. As written, its single container has:
+A pod manifest is at `~/practice-work/q103-38-job-command-args-split-fix/word-counter.yaml` in
+your terminal's working directory. It has not been applied. Its container `command` is a single
+array element, `wc -l /etc/hostname`, so the container never runs `wc`.
 
-```yaml
-command: ["wc -l /etc/hostname"]
-```
+Fix `word-counter.yaml` so the container runs `wc` with arguments `-l` and `/etc/hostname`:
 
-That is **one** array element containing the whole string `wc -l /etc/hostname`, not a program name
-followed by separate arguments. Kubernetes runs `command` as an exec argv list, not through a
-shell, so the container runtime tries to execute a program literally named `wc -l /etc/hostname`
-(with spaces in the name) and fails immediately - it never runs `wc` at all.
+- `command` is `["wc"]`
+- `args` is `["-l", "/etc/hostname"]`
 
-Fix `word-counter.yaml` so it correctly calls `wc` with the `-l` flag against `/etc/hostname`,
-using **both** fields the way Kubernetes expects them to be split:
-
-- `command: ["wc"]` - the program to run (overrides the image's `ENTRYPOINT`)
-- `args: ["-l", "/etc/hostname"]` - the arguments passed to it (overrides the image's `CMD`)
-
-Then apply it. The pod must reach phase `Succeeded`, and its logs must show `wc -l`'s output for
+Apply it. The pod must reach phase `Succeeded`, and its logs must show `wc -l` output for
 `/etc/hostname`.
 
 ## Hint
 
 Search kubernetes.io/docs for **"define command argument container"** - the "Define a Command and
-Arguments for a Container" task page explains that `command` and `args` in the Pod spec map to a
-container image's `ENTRYPOINT` and `CMD`, and that each is a list of separate argv elements, not a
-single shell string.
+Arguments for a Container" task page explains that `command` and `args` map to a container
+image's `ENTRYPOINT` and `CMD`, and that each is a list of argv elements, not one shell string.
+Kubernetes runs `command` as exec, so one element named `wc -l /etc/hostname` is a program name
+that does not exist.
