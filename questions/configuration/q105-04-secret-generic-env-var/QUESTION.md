@@ -2,7 +2,7 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-04-secret-generic-env-var`
 
-`setup.sh` already created a running pod named `billing-app` (image `nginx:1.25-alpine`) in
+A running Pod named `billing-app` (image `nginx:1.25-alpine`) already exists in
 namespace `q105-04-secret-generic-env-var`.
 
 Create a generic Secret named `billing-secret` with one key, `DB_PASSWORD`, set to the value

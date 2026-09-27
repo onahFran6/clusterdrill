@@ -2,16 +2,14 @@
 
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-37-helm-set-flag-precedence-order`
 
-`setup.sh` staged a local Helm chart named `tuner` on disk at
-`questions/helm-crds/q110-37-helm-set-flag-precedence-order/chart` (relative to the
-`practice-bank/` directory). The chart's default `values.yaml` sets `logLevel: info` and
-templates a ConfigMap key `logLevel` from `.Values.logLevel`.
+A local Helm chart named `tuner` is on disk at
+`questions/helm-crds/q110-37-helm-set-flag-precedence-order/chart` (relative to
+`practice-bank/`). Its default `values.yaml` sets `logLevel: info`, and a ConfigMap key
+`logLevel` is rendered from `.Values.logLevel`.
 
-Install this chart into namespace `q110-37-helm-set-flag-precedence-order` under release name
-`demo`, passing **two** separate `--set logLevel=...` flags on the same command line: first
-`--set logLevel=debug`, then `--set logLevel=warn`. When the same key is set more than once
-across multiple `--set` flags, the **last** one on the command line wins - the final ConfigMap
-must end up with `logLevel: warn`, not `debug`.
+Install the chart into this namespace as release `demo`, passing two separate
+`--set logLevel=...` flags on the same command: first `logLevel=debug`, then `logLevel=warn`.
+ConfigMap `demo-tuner` must end up with `logLevel: warn`.
 
 ## Hint
 

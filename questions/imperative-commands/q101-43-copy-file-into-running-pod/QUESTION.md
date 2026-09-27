@@ -1,9 +1,9 @@
-# q101-43-copy-file-into-running-pod: Copy a local file into a running pod
+# q101-43: Copy a local file into a running Pod
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-43-copy-file-into-running-pod`
 
-`setup.sh` already created a running Pod named `archive-box` (image `busybox:1.36`, container name
-`archive-box`) in namespace `q101-43-copy-file-into-running-pod`, and dropped a local file at
+A running Pod named `archive-box` (image `busybox:1.36`, container name `archive-box`) already
+exists in namespace `q101-43-copy-file-into-running-pod`, and a local file already exists at
 `~/practice-work/q101-43-copy-file-into-running-pod/manifest.txt` containing:
 
 ```
@@ -13,7 +13,7 @@ channel=stable
 
 Using `kubectl cp`, copy that local file into the running container at path `/data/manifest.txt`
 (the `/data` directory already exists in the container). Do not use `kubectl exec` with a
-heredoc/redirect to recreate the file's contents - the task is specifically to practice `kubectl cp`.
+heredoc/redirect to recreate the file's contents - the task is to practice `kubectl cp`.
 
 ## Hint
 

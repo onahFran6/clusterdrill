@@ -2,16 +2,16 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q106-37-clusterrolebinding-to-group`
 
-`setup.sh` already created a ClusterRole named `q106-37-namespace-viewer` (grants `get`/`list` on
-`namespaces`, a cluster-scoped resource, and is already labeled for cleanup).
+A ClusterRole named `q106-37-namespace-viewer` already exists. It grants `get`/`list` on
+`namespaces`.
 
 Create a ClusterRoleBinding named `q106-37-namespace-viewer-binding` that grants the
-`q106-37-namespace-viewer` ClusterRole to the **Group** `platform-auditors`, cluster-wide - not a
-User or ServiceAccount.
+`q106-37-namespace-viewer` ClusterRole to the Group `platform-auditors`, cluster-wide. The
+subject must be a Group, not a User or a ServiceAccount.
 
-**Important:** label the ClusterRoleBinding you create with
-`clusterdrill-question: q106-37-clusterrolebinding-to-group` so cleanup can find it - it is
-cluster-scoped and will not be removed just by deleting the namespace.
+Label that ClusterRoleBinding with
+`clusterdrill-question: q106-37-clusterrolebinding-to-group`. It is cluster-scoped and will not
+be removed just by deleting the namespace.
 
 ## Hint
 

@@ -2,16 +2,15 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q106-24-clusterrolebinding-view-group`
 
-`setup.sh` already created, in namespace `q106-24-clusterrolebinding-view-group`:
-
-- a ServiceAccount named `auditor` with no permissions granted
+Namespace `q106-24-clusterrolebinding-view-group` already has a ServiceAccount named `auditor`
+with no permissions granted.
 
 Create a ClusterRoleBinding named `auditor-view-binding` that grants the built-in `view`
 ClusterRole to the `auditor` ServiceAccount, cluster-wide.
 
-**Important:** label the ClusterRoleBinding you create with
-`clusterdrill-question: q106-24-clusterrolebinding-view-group` so cleanup can find it - it is
-cluster-scoped and will not be removed just by deleting the namespace.
+Label that ClusterRoleBinding with
+`clusterdrill-question: q106-24-clusterrolebinding-view-group`. It is cluster-scoped and will
+not be removed just by deleting the namespace.
 
 ## Hint
 

@@ -2,23 +2,19 @@
 
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-40-helm-chart-local-subchart-dependency`
 
-`setup.sh` staged two local Helm charts on disk, both relative to the `practice-bank/`
-directory:
+Two local Helm charts are on disk (paths relative to `practice-bank/`):
 
-- a subchart named `cache` at
+- subchart `cache` at
   `questions/helm-crds/q110-40-helm-chart-local-subchart-dependency/chart-cache` (templates a
   ConfigMap)
-- a parent chart named `webapp` at
+- parent chart `webapp` at
   `questions/helm-crds/q110-40-helm-chart-local-subchart-dependency/chart`, whose `Chart.yaml`
-  declares a dependency on `cache` via a local `file://../chart-cache` repository - but that
-  dependency has **not been fetched yet**: there is no `charts/` directory inside the parent
-  chart, so installing it as-is would only apply the parent's own Deployment, not the
-  subchart's ConfigMap.
+  declares a dependency on `cache` via `file://../chart-cache` - but the dependency has not been
+  fetched yet (no `charts/` directory under the parent)
 
-Run `helm dependency update` inside the parent chart directory to fetch the local subchart into
-its `charts/` subdirectory, then install it into namespace
-`q110-40-helm-chart-local-subchart-dependency` under release name `demo`. Both the parent's
-Deployment (`demo-webapp`) and the subchart's ConfigMap (`demo-cache`) must exist afterward.
+Resolve the parent's local dependency into its `charts/` subdirectory, then install the parent
+into this namespace as release `demo`. Both Deployment `demo-webapp` and ConfigMap `demo-cache`
+must exist afterward.
 
 ## Hint
 

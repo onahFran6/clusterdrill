@@ -1,23 +1,22 @@
-# q104-30-diagnose-wrong-container-name-in-set-image: Find the real container name before updating its image
+# q104-30: Update a Deployment image using the real container name
 
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q104-30-diagnose-wrong-container-name-in-set-image`
 
-`setup.sh` already created a Deployment named `search-api` (2 replicas, image `nginx:1.25-alpine`)
-in namespace `q104-30-diagnose-wrong-container-name-in-set-image`. A teammate asked you to update
-its image to `nginx:1.26-alpine` by running:
+A Deployment named `search-api` already exists in namespace
+`q104-30-diagnose-wrong-container-name-in-set-image` with 2 replicas of image
+`nginx:1.25-alpine`. A teammate tried to bump the image with:
 
 ```
 kubectl set image deployment/search-api webapp=nginx:1.26-alpine -n q104-30-diagnose-wrong-container-name-in-set-image
 ```
 
-That command fails with an error, because `webapp` is not this Deployment's actual container name
-(it's a guess, copied from a different service).
-
-Inspect the Deployment to find its real container name, then update **that** container's image to
-`nginx:1.26-alpine`, and confirm the Deployment reaches 2 ready replicas again.
+That command failed. Inspect the Deployment, find the container name that actually exists, and
+update that container's image to `nginx:1.26-alpine`. Confirm the Deployment reaches 2 ready
+replicas again.
 
 ## Hint
 
-Search kubernetes.io/docs for **"kubectl set image"** - and combine it with
+Search kubernetes.io/docs for **"kubectl set image"** - combine it with
 `kubectl get deployment ... -o jsonpath='{.spec.template.spec.containers[*].name}'` to list a
-Deployment's actual container names before guessing one.
+Deployment's actual container names before guessing one. The `container=image` argument must
+match a real container name on the pod template.

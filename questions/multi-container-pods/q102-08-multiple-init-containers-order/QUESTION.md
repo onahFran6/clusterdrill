@@ -2,23 +2,22 @@
 
 **Domain:** Application Design and Build · **Points:** 7 · **Namespace:** `q102-08-multiple-init-containers-order`
 
-Create a Pod named `ordered-init-app` in this namespace with **two** init
-containers, defined in this order, plus a main container:
+Create a Pod named `ordered-init-app` in this namespace with two init containers
+(defined in this order) plus a main container:
 
 1. `init-first` (image `busybox:1.36`) - creates the marker file
    `/work/first-done` in a shared `emptyDir` volume named `work-vol`, e.g.
    `sh -c "touch /work/first-done"`.
-2. `init-second` (image `busybox:1.36`) - only succeeds if
-   `/work/first-done` already exists, proving it ran *after* `init-first`,
-   e.g. `sh -c "test -f /work/first-done && touch /work/second-done"`.
+2. `init-second` (image `busybox:1.36`) - only succeeds if `/work/first-done`
+   already exists, proving it ran after `init-first`, e.g.
+   `sh -c "test -f /work/first-done && touch /work/second-done"`.
 
-Then a main container named `main` (image `busybox:1.36`) that mounts the
-same `work-vol` volume at `/work` and sleeps (e.g. `sleep 3600`).
+Then a main container named `main` (image `busybox:1.36`) that mounts the same
+`work-vol` volume at `/work` and sleeps (e.g. `sleep 3600`).
 
-Init containers run sequentially in the order they are listed under
-`spec.initContainers`, and each must complete successfully before the next
-one starts - `initContainers[0]` must be `init-first` and
-`initContainers[1]` must be `init-second`.
+`initContainers[0]` must be `init-first` and `initContainers[1]` must be
+`init-second`. Init containers run sequentially in listed order; each must
+complete successfully before the next starts.
 
 ## Hint
 

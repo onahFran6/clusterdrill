@@ -2,22 +2,13 @@
 
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-44-helm-required-function-value`
 
-`setup.sh` staged a local Helm chart named `gateway` on disk at
-`questions/helm-crds/q110-44-helm-required-function-value/chart` (relative to the
-`practice-bank/` directory). Its Secret template calls Helm's `required` function on
-`.Values.apiKey`:
+A local Helm chart named `gateway` is on disk at
+`questions/helm-crds/q110-44-helm-required-function-value/chart` (relative to `practice-bank/`).
+Its Secret template calls Helm's `required` function on `.Values.apiKey`. Installing with the
+chart defaults fails at template-render time.
 
-```
-apiKey: {{ required "apiKey is required - pass --set apiKey=..." .Values.apiKey | quote }}
-```
-
-`apiKey` defaults to an empty string in `values.yaml`, so installing this chart as-is fails
-outright at template-render time (before anything is even sent to the cluster) with the
-`required` function's own error message - no Secret, no release, nothing partially created.
-
-Install this chart into namespace `q110-44-helm-required-function-value` under
-release name `demo`, supplying `apiKey` as `sk-live-92f3` via `--set` so the `required` check
-passes and the Secret is actually created.
+Install the chart into this namespace as release `demo`, supplying `apiKey` as `sk-live-92f3` so
+the `required` check passes and the Secret is created.
 
 ## Hint
 

@@ -2,7 +2,7 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-05-secret-docker-registry-imagepullsecret`
 
-`setup.sh` already created a running pod named `private-app` (image `nginx:1.25-alpine`) in
+A running Pod named `private-app` (image `nginx:1.25-alpine`) already exists in
 namespace `q105-05-secret-docker-registry-imagepullsecret`.
 
 Create a Secret named `regcred` of the Docker registry credential type, for a private registry

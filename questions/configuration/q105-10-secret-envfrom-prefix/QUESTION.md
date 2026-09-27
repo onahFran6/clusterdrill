@@ -2,8 +2,8 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-10-secret-envfrom-prefix`
 
-`setup.sh` already created a generic Secret named `payment-creds` with two keys, `API_KEY` and
-`API_SECRET`, plus a running pod named `payment-worker` (image `nginx:1.25-alpine`), in namespace
+A generic Secret named `payment-creds` already exists with two keys, `API_KEY` and
+`API_SECRET`, plus a running Pod named `payment-worker` (image `nginx:1.25-alpine`), in namespace
 `q105-10-secret-envfrom-prefix`.
 
 Edit the pod so its container bulk-imports every key from `payment-creds` as environment

@@ -2,10 +2,11 @@
 
 **Domain:** Application Observability and Maintenance · **Points:** 5 · **Namespace:** `q107-43-readinessprobe-httpget-custom-header`
 
-`setup.sh` already created a running Pod named `api-gateway` (image `nginx:1.25-alpine`) with a
-`readinessProbe` on `path: /`, `port: 80`. This platform's health-check convention requires every
-probe request to carry the header `X-Probe-Source: kubelet`. Add that header to `api-gateway`'s
-`readinessProbe`, without changing `path` or `port`, and confirm it reaches Ready again.
+A running Pod named `api-gateway` (image `nginx:1.25-alpine`) already exists with a
+`readinessProbe` on `path: /`, `port: 80`.
+
+Add the header `X-Probe-Source: kubelet` to that `readinessProbe`. Do not change `path` or `port`.
+Confirm the Pod reaches Ready again.
 
 ## Hint
 

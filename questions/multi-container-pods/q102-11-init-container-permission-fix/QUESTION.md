@@ -5,17 +5,17 @@
 Create a Pod named `secure-app` with a shared `emptyDir` volume named
 `data-vol` and two containers:
 
-- An **init container** named `fix-permissions` (image `busybox:1.36`) that
+- An init container named `fix-permissions` (image `busybox:1.36`) that
   mounts `data-vol` at `/data` and, running as the default root user, fixes
-  ownership and permissions on the volume so a non-root user can write to
-  it - e.g. `sh -c "chown -R 1000:1000 /data && chmod -R 755 /data"`.
+  ownership and permissions so a non-root user can write to it - e.g.
+  `sh -c "chown -R 1000:1000 /data && chmod -R 755 /data"`.
 - A main container named `main` (image `busybox:1.36`) that also mounts
-  `data-vol` at `/data`, runs as UID `1000` via
-  `securityContext.runAsUser: 1000`, and runs a command that writes into the
-  volume, e.g. `sh -c "touch /data/test.txt && sleep 3600"`.
+  `data-vol` at `/data`, runs as UID `1000` via `securityContext.runAsUser: 1000`,
+  and runs a command that writes into the volume, e.g.
+  `sh -c "touch /data/test.txt && sleep 3600"`.
 
-Without the init container's ownership fix, the non-root main container
-would fail to write to the (root-owned by default) `emptyDir`.
+The non-root main container must be able to write to the volume after the
+init container finishes.
 
 ## Hint
 

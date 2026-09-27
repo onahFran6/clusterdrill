@@ -2,10 +2,8 @@
 
 **Domain:** Application Observability and Maintenance · **Points:** 5 · **Namespace:** `q107-01-liveness-httpget-basic`
 
-`setup.sh` already created a pod named `web-front` (image `nginx:1.25-alpine`, listening on
-container port `80`) in namespace `q107-01-liveness-httpget-basic`. The pod currently has no
-liveness probe at all, so a hung worker process inside the container would never be restarted
-automatically.
+A pod named `web-front` (image `nginx:1.25-alpine`, listening on container port `80`) already
+exists in namespace `q107-01-liveness-httpget-basic`. It has no liveness probe.
 
 Edit the pod so it has a `livenessProbe` that:
 
@@ -19,4 +17,5 @@ name to add the probe).
 ## Hint
 
 Search kubernetes.io/docs for **"configure liveness readiness startup probes"** - the pod
-lifecycle docs show the exact `livenessProbe.httpGet` YAML fields and their defaults.
+lifecycle docs show the exact `livenessProbe.httpGet` YAML fields and their defaults. Without a
+liveness probe, a hung process inside the container is never restarted automatically.

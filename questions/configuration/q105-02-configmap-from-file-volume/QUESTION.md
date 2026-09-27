@@ -2,9 +2,9 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-02-configmap-from-file-volume`
 
-`setup.sh` already created a file at `$HOME/practice-work/q105-02-configmap-from-file-volume/q105-02-nginx.conf`
-(this question's terminal working directory - shown above the terminal panel), and a running pod
-named `web-server` (image `nginx:1.25-alpine`) in namespace `q105-02-configmap-from-file-volume`.
+A file already exists at `$HOME/practice-work/q105-02-configmap-from-file-volume/q105-02-nginx.conf`
+(this question's terminal working directory - shown above the terminal panel), and a running Pod
+named `web-server` (image `nginx:1.25-alpine`) is in namespace `q105-02-configmap-from-file-volume`.
 
 Create a ConfigMap named `nginx-conf` whose data comes from the **contents of that file** (the
 key must end up being the file's base name, `q105-02-nginx.conf`) - do not retype the file's

@@ -2,7 +2,7 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-03-configmap-from-env-file`
 
-`setup.sh` already wrote a file to `$HOME/practice-work/q105-03-configmap-from-env-file/q105-03.env`
+A file already exists at `$HOME/practice-work/q105-03-configmap-from-env-file/q105-03.env`
 (this question's terminal working directory - shown above the terminal panel) containing:
 
 ```

@@ -2,10 +2,10 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-06-secret-tls-volume-mount`
 
-`setup.sh` already generated a self-signed certificate/key pair at
+A self-signed certificate/key pair already exists at
 `$HOME/practice-work/q105-06-secret-tls-volume-mount/q105-06-tls.crt` and `q105-06-tls.key`
-(this question's terminal working directory - shown above the terminal panel), and created a
-running pod named `edge-proxy` (image `nginx:1.25-alpine`) in namespace
+(this question's terminal working directory - shown above the terminal panel), and a running Pod
+named `edge-proxy` (image `nginx:1.25-alpine`) is in namespace
 `q105-06-secret-tls-volume-mount`.
 
 Create a Secret named `edge-tls` of the TLS credential type from that certificate/key pair.

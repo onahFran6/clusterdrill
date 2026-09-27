@@ -1,8 +1,8 @@
-# q105-37-kubectl-set-env-configmap: Inject a ConfigMap into a running Deployment imperatively
+# q105-37: Inject a ConfigMap into a running Deployment
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-37-kubectl-set-env-configmap`
 
-`setup.sh` already created, in namespace `q105-37-kubectl-set-env-configmap`:
+Namespace `q105-37-kubectl-set-env-configmap` has:
 
 - a ConfigMap named `feature-flags` with keys `DARK_MODE=true` and `BETA_UI=false`, and
 - a Deployment named `web-frontend` (1 replica, image `nginx:1.25-alpine`) whose container has no

@@ -1,9 +1,9 @@
-# q108-34-service-type-loadbalancer-basic: Expose a Deployment via a LoadBalancer Service
+# q108-34: Expose a Deployment via a LoadBalancer Service
 
 **Domain:** Services and Networking · **Points:** 5 · **Namespace:** `q108-34-service-type-loadbalancer-basic`
 
-`setup.sh` already created a Deployment named `webshop` (image `httpd:2.4-alpine`, 2 replicas,
-container port `80`, pod-template label `app=webshop`) in namespace
+A Deployment named `webshop` (image `httpd:2.4-alpine`, 2 replicas,
+container port `80`, pod-template label `app=webshop`) already exists in namespace
 `q108-34-service-type-loadbalancer-basic`.
 
 Write a Service manifest named `webshop-svc` that:
@@ -13,8 +13,8 @@ Write a Service manifest named `webshop-svc` that:
 - listens on port `80` and forwards to the container's port `80`
 
 Apply the manifest so the Service exists in the namespace. This lab cluster has no real cloud
-load balancer, so the Service's external IP will stay `<pending>` forever - that is expected and
-not graded; only the object's `spec` is.
+load balancer, so the Service's external IP will stay `<pending>`. That is expected. Only the
+object's `spec` is graded.
 
 ## Hint
 

@@ -10,8 +10,7 @@ Create a pod named `batch-worker` in namespace `q105-11-resource-requests-limits
 - Memory request: `128Mi`
 - Memory limit: `256Mi`
 
-`setup.sh` has not created this pod for you - author the manifest (or imperative command plus
-patch) yourself.
+Create the Pod yourself - nothing is pre-seeded for you beyond the empty namespace.
 
 ## Hint
 

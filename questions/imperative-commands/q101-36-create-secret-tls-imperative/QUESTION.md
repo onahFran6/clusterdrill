@@ -1,8 +1,8 @@
-# q101-36-create-secret-tls-imperative: Create a TLS Secret from a cert/key pair
+# q101-36: Create a TLS Secret from a cert/key pair
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-36-create-secret-tls-imperative`
 
-`setup.sh` already generated a self-signed certificate and private key at
+A self-signed certificate and private key already exist at
 `~/practice-work/q101-36-create-secret-tls-imperative/tls.crt` and `tls.key`.
 
 In namespace `q101-36-create-secret-tls-imperative`, create a Secret named `web-tls` of type

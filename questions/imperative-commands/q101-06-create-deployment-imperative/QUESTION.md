@@ -1,14 +1,10 @@
-# q101-06: Create a Deployment imperatively with a replica count
+# q101-06: Create a Deployment with a replica count
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-06-create-deployment-imperative`
 
-In namespace `q101-06-create-deployment-imperative`, create a Deployment named `api-server` that:
-
-- runs image `nginx:1.25-alpine`
-- starts with `3` replicas
-
-Use imperative `kubectl` commands only (a `create` plus a follow-up scale/edit command is fine,
-but no hand-written Deployment YAML).
+In namespace `q101-06-create-deployment-imperative`, create a Deployment named `api-server` that
+runs image `nginx:1.25-alpine` with `3` replicas. Use imperative `kubectl` only (a create plus a
+follow-up scale is fine) - no hand-written Deployment YAML.
 
 ## Hint
 

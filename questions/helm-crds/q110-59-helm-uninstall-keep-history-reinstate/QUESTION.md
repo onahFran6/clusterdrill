@@ -1,19 +1,13 @@
-# q110-59: Uninstall without losing history, then bring the release back
+# q110-59-helm-uninstall-keep-history-reinstate: Uninstall without losing history, then bring the release back
 
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-59-helm-uninstall-keep-history-reinstate`
 
-`setup.sh` installed a Helm release named `app` (chart `archiveapp`) into namespace
-`q110-59-helm-uninstall-keep-history-reinstate`, currently revision 1, `deployed`. Compliance
-wants it removed from the cluster today, but auditors need the option to reinstate it exactly
-as it was without anyone re-authoring the manifests from scratch.
+Release `app` (chart `archiveapp`) is installed in this namespace at revision 1, `deployed`.
 
 1. Uninstall release `app` in a way that removes it from the cluster **without discarding its
-   revision history** - a plain `helm uninstall` throws the history away; you need the flag
-   that doesn't.
-2. Confirm the release is still visible through a history-aware listing (`helm history app` or
-   `helm list`) even while uninstalled.
-3. Bring `app` back into a `deployed` state, proving the "reinstate" option actually works -
-   without hand-writing the manifests again.
+   revision history** (a plain uninstall throws history away).
+2. Confirm the release is still visible through a history-aware listing even while uninstalled.
+3. Bring `app` back to a `deployed` state without hand-writing the manifests again.
 
 ## Hint
 

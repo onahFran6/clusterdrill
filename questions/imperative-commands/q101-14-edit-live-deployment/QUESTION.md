@@ -1,13 +1,12 @@
-# q101-14: Edit a live Deployment's replica count
+# q101-14: Change a live Deployment's replica count
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-14-edit-live-deployment`
 
-`setup.sh` already created a Deployment named `live-edit` (image `nginx:1.25-alpine`, 1 replica)
-in namespace `q101-14-edit-live-deployment`.
+A Deployment named `live-edit` (image `nginx:1.25-alpine`, 1 replica) already exists in
+namespace `q101-14-edit-live-deployment`.
 
-Using `kubectl edit` (or `kubectl patch`, which is what `kubectl edit` does under the hood when
-you save a changed manifest), change the live Deployment's `spec.replicas` to `4` directly against
-the cluster object - don't reapply a YAML file from disk.
+Change the live Deployment's replica count to `4` against the cluster object directly - do not
+reapply a YAML file from disk.
 
 ## Hint
 

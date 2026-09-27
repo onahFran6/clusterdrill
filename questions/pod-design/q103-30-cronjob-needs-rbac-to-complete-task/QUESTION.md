@@ -2,28 +2,25 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-30-cronjob-needs-rbac-to-complete-task`
 
-`setup.sh` already created a CronJob named `status-recorder` in namespace
-`q103-30-cronjob-needs-rbac-to-complete-task`. Each run's real job is to record that it ran: the
-container patches `data.last_run_status` on a ConfigMap named `job-status` (in the same namespace)
-using its own in-cluster credentials, then exits `0` on success or a non-zero code if the patch
-itself failed.
+A CronJob named `status-recorder` already exists in namespace
+`q103-30-cronjob-needs-rbac-to-complete-task`. Each run records that it ran by patching
+`data.last_run_status` on a ConfigMap named `job-status` in the same namespace, using its
+in-cluster credentials. It exits `0` on success.
 
-The CronJob's pods run under a dedicated ServiceAccount, `status-recorder-sa`. Right now every run
-fails - the container's own log shows the patch attempt being rejected. Inspect a recent run (or
-trigger a fresh one) to see why.
+The CronJob's pods run as ServiceAccount `status-recorder-sa`. Every run fails. Inspect a recent
+run to see why.
 
-Fix this so `status-recorder-sa` can actually complete the job:
+Fix this so `status-recorder-sa` can finish the job:
 
-1. Create whatever `Role` and `RoleBinding` are needed so `status-recorder-sa` can `patch`/`update`
-   the `job-status` ConfigMap in this namespace. Do not loosen anything outside this namespace, and
-   do not change the CronJob, the ServiceAccount, or the ConfigMap's name.
-2. Trigger one fresh run of `status-recorder` (`kubectl create job --from=cronjob/status-recorder
-   ...` - don't wait for the schedule) and confirm it completes successfully, and that
-   `job-status`'s `data.last_run_status` field has actually changed from its original value of
-   `never-run`.
+1. Grant `status-recorder-sa` `patch` and `update` on the `job-status` ConfigMap in this
+   namespace, with a `Role` and `RoleBinding`. Do not grant access outside this namespace, and
+   do not rename the CronJob, the ServiceAccount, or the ConfigMap.
+2. Trigger one fresh run of `status-recorder` without waiting for the schedule. It must complete
+   successfully, and `job-status`'s `data.last_run_status` must change from `never-run`.
 
 ## Hint
 
-Search kubernetes.io/docs for **"Role and RoleBinding"** - the RBAC concept page shows how to bind
-a namespaced Role's verbs (like `patch` and `update` on a resource) to a specific ServiceAccount
-subject.
+Search kubernetes.io/docs for **"Role and RoleBinding"** - the RBAC concept page shows how to
+bind a namespaced Role's verbs (`patch` and `update`) to a ServiceAccount. Create the run with
+`kubectl create job --from=cronjob/status-recorder`. The container log shows the patch being
+rejected until the Role allows it.

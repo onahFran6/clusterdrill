@@ -2,22 +2,20 @@
 
 **Domain:** Application Observability and Maintenance · **Points:** 5 · **Namespace:** `q107-08-diagnose-crashloop-oomkilled`
 
-`setup.sh` already created a pod named `render-worker` (image `polinux/stress`) in namespace
-`q107-08-diagnose-crashloop-oomkilled`. The pod is stuck in `CrashLoopBackOff`. This container's
-workload genuinely needs about 150Mi of memory to do its job, but its memory `limit` was set far
-too low.
+A pod named `render-worker` (image `polinux/stress`) already exists in namespace
+`q107-08-diagnose-crashloop-oomkilled`. The pod is stuck in `CrashLoopBackOff`.
 
-Use `kubectl describe pod render-worker -n q107-08-diagnose-crashloop-oomkilled` to find the
-termination reason in the container's last state, then fix the pod:
+Find the termination reason in the container's last state, then fix the pod:
 
 - keep the pod named `render-worker` in the same namespace
 - keep the same image (`polinux/stress`) and the same `command`/`args`
-- raise the container's memory `limit` to `256Mi` (and set memory `requests` to `256Mi` too, so the
-  pod isn't scheduled expecting less than it needs)
+- set the container's memory `limit` to `256Mi` and its memory `requests` to `256Mi`
 - the pod reaches and stays `Running` with its container `Ready`
 
 ## Hint
 
 Search kubernetes.io/docs for **"OOMKilled"** - the "assign memory resources" task page explains how
 a container exceeding its memory `limit` gets killed with reason `OOMKilled`, visible in
-`describe`'s "Last State" section.
+`describe`'s "Last State" section. This workload needs about 150Mi; the current limit is far below
+that. Raise both the request and the limit so the pod is not scheduled with less memory than it
+uses.

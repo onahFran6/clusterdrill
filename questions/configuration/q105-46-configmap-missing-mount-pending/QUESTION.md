@@ -2,11 +2,10 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-46-configmap-missing-mount-pending`
 
-`setup.sh` already created a Deployment named `report-generator` (1 replica, image
-`nginx:1.25-alpine`) in namespace `q105-46-configmap-missing-mount-pending`. Its pod template
-mounts a ConfigMap named `settings-config` as a volume - but that ConfigMap does not exist, so the
-pod is stuck (not `CrashLoopBackOff` - it never even starts its container). No ConfigMap exists
-yet.
+A Deployment named `report-generator` (1 replica, image `nginx:1.25-alpine`) already exists in
+namespace `q105-46-configmap-missing-mount-pending`. Its pod template mounts a ConfigMap named
+`settings-config` as a volume - but that ConfigMap does not exist, so the pod is stuck (not
+`CrashLoopBackOff` - it never even starts its container). No ConfigMap exists yet.
 
 Inspect the pod's events (`kubectl describe pod ...`) to see the exact volume-mount failure, then
 create the missing ConfigMap named `settings-config` with a key `MODE` set to `production` -

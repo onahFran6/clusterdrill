@@ -2,18 +2,17 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q106-08-clusterrolebinding-bind-sa`
 
-`setup.sh` already created, in namespace `q106-08-clusterrolebinding-bind-sa`:
+Namespace `q106-08-clusterrolebinding-bind-sa` already has:
 
 - a ServiceAccount named `fleet-inspector`
-- a ClusterRole named `q106-08-namespace-viewer` (grants `get`/`list` on `namespaces`, a
-  cluster-scoped resource, and is already labeled for cleanup)
+- a ClusterRole named `q106-08-namespace-viewer` (grants `get`/`list` on `namespaces`)
 
 Create a ClusterRoleBinding named `q106-08-fleet-inspector-binding` that grants the
 `q106-08-namespace-viewer` ClusterRole to the `fleet-inspector` ServiceAccount, cluster-wide.
 
-**Important:** label the ClusterRoleBinding you create with
-`clusterdrill-question: q106-08-clusterrolebinding-bind-sa` so cleanup can find it - it is
-cluster-scoped and will not be removed just by deleting the namespace.
+Label that ClusterRoleBinding with
+`clusterdrill-question: q106-08-clusterrolebinding-bind-sa`. It is cluster-scoped and will not
+be removed just by deleting the namespace.
 
 ## Hint
 

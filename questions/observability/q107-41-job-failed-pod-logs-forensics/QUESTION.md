@@ -2,12 +2,10 @@
 
 **Domain:** Application Observability and Maintenance · **Points:** 5 · **Namespace:** `q107-41-job-failed-pod-logs-forensics`
 
-`setup.sh` already created a Job named `data-migration` in this namespace that has finished
-failing (`backoffLimit: 1`), leaving one or more failed Pods behind. This is a pure investigation
-task - you do not need to fix anything.
+A Job named `data-migration` already exists in this namespace and has finished failing
+(`backoffLimit: 1`), leaving one or more failed Pods behind. Do not change the Job or its Pods.
 
-Find the failed Pod(s) belonging to this Job and read their logs to determine why they failed.
-Redirect the exact error line from the logs into a file at
+Read the failed Pod logs and save the exact error line to
 `$HOME/practice-work/q107-41-job-failed-pod-logs-forensics/failure-reason.txt` on the terminal
 host.
 

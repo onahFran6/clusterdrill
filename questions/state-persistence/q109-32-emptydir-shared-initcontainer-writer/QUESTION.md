@@ -9,14 +9,14 @@ with:
   `sh -c "echo ready > /work/config.txt"`
 - a main container named `app` (image `busybox:1.36`) that runs
   `sh -c "sleep 3600"`
-- a shared `emptyDir` volume named `work`, mounted at `/work` in **both** containers, so the
-  file the init container writes before it exits is still there for the main container to read
-  once it starts
+- a shared `emptyDir` volume named `work`, mounted at `/work` in **both** containers
+
+The main container must be able to read `/work/config.txt` with contents `ready`.
 
 ## Hint
 
 Search kubernetes.io/docs for **"init containers" "shared volume"** - the Init Containers
 concept page shows an init container and the Pod's app containers can share the same
 `emptyDir` volume, letting an init container prepare files the main container reads once
-running - the init container's own filesystem changes outside that shared volume do not
+running. The init container's own filesystem changes outside that shared volume do not
 carry over.

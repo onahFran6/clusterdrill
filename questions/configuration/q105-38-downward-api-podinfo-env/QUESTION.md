@@ -1,19 +1,18 @@
-# q105-38-downward-api-podinfo-env: Expose pod identity as environment variables via the Downward API
+# q105-38: Expose pod identity as environment variables
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-38-downward-api-podinfo-env`
 
-`setup.sh` has not created any pod for you in namespace `q105-38-downward-api-podinfo-env` -
-author the manifest yourself.
+No Pod exists yet in namespace `q105-38-downward-api-podinfo-env` - author the manifest yourself.
 
 Create a Pod named `info-reporter`, image `busybox:1.36`, whose container runs `sleep 3600` and
-has three environment variables sourced from the pod's own metadata via the Downward API
+has three environment variables sourced from the Pod's own metadata via the Downward API
 (`fieldRef`, not a ConfigMap or Secret):
 
-- `MY_POD_NAME` - the pod's own name (`metadata.name`)
-- `MY_POD_NAMESPACE` - the pod's own namespace (`metadata.namespace`)
-- `MY_POD_IP` - the pod's own IP address (`status.podIP`)
+- `MY_POD_NAME` - the Pod's own name (`metadata.name`)
+- `MY_POD_NAMESPACE` - the Pod's own namespace (`metadata.namespace`)
+- `MY_POD_IP` - the Pod's own IP address (`status.podIP`)
 
-The pod must reach `Running`.
+The Pod must reach `Running`.
 
 ## Hint
 

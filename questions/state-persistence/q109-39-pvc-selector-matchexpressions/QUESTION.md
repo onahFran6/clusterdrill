@@ -2,17 +2,16 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q109-39-pvc-selector-matchexpressions`
 
-`setup.sh` already created two statically-provisioned PersistentVolumes, both with capacity
-`100Mi`, access mode `ReadWriteOnce`, and storage class name `""`:
+Two statically-provisioned PersistentVolumes already exist, both with capacity `100Mi`, access
+mode `ReadWriteOnce`, and storage class name `""`:
 
 - `tier-gold-pv` (label `tier: gold`, `hostPath` at `/mnt/q109-39-gold`)
 - `tier-bronze-pv` (label `tier: bronze`, `hostPath` at `/mnt/q109-39-bronze`)
 
 Create a PersistentVolumeClaim named `gold-claim` in namespace
 `q109-39-pvc-selector-matchexpressions` (access mode `ReadWriteOnce`, storage class name `""`,
-requesting `50Mi`) that binds to **only** the `gold` volume - never the `bronze` one - using
-`spec.selector.matchExpressions` (not `matchLabels`) with a single expression: key `tier`,
-operator `In`, values `[gold]`.
+requesting `50Mi`) that binds to **only** `tier-gold-pv` using `spec.selector.matchExpressions`
+(not `matchLabels`) with a single expression: key `tier`, operator `In`, values `[gold]`.
 
 ## Hint
 

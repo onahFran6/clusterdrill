@@ -2,8 +2,8 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-07-configmap-key-env-var`
 
-`setup.sh` already created a ConfigMap named `feature-flags` with keys `NEW_CHECKOUT=enabled`
-and `DARK_MODE=disabled`, plus a running pod named `storefront` (image `nginx:1.25-alpine`), in
+A ConfigMap named `feature-flags` already exists with keys `NEW_CHECKOUT=enabled` and
+`DARK_MODE=disabled`, plus a running Pod named `storefront` (image `nginx:1.25-alpine`), in
 namespace `q105-07-configmap-key-env-var`.
 
 Edit the pod so its container gets **exactly one** new environment variable, `CHECKOUT_FLAG`,

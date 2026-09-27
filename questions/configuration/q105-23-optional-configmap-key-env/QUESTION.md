@@ -1,18 +1,15 @@
-# q105-23-optional-configmap-key-env: Reference an optional ConfigMap key that may not exist
+# q105-23: Start a Pod that references a ConfigMap key that may not exist
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-23-optional-configmap-key-env`
 
-`setup.sh` already created a ConfigMap named `app-flags` with only one key, `FEATURE_X=on`, plus a
-pod named `flagreader` (image `nginx:1.25-alpine`) in namespace
-`q105-23-optional-configmap-key-env`. The pod is currently failing to start with
-`CreateContainerConfigError` because its container defines an environment variable `FEATURE_Y`
-sourced via `valueFrom.configMapKeyRef` from a key that does not exist in `app-flags`.
+A ConfigMap named `app-flags` already exists with only one key, `FEATURE_X=on`, plus a Pod named
+`flagreader` (image `nginx:1.25-alpine`) in namespace `q105-23-optional-configmap-key-env`. The
+pod is failing to start with `CreateContainerConfigError` - its container expects an environment
+variable `FEATURE_Y` from `app-flags`, but that key is not in the ConfigMap.
 
-Edit the pod so the `FEATURE_Y` environment variable's `configMapKeyRef` is marked `optional:
-true`, so the container starts successfully even though that key is missing - the container
-should simply not have a `FEATURE_Y` variable set at all. Do not change the `FEATURE_X` reference,
-and do not add the missing key to the ConfigMap. The pod will need to be recreated for the change
-to take effect, and it must end up Running and Ready.
+Fix the pod so it reaches Running and Ready even though `FEATURE_Y` is missing from `app-flags`.
+Do not change the `FEATURE_X` reference, and do not add the missing key to the ConfigMap. The
+container should simply not have a `FEATURE_Y` variable set. Recreating the pod is fine.
 
 ## Hint
 

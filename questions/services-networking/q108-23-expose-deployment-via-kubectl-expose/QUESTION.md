@@ -1,10 +1,10 @@
-# q108-23-expose-deployment-via-kubectl-expose: Expose a bare Deployment as a ClusterIP Service
+# q108-23: Expose a Deployment as a ClusterIP Service
 
 **Domain:** Services and Networking · **Points:** 5 · **Namespace:** `q108-23-expose-deployment-via-kubectl-expose`
 
-`setup.sh` already created a Deployment named `billing-worker` (image `httpd:2.4-alpine`, 3
-replicas, container port `8443`, pod-template label `app=billing-worker`) in namespace
-`q108-23-expose-deployment-via-kubectl-expose`. There is no Service in front of it at all.
+A Deployment named `billing-worker` (image `httpd:2.4-alpine`, 3
+replicas, container port `8443`, pod-template label `app=billing-worker`) already exists in
+namespace `q108-23-expose-deployment-via-kubectl-expose`. There is no Service in front of it.
 
 Create a Service named exactly `billing-worker-svc` that:
 

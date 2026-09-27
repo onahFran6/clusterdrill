@@ -1,10 +1,10 @@
-# q110-53: Nested --set overrides plus --set-string to stop a flag being coerced to bool
+# q110-53-helm-set-nested-and-set-string: Nested --set overrides plus --set-string to stop a flag being coerced to bool
 
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-53-helm-set-nested-and-set-string`
 
-`setup.sh` staged a local chart named `web` on disk at
-`questions/helm-crds/q110-53-helm-set-nested-and-set-string/chart` (relative to the repo
-root). Its `values.yaml` defaults are:
+A local Helm chart named `web` is on disk at
+`questions/helm-crds/q110-53-helm-set-nested-and-set-string/chart` (relative to
+`practice-bank/`). Its `values.yaml` defaults include:
 
 ```yaml
 ingress:
@@ -18,18 +18,15 @@ extra:
   buildFlag: "stable"
 ```
 
-There's no time to write a values file - every override has to go in as `--set`/`--set-string`
-flags on a single `helm install` command. Install a release named `web` into namespace
-`q110-53-helm-set-nested-and-set-string` with:
+Install a release named `web` into this namespace with a single `helm install`, overriding via
+`--set` / `--set-string` only (no values file):
 
-- `ingress.enabled` set to `true` (the chart only renders an `Ingress` when this is true)
-- The first entry of `ingress.hosts` with `host` set to `app.example.com`
-- `resources.limits.cpu` set to `500m`
-- `extra.buildFlag` set to the **literal string** `"true"` - the chart renders this value
-  through `toYaml` into a ConfigMap's `data` field (which the Kubernetes API only accepts as
-  `map[string]string`); if `buildFlag` lands as the boolean `true` instead of the string
-  `"true"`, the ConfigMap is invalid and the **entire release fails to install** - so getting
-  this one flag right is a precondition for everything else in this task succeeding.
+- `ingress.enabled` to `true` (the chart only renders an Ingress when this is true)
+- the first `ingress.hosts` entry's `host` to `app.example.com`
+- `resources.limits.cpu` to `500m`
+- `extra.buildFlag` to the literal string `"true"` (not a boolean) - the chart renders this into
+  a ConfigMap `data` field; a boolean value makes the ConfigMap invalid and the whole install
+  fails
 
 ## Hint
 

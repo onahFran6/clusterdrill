@@ -111,6 +111,16 @@ rules:
 - apiGroups: ["rbac.authorization.k8s.io"]
   resources: ["clusterrolebindings", "clusterroles", "rolebindings", "roles"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+# bind: required so setup.sh's grant_user_namespace_access can RoleBind the
+# built-in `admin` ClusterRole into each question namespace, and so
+# web/rbac.py can ClusterRoleBind `clusterdrill-cluster-scoped-access` onto
+# each per-user ServiceAccount. Creating a wildcard Role instead is
+# forbidden by Kubernetes RBAC escalation checks against this least-
+# privilege appliance identity - see lib/grading.sh's grant comment.
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterroles"]
+  verbs: ["bind"]
+  resourceNames: ["admin", "clusterdrill-cluster-scoped-access"]
 - apiGroups: ["storage.k8s.io"]
   resources: ["storageclasses"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]

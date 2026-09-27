@@ -2,26 +2,26 @@
 
 **Domain:** Services and Networking · **Points:** 7 · **Namespace:** `q108-15-networkpolicy-allow-egress-to-pods`
 
-`setup.sh` already created two Deployments in namespace
+Two Deployments already exist in namespace
 `q108-15-networkpolicy-allow-egress-to-pods`:
 
 - `report-generator` (pod-template label `app=report-generator`) - should only be able to reach
-  one internal dependency, nothing else
+  one internal dependency
 - `metrics-store` (pod-template label `app=metrics-store`, container port `9090`) - the one
   destination `report-generator` is allowed to call
 
 Create a NetworkPolicy named `report-generator-restrict-egress` in this namespace that:
 
-- applies to pods matching `app=report-generator` (the policy's `podSelector`)
+- applies to pods matching `app=report-generator`
 - allows **egress** traffic only to pods matching `app=metrics-store`
 - restricts the allowed egress traffic to TCP port `9090`
 
-Because this policy sets `policyTypes: [Egress]` with a defined `egress` rule and no catch-all
-"allow everything" entry, any other outbound destination from `report-generator` (including DNS,
-unless a separate rule allows it) falls outside what this policy permits.
+Set `policyTypes` to include `Egress`. Do not add a catch-all allow rule.
 
 ## Hint
 
-Search kubernetes.io/docs for **"NetworkPolicy resource"** - the same concept page's example
-manifest also shows an `egress[].to[].podSelector` combined with an `egress[].ports` entry, mirror
-image of the ingress side.
+Search kubernetes.io/docs for **"NetworkPolicy resource"** - the concept page's example manifest
+shows an `egress[].to[].podSelector` combined with an `egress[].ports` entry. With
+`policyTypes: [Egress]` and no catch-all egress entry, any other outbound destination from
+`report-generator` (including DNS, unless a separate rule allows it) is outside what this policy
+permits.

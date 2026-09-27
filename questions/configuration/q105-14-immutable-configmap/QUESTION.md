@@ -2,7 +2,7 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-14-immutable-configmap`
 
-`setup.sh` already created a ConfigMap named `release-info` with a key `VERSION=3.1.0`, in
+A ConfigMap named `release-info` already exists with a key `VERSION=3.1.0`, in
 namespace `q105-14-immutable-configmap`. It is currently mutable.
 
 Update `release-info` so that it is marked **immutable** - once you make this change, Kubernetes

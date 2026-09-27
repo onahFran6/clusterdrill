@@ -1,8 +1,8 @@
-# q101-40-create-configmap-from-env-file: Create a ConfigMap from an env file
+# q101-40: Create a ConfigMap from an env file
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-40-create-configmap-from-env-file`
 
-`setup.sh` already dropped a `KEY=VALUE`-per-line env file at
+A `KEY=VALUE`-per-line env file already exists at
 `~/practice-work/q101-40-create-configmap-from-env-file/service.env` containing:
 
 ```

@@ -5,16 +5,14 @@
 Create a Pod named `shared-vol-demo` with two containers that share data
 through a single `emptyDir` volume named `shared`:
 
-- `producer` (image `busybox:1.36`) - mounts the `shared` volume at
-  `/producer-data` and continuously writes a line to
-  `/producer-data/message.txt`.
-- `consumer` (image `busybox:1.36`) - mounts the **same** `shared` volume,
-  but at a **different** mount path, `/consumer-data`, and continuously
-  reads/tails `/consumer-data/message.txt`.
+- `producer` (image `busybox:1.36`) - mounts `shared` at `/producer-data` and
+  continuously writes a line to `/producer-data/message.txt`.
+- `consumer` (image `busybox:1.36`) - mounts the same `shared` volume at a
+  different path, `/consumer-data`, and continuously reads/tails
+  `/consumer-data/message.txt`.
 
-Both containers must mount the volume named `shared` (what makes the data
-shared is the volume **name** matching in both `volumeMounts`, not the mount
-path - the two containers are deliberately given different paths).
+Both containers must mount the volume named `shared`. Matching volume names in
+`volumeMounts` is what shares the data - the mount paths may differ.
 
 ## Hint
 

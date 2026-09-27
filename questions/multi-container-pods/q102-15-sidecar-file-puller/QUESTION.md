@@ -5,23 +5,16 @@
 Create a Pod named `content-server` in this namespace with two containers that
 share a single `emptyDir` volume named `web-content`:
 
-- `content-puller` (image `busybox:1.36`) - a sidecar that periodically
-  (re)writes `/www/index.html` with some placeholder HTML content, for
-  example a loop like:
+- `content-puller` (image `busybox:1.36`) - periodically (re)writes
+  `/www/index.html` with placeholder HTML, for example:
   `sh -c "while true; do echo '<html>synced content</html>' > /www/index.html; sleep 30; done"`.
-  Mount `web-content` at `/www` in this container.
-- `web` (image `nginx:1.27-alpine`) - the main container that serves
-  whatever `content-puller` writes. Mount the **same** `web-content` volume
-  at `/usr/share/nginx/html`, nginx's default document root, so nginx serves
-  the file the sidecar keeps refreshing.
+  Mount `web-content` at `/www`.
+- `web` (image `nginx:1.27-alpine`) - serves whatever `content-puller` writes.
+  Mount the same `web-content` volume at `/usr/share/nginx/html` (nginx's
+  default document root).
 
-This is the "git-sync"-style pattern: a sidecar pulls/refreshes content into
-a shared volume that the main container just serves, without the main
-container needing any knowledge of how the content gets there.
-
-The pod must end up with exactly two containers: `content-puller` and `web`,
-both mounting `web-content`, with `web` mounting it specifically at
-`/usr/share/nginx/html`.
+The Pod must end up with exactly two containers: `content-puller` and `web`,
+both mounting `web-content`, with `web` mounting it at `/usr/share/nginx/html`.
 
 ## Hint
 

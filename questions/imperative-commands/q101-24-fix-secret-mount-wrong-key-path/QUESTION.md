@@ -1,19 +1,18 @@
-# q101-24-fix-secret-mount-wrong-key-path: Fix a Secret volume mount referencing a key that does not exist
+# q101-24: Fix a Secret volume mount that never becomes Ready
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-24-fix-secret-mount-wrong-key-path`
 
-In namespace `q101-24-fix-secret-mount-wrong-key-path`, a pod named `cert-server` is failing to
-start. It's supposed to mount a Secret named `tls-creds` at `/etc/certs/cert.pem`, but something
-is wrong with the volume configuration.
+In namespace `q101-24-fix-secret-mount-wrong-key-path`, a Pod named `cert-server` is failing to
+start. It is supposed to mount Secret `tls-creds` so that a single file appears at
+`/etc/certs/cert.pem`, but something is wrong with the volume configuration.
 
-Investigate with `kubectl describe pod cert-server` to find the root cause, then fix it
-imperatively (no hand-written manifest applied from a fresh YAML file - patch, regenerate, or
-recreate the pod using `kubectl` commands/flags). The fixed pod must:
+Investigate with `kubectl describe pod cert-server`, then fix it imperatively (patch, regenerate,
+or recreate - no hand-written manifest applied from a fresh YAML file). The fixed Pod must:
 
 - Be named `cert-server`, in this namespace, `Running` and `Ready`.
 - Mount the existing Secret `tls-creds` as a volume.
 - Expose exactly one file from that Secret at path `/etc/certs/cert.pem`.
-- That file's content must be the Secret's original `tls.crt` value (don't recreate the Secret
+- That file's content must be the Secret's original `tls.crt` value (do not recreate the Secret
   with different data).
 
 Verify with `kubectl exec cert-server -- cat /etc/certs/cert.pem`.

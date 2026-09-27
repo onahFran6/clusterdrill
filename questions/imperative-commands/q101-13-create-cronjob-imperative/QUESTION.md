@@ -8,7 +8,7 @@ In namespace `q101-13-create-cronjob-imperative`, create a CronJob named `heartb
 - runs the command `echo heartbeat`
 - is scheduled with the cron expression `*/5 * * * *`
 
-Use a single imperative `kubectl create cronjob` command, not a hand-written manifest.
+Use a single imperative `kubectl create cronjob` command - not a hand-written manifest.
 
 ## Hint
 

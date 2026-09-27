@@ -2,7 +2,7 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-15-immutable-secret`
 
-`setup.sh` already created a generic Secret named `signing-key` with a key `KEY_ID=key-2026-a`,
+A generic Secret named `signing-key` already exists with a key `KEY_ID=key-2026-a`,
 in namespace `q105-15-immutable-secret`. It is currently mutable.
 
 Update `signing-key` so that it is marked **immutable** - once you make this change, Kubernetes

@@ -1,29 +1,25 @@
-# q108-28-diagnose-dns-wrong-namespace-suffix: Diagnose and fix a hardcoded cross-namespace DNS suffix breaking a client Deployment
+# q108-28: Fix a client Deployment whose cross-namespace DNS name does not resolve
 
 **Domain:** Services and Networking · **Points:** 5 · **Namespace:** `q108-28-diagnose-dns-wrong-namespace-suffix`
 
-`setup.sh` already created two namespaces:
+Two namespaces already exist:
 
 - `q108-28-diagnose-dns-wrong-namespace-suffix-backend`, containing a Deployment `orders-api` and a
-  Service `orders-svc` (port `8080`) that is actually serving traffic.
+  Service `orders-svc` (port `8080`) that is serving traffic.
 - `q108-28-diagnose-dns-wrong-namespace-suffix-frontend`, containing a Deployment `web-ui` whose
-  container repeatedly curls an env var `ORDERS_URL` in a loop and writes the result to a file used
-  by its liveness probe.
+  container repeatedly requests an env var `ORDERS_URL` and writes the result to a file used by
+  its liveness probe.
 
-`web-ui`'s pods are stuck `CrashLoopBackOff` (failing liveness). Its container's `ORDERS_URL` env
-var is hardcoded to
-`http://orders-svc.q108-28-diagnose-dns-wrong-namespace-suffix-backend-old.svc.cluster.local:8080/`
-- a namespace suffix (`-backend-old`) that does not exist. The real backend namespace is
-`q108-28-diagnose-dns-wrong-namespace-suffix-backend`.
+`web-ui`'s pods are stuck `CrashLoopBackOff`. `ORDERS_URL` is a cluster DNS name that does not
+resolve.
 
-Edit the `web-ui` Deployment in the `-frontend` namespace so its `ORDERS_URL` env var points at the
-correct namespace (`q108-28-diagnose-dns-wrong-namespace-suffix-backend`), then confirm `web-ui`'s
-pods become `Ready 1/1`.
+Edit the `web-ui` Deployment in the `-frontend` namespace so `ORDERS_URL` is exactly
+`http://orders-svc.q108-28-diagnose-dns-wrong-namespace-suffix-backend.svc.cluster.local:8080/`,
+then confirm `web-ui`'s pods become `Ready 1/1`.
 
 ## Hint
 
 Search kubernetes.io/docs for **"DNS for Services and Pods"** - the DNS concept page's "What
-things get DNS names" section spells out the full
-`<service>.<namespace>.svc.cluster.local` form; a Pod resolving a Service in another namespace must
-name that namespace exactly, or the lookup returns NXDOMAIN and any client that treats that as fatal
-never becomes healthy.
+things get DNS names" section spells out `<service>.<namespace>.svc.cluster.local`. A namespace
+suffix that does not exist returns NXDOMAIN, and a client that treats that failure as fatal never
+becomes healthy. Compare `ORDERS_URL` with the backend namespace that actually exists.

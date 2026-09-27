@@ -2,14 +2,25 @@
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q106-28-chained-rbac-role-wrong-apigroup`
 
-`setup.sh` already created, in namespace `q106-28-chained-rbac-role-wrong-apigroup`:
+Namespace `q106-28-chained-rbac-role-wrong-apigroup` already has:
 
 - a ServiceAccount named `ci-bot`
-- a Role named `deploy-reader` intended to grant `get`/`list` on `deployments`
-- a RoleBinding named `ci-bot-binding` that correctly binds `deploy-reader` to `ci-bot`
-- a real Deployment named `payments-api` (2 replicas, `nginx` image)
+- a Role named `deploy-reader`, intended to grant `get` and `list` on `deployments`
+- a RoleBinding named `ci-bot-binding` that binds `deploy-reader` to `ci-bot`
+- a Deployment named `payments-api` (2 replicas, image `nginx`)
 
-A teammate reports that `ci-bot` still cannot read `payments-api`. Confirm this yourself:
+`ci-bot` still cannot read `payments-api`. Update Role `deploy-reader` in place so `ci-bot` can
+`get` and `list` Deployments in this namespace. `ci-bot` must remain unable to `delete`
+Deployments. Do not rename or recreate the ServiceAccount or the RoleBinding, and do not add
+any verb beyond `get` and `list`.
+
+## Hint
+
+Search kubernetes.io/docs for **"Role and ClusterRole"** - the RBAC concept page's rule examples
+show which `apiGroups` value each built-in resource belongs to, including the difference between
+the core group (`""`) and `apps`. `deployments` is an `apps` resource.
+
+Confirm the denial before the fix:
 
 ```sh
 kubectl auth can-i get deployments \
@@ -17,15 +28,4 @@ kubectl auth can-i get deployments \
   -n q106-28-chained-rbac-role-wrong-apigroup
 ```
 
-It returns `no`, even though the RoleBinding and ServiceAccount names all look correct. Find the
-actual bug inside the `deploy-reader` Role's rule and fix it - `deployments` belongs to the `apps`
-API group, not the core (empty string) group. Edit the Role in place so its rule for resource
-`deployments` uses `apiGroups: ["apps"]`. Do **not** rename or recreate the ServiceAccount or
-RoleBinding, and do **not** add any verb beyond `get` and `list` (the fix must not over-grant -
-`ci-bot` must still be denied `delete` on `deployments`).
-
-## Hint
-
-Search kubernetes.io/docs for **"Role and ClusterRole"** - the RBAC concept page's rule examples
-show which `apiGroups` value each built-in resource actually belongs to, including the difference
-between the core group (`""`) and `apps`.
+That returns `no` until the Role's rule for `deployments` uses `apiGroups: ["apps"]`.

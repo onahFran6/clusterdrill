@@ -2,21 +2,18 @@
 
 **Domain:** Services and Networking · **Points:** 6 · **Namespace:** `q108-17-networkpolicy-restrict-port`
 
-`setup.sh` already created a Deployment `admin-panel` (pod-template label `app=admin-panel`,
-container exposing both port `8443` for the real admin UI and port `9000` for an internal debug
-endpoint that should never be reachable from other pods) in namespace
-`q108-17-networkpolicy-restrict-port`. It also created a NetworkPolicy named
-`admin-panel-ingress` that already selects `app=admin-panel` pods and already allows ingress from
-pods matching `app=ops-console`, but the existing policy has **no `ports` field at all** - meaning
-it currently allows the `ops-console` pods to reach *every* port on `admin-panel`, including the
-debug port `9000`.
+A Deployment `admin-panel` (pod-template label `app=admin-panel`,
+container exposing both port `8443` for the admin UI and port `9000` for an internal debug
+endpoint) already exists in namespace `q108-17-networkpolicy-restrict-port`, along with a
+NetworkPolicy named `admin-panel-ingress`. That policy already selects `app=admin-panel` pods and
+already allows ingress from pods matching `app=ops-console`, but it does not limit which ports
+those clients can reach. The debug port `9000` must not stay open.
 
-Edit the existing NetworkPolicy `admin-panel-ingress` so its ingress rule allows traffic **only**
-on TCP port `8443`, closing off the debug port without changing the existing `podSelector` or
-`from` selector.
+Edit `admin-panel-ingress` so its ingress rule allows traffic **only** on TCP port `8443`,
+without changing the existing `podSelector` or `from` selector.
 
 ## Hint
 
 Search kubernetes.io/docs for **"NetworkPolicy resource"** - the concept page shows that omitting
-`ports` in an ingress rule means "all ports," and that adding a `ports` list is how you scope a
-rule down to specific ports and protocols.
+`ports` in an ingress rule means all ports, and that adding a `ports` list scopes a rule to
+specific ports and protocols.

@@ -2,7 +2,7 @@
 
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-01-helm-install-release`
 
-`setup.sh` staged a local Helm chart named `greeter` on disk at
+A local Helm chart named `greeter` is available at
 `questions/helm-crds/q110-01-helm-install-release/chart` (relative to the `practice-bank/`
 directory). The chart templates a single-replica Deployment.
 
@@ -13,4 +13,3 @@ Install this chart into namespace `q110-01-helm-install-release` under the relea
 
 Search kubernetes.io/docs for **"helm install"** - the Helm quickstart shows the exact
 `helm install <release-name> <chart>` syntax, including how to target a specific namespace.
-

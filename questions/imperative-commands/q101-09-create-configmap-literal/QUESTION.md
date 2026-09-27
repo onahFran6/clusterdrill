@@ -2,13 +2,13 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-09-create-configmap-literal`
 
-In namespace `q101-09-create-configmap-literal`, create a ConfigMap named `app-config` with the
-following imperative `kubectl` command, containing exactly these two keys:
+In namespace `q101-09-create-configmap-literal`, create a ConfigMap named `app-config` with
+exactly these two keys:
 
 - `LOG_LEVEL=info`
 - `MAX_CONNECTIONS=100`
 
-No YAML file authored by hand - use literal key/value flags.
+Use an imperative `kubectl` command with literal key/value flags - no YAML file authored by hand.
 
 ## Hint
 

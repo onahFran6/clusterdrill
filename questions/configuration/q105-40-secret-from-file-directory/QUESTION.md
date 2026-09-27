@@ -1,9 +1,8 @@
-# q105-40-secret-from-file-directory: Build a Secret from every file in a directory
+# q105-40: Build a Secret from a directory of certificate files
 
 **Domain:** Application Environment, Configuration and Security · **Points:** 5 · **Namespace:** `q105-40-secret-from-file-directory`
 
-`setup.sh` has already written a directory of files to `~/certs/` (mapped to your terminal's home
-directory):
+A directory of files already exists at `~/certs/` in your terminal's home directory:
 
 - `~/certs/tls-ca.pem` containing `CA-CERT-DATA`
 - `~/certs/tls-client.pem` containing `CLIENT-CERT-DATA`

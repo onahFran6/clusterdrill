@@ -13,9 +13,8 @@ own resource requests and limits:
   - requests: `cpu: 50m`, `memory: 32Mi`
   - limits: `cpu: 100m`, `memory: 64Mi`
 
-This demonstrates that each container in a multi-container Pod gets its
-own independent `resources` block - the Pod's total requested/limited
-resources are the sum across all of its containers.
+Each container gets its own independent `resources` block; the Pod's totals
+are the sum across all containers.
 
 ## Hint
 

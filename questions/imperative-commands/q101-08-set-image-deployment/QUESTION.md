@@ -1,8 +1,8 @@
-# q101-08: Update a Deployment's image with `kubectl set image`
+# q101-08: Update a Deployment's container image
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-08-set-image-deployment`
 
-`setup.sh` already created a Deployment named `image-rollout` in namespace
+A Deployment named `image-rollout` already exists in namespace
 `q101-08-set-image-deployment`, with a single container named `app` running `nginx:1.24-alpine`.
 
 Using a single imperative `kubectl` command, update the `app` container's image to

@@ -11,7 +11,7 @@ Create a `LimitRange` named `storage-limits` that bounds each container's `ephem
 - `min`: `50Mi`
 - `max`: `1Gi`
 
-Then create a pod named `scratch-worker` (image `busybox:1.36`, running `sleep 3600`) whose
+Then create a Pod named `scratch-worker` (image `busybox:1.36`, running `sleep 3600`) whose
 container sets **no** `ephemeral-storage` request or limit of its own at all - relying entirely on
 `storage-limits` to fill in the `100Mi` request and `500Mi` limit automatically. The pod must
 reach `Running`.

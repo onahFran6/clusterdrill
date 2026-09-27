@@ -1,8 +1,8 @@
-# q101-32-json-patch-remove-env-var-by-index: Remove one environment variable by index with a JSON Patch
+# q101-32: Remove one environment variable from a Pod by array index
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-32-json-patch-remove-env-var-by-index`
 
-In namespace `q101-32-json-patch-remove-env-var-by-index`, a pod named `api-worker` is running a
+In namespace `q101-32-json-patch-remove-env-var-by-index`, a Pod named `api-worker` is running a
 single container with five environment variables, in this exact order:
 
 - `APP_ENV=production`
@@ -11,20 +11,16 @@ single container with five environment variables, in this exact order:
 - `MAX_RETRIES=5`
 - `CACHE_TTL=300`
 
-`LEGACY_API_URL` points at a service that was decommissioned last quarter and must be removed
-entirely - not blanked out to an empty string, not renamed, gone from the env list. The other
+`LEGACY_API_URL` must be removed entirely - not blanked to an empty string, not renamed. The other
 four variables must keep their exact original order, names, and values.
 
-A running pod's `spec.containers[*].env` is immutable - the API server rejects any attempt to
-patch it on the live object directly, and rewriting the whole `env` list by hand risks silently
-reordering or dropping one of the variables you're supposed to keep untouched. Use a JSON Patch
-`remove` operation targeting the exact array index of `LEGACY_API_URL` (`--type=json` with a path
-like `/spec/containers/0/env/2`) against a local copy of the pod's manifest, then recreate the pod
-from that patched manifest.
+A running Pod's `spec.containers[*].env` is immutable. Use a JSON Patch `remove` operation
+targeting the array index of `LEGACY_API_URL` against a local copy of the Pod's manifest, then
+recreate the Pod from that patched manifest.
 
-End state: pod `api-worker` in this namespace, `Running` and `Ready`, with exactly four
+End state: Pod `api-worker` in this namespace, `Running` and `Ready`, with exactly four
 environment variables - `APP_ENV`, `LOG_LEVEL`, `MAX_RETRIES`, `CACHE_TTL` - in that order, each
-holding its original value, and no trace of `LEGACY_API_URL` anywhere in the env list.
+holding its original value, and no trace of `LEGACY_API_URL` in the env list.
 
 ## Hint
 

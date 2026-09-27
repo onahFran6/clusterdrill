@@ -2,12 +2,6 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q109-38-pv-mountoptions-field`
 
-`setup.sh` created namespace `q109-38-pv-mountoptions-field` but no resources yet.
-
-A performance-sensitive workload's storage doesn't need access-time tracking, and the platform
-team wants that expressed on the volume itself rather than relying on every consumer to
-remember a mount flag.
-
 Create a PersistentVolume named `perf-data-pv` that:
 
 - has capacity `1Gi`
@@ -23,4 +17,4 @@ Create a PersistentVolume named `perf-data-pv` that:
 Search kubernetes.io/docs for **"persistentvolume mountOptions"** - the Persistent Volumes
 concept page's Mount Options section shows `spec.mountOptions` as a list of extra flags passed
 to the mount command for volume plugins that support it, specified on the PersistentVolume
-itself rather than by each consumer.
+itself rather than by each consumer. `noatime` drops access-time tracking.

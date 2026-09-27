@@ -1,16 +1,16 @@
-# q101-16: Override a container's command and arguments imperatively
+# q101-16: Override a container's command and arguments
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q101-16-run-pod-command-args`
 
-In namespace `q101-16-run-pod-command-args`, create a pod named `custom-cmd` running image
-`busybox:1.36` whose container overrides the image's default entrypoint to instead run:
+In namespace `q101-16-run-pod-command-args`, create a Pod named `custom-cmd` running image
+`busybox:1.36` whose container runs:
 
 ```
 sh -c "echo hello-ckad && sleep 3600"
 ```
 
-Use a single imperative `kubectl run` command with a command override (everything after `--`) -
-no manifest authored by hand. The pod should end up `Running`.
+Use a single imperative `kubectl run` command with a command override - no manifest authored by
+hand. The Pod should end up `Running`.
 
 ## Hint
 
