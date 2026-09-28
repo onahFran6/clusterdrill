@@ -15,13 +15,13 @@ import httpx
 import node_topology
 import websockets as websockets_client
 import websockets.exceptions as websockets_exceptions
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response, StreamingResponse
 from idle import tracker as idle_tracker
 from services import question_view
 from starlette.requests import Request
 from starlette.websockets import WebSocket, WebSocketDisconnect
-from ttyd_manager import ensure_session
+from ttyd_manager import ensure_session, read_paste_buffer
 from ttyd_manager import manager as ttyd_manager
 
 logger = logging.getLogger("clusterdrill.terminal")
@@ -54,6 +54,27 @@ def _terminal_instance(tab_id: int, user_id: str | None = None, node_target: str
     if inst is None or not inst.is_running:
         raise HTTPException(status_code=503, detail="Terminal is not running.")
     return inst
+
+
+_COPY_BRIDGE_SCRIPT_TAG = '<script src="/static/terminal-copy-bridge.js"></script>'
+
+
+@router.post("/terminal-clipboard/{tab_id}", dependencies=[Depends(auth.csrf_protect_header)])
+async def terminal_copy_buffer(request: Request, tab_id: int):
+    """Backs static/terminal-copy-bridge.js (injected into ttyd's own page
+    by terminal_proxy_http_tab below): tmux's default mouse-drag-release
+    binding already copies a drag selection into this user's own tmux
+    server's paste buffer for free (ensure_session turns mouse mode on) -
+    this just reads it back out so the bridge script can push it into the
+    real browser clipboard. tab_id is part of the URL for parity with every
+    other terminal route (and so the bridge script has an unambiguous
+    per-tab endpoint to call), but read_paste_buffer is scoped to the
+    user's own tmux server, not an individual tab - see its docstring for
+    why that's fine here (same user's own data regardless of which of
+    their tabs copied it).
+    """
+    user_id = auth.current_user_id(request.session)
+    return {"text": read_paste_buffer(user_id)}
 
 
 def _origin_is_trusted(websocket: WebSocket) -> bool:
@@ -129,14 +150,29 @@ async def terminal_proxy_http_tab(request: Request, tab_id: int, path: str):
             },
             content=body,
         )
+        response_headers = {
+            k: v
+            for k, v in upstream.headers.items()
+            if k.lower() not in ("content-encoding", "content-length", "transfer-encoding", "connection")
+        }
+        if path == "" and request.method == "GET" and upstream.headers.get("content-type", "").startswith("text/html"):
+            # ttyd's own index page (its whole UI is one embedded, minified
+            # asset bundle - there's no separate template to hook into) -
+            # inject the copy-bridge script right before </body> so it runs
+            # inside ttyd's page with access to its `window.term`. A full
+            # buffer-and-replace rather than the streaming pass-through
+            # every other request gets below: this is one small HTML
+            # document (the root page load), not the asset/websocket
+            # traffic StreamingResponse exists for, so buffering it to do a
+            # text replacement is cheap and never touches ttyd's own JS.
+            html = upstream.content.decode("utf-8", errors="ignore").replace(
+                "</body>", _COPY_BRIDGE_SCRIPT_TAG + "</body>", 1,
+            )
+            return Response(content=html.encode("utf-8"), status_code=upstream.status_code, headers=response_headers)
         return StreamingResponse(
             upstream.aiter_bytes(),
             status_code=upstream.status_code,
-            headers={
-                k: v
-                for k, v in upstream.headers.items()
-                if k.lower() not in ("content-encoding", "content-length", "transfer-encoding", "connection")
-            },
+            headers=response_headers,
         )
 
 
