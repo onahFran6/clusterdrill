@@ -53,6 +53,23 @@ def test_ttyd_instance_tmux_session_name_scoped_per_user():
     assert inst.tmux_session_name == "clusterdrill-alice-2"
 
 
+def test_ttyd_instance_tmux_socket_name_scoped_per_user():
+    # Each user's own private tmux server, not the shared default socket -
+    # see _tmux_socket_name's docstring for why (closes a `tmux attach`
+    # cross-user hijack that a shared server with distinctly-named sessions
+    # alone doesn't prevent).
+    no_accounts = ttyd_manager.TtydInstance(tab_id=1)
+    alice_tab1 = ttyd_manager.TtydInstance(tab_id=1, user_id="alice")
+    alice_tab2 = ttyd_manager.TtydInstance(tab_id=2, user_id="alice")
+    bob_tab1 = ttyd_manager.TtydInstance(tab_id=1, user_id="bob")
+
+    assert no_accounts.tmux_socket_name == "clusterdrill-0"
+    # Same user's tabs share one socket (one private server, many sessions).
+    assert alice_tab1.tmux_socket_name == alice_tab2.tmux_socket_name == "clusterdrill-1"
+    # A different user gets a different socket entirely.
+    assert bob_tab1.tmux_socket_name == "clusterdrill-2"
+
+
 def test_two_users_get_non_overlapping_port_blocks():
     alice_tab1 = ttyd_manager.TtydInstance(tab_id=1, user_id="alice")
     bob_tab1 = ttyd_manager.TtydInstance(tab_id=1, user_id="bob")
@@ -81,7 +98,7 @@ def test_pool_ensure_tab_rejects_out_of_bounds(monkeypatch):
 def test_shell_command_uses_tmux_new_session_when_available(monkeypatch):
     monkeypatch.setattr(ttyd_manager.shutil, "which", lambda name: f"/usr/bin/{name}")
     cmd = ttyd_manager._shell_command(2)
-    assert cmd == ["/usr/bin/tmux", "new-session", "-A", "-s", "clusterdrill-2"]
+    assert cmd == ["/usr/bin/tmux", "-L", "clusterdrill-0", "new-session", "-A", "-s", "clusterdrill-2"]
 
 
 def test_shell_command_falls_back_to_bare_shell_without_tmux(monkeypatch):
@@ -105,9 +122,9 @@ def test_shell_command_control_plane_target_is_byte_for_byte_unchanged(monkeypat
 def test_shell_command_worker_target_wraps_kubectl_debug_node(monkeypatch):
     monkeypatch.setattr(ttyd_manager.shutil, "which", lambda name: f"/usr/bin/{name}")
     cmd = ttyd_manager._shell_command(3, "alice", "worker-1")
-    assert cmd[:5] == ["/usr/bin/tmux", "new-session", "-A", "-s", "clusterdrill-alice-3"]
-    assert cmd[5:7] == ["sh", "-c"]
-    script = cmd[7]
+    assert cmd[:7] == ["/usr/bin/tmux", "-L", "clusterdrill-1", "new-session", "-A", "-s", "clusterdrill-alice-3"]
+    assert cmd[7:9] == ["sh", "-c"]
+    script = cmd[9]
     assert "kubectl debug node/worker-1" in script
     assert "--image=busybox:1.36" in script
     assert "chroot /host sh" in script
@@ -119,7 +136,7 @@ def test_shell_command_worker_target_wraps_kubectl_debug_node(monkeypatch):
 
 def test_shell_command_worker_target_reuses_an_existing_pod_via_exec(monkeypatch):
     monkeypatch.setattr(ttyd_manager.shutil, "which", lambda name: f"/usr/bin/{name}")
-    script = ttyd_manager._shell_command(1, "alice", "worker-1")[7]
+    script = ttyd_manager._shell_command(1, "alice", "worker-1")[9]
     # The reconnect path (pod already exists) must exec into it, never
     # attempt a second `kubectl debug` under the same name - kubectl
     # rejects creating a pod that already exists outright.
@@ -135,7 +152,7 @@ def test_shell_command_ignores_worker_target_without_a_user_id(monkeypatch):
     # server-side backstop in case a node= query param reaches here anyway.
     monkeypatch.setattr(ttyd_manager.shutil, "which", lambda name: f"/usr/bin/{name}")
     cmd = ttyd_manager._shell_command(1, None, "worker-1")
-    assert cmd == ["/usr/bin/tmux", "new-session", "-A", "-s", "clusterdrill-1"]
+    assert cmd == ["/usr/bin/tmux", "-L", "clusterdrill-0", "new-session", "-A", "-s", "clusterdrill-1"]
 
 
 # --- start() vs. a stale same-named tmux session from a prior process life ---
@@ -156,7 +173,7 @@ def test_start_kills_any_stale_same_named_session_before_a_worker_target(monkeyp
     assert inst.start("/usr/bin/ttyd", {}) is True
 
     manager.run.assert_called_once_with(
-        ["/usr/bin/tmux", "kill-session", "-t", "clusterdrill-alice-2"],
+        ["/usr/bin/tmux", "-L", "clusterdrill-1", "kill-session", "-t", "clusterdrill-alice-2"],
         stdout=ttyd_manager.subprocess.DEVNULL, stderr=ttyd_manager.subprocess.DEVNULL,
     )
     # The kill must happen before Popen spawns ttyd, not after - a stale
@@ -197,13 +214,16 @@ def test_start_worker_target_without_tmux_binary_never_calls_run(monkeypatch):
     mock_run.assert_not_called()
 
 
-def test_kill_all_tmux_sessions_calls_kill_session_per_tab(monkeypatch):
+def test_kill_all_tmux_sessions_calls_kill_server_per_user(monkeypatch):
     """The exact function responsible for this session's real incident
     (killed two live tmux sessions during a non-pytest manual test) -
     verified here purely against a mock, argv shape only, real tmux never
     touched. subprocess.run is replaced with a MagicMock for this test only
     (shadows conftest's autouse guard, which is fine - a MagicMock never
-    shells out regardless)."""
+    shells out regardless). One `kill-server` call per known user_id now
+    tears down every tab's session for that user at once (each user_id has
+    its own private tmux server - see _tmux_socket_name), not one
+    `kill-session` call per tab."""
     monkeypatch.setattr(ttyd_manager.shutil, "which", lambda name: "/usr/bin/tmux")
     mock_run = MagicMock()
     monkeypatch.setattr(ttyd_manager.subprocess, "run", mock_run)
@@ -211,12 +231,11 @@ def test_kill_all_tmux_sessions_calls_kill_session_per_tab(monkeypatch):
     pool = ttyd_manager.TtydPool(max_tabs=3)
     pool.kill_all_tmux_sessions()
 
-    assert mock_run.call_count == 3
-    called_session_names = [call.args[0][3] for call in mock_run.call_args_list]
-    assert called_session_names == ["clusterdrill-1", "clusterdrill-2", "clusterdrill-3"]
-    for call in mock_run.call_args_list:
-        argv = call.args[0]
-        assert argv[:3] == ["/usr/bin/tmux", "kill-session", "-t"]
+    assert mock_run.call_count == 1
+    mock_run.assert_called_once_with(
+        ["/usr/bin/tmux", "-L", "clusterdrill-0", "kill-server"],
+        stdout=ttyd_manager.subprocess.DEVNULL, stderr=ttyd_manager.subprocess.DEVNULL,
+    )
 
 
 def test_kill_all_tmux_sessions_noop_without_tmux_binary(monkeypatch):
@@ -247,11 +266,8 @@ def test_kill_all_tmux_sessions_sweeps_every_known_user(monkeypatch):
     pool = ttyd_manager.TtydPool(max_tabs=2)
     pool.kill_all_tmux_sessions()
 
-    called_session_names = {call.args[0][3] for call in mock_run.call_args_list}
-    assert called_session_names == {
-        "clusterdrill-1", "clusterdrill-2",
-        "clusterdrill-alice-1", "clusterdrill-alice-2",
-    }
+    called_sockets = {call.args[0][2] for call in mock_run.call_args_list}
+    assert called_sockets == {"clusterdrill-0", "clusterdrill-1"}
 
 
 def test_kill_all_tmux_sessions_deletes_debug_pods_for_every_known_user_but_not_none(monkeypatch):
@@ -332,8 +348,12 @@ def test_kill_user_tmux_sessions_only_targets_that_user(monkeypatch):
     pool = ttyd_manager.TtydPool(max_tabs=2)
     pool.kill_user_tmux_sessions("alice")
 
-    called_session_names = [call.args[0][3] for call in mock_run.call_args_list]
-    assert called_session_names == ["clusterdrill-alice-1", "clusterdrill-alice-2"]
+    # One kill-server call on alice's own private socket tears down every
+    # tab's session for her in one shot - no other user's socket is touched.
+    mock_run.assert_called_once_with(
+        ["/usr/bin/tmux", "-L", "clusterdrill-1", "kill-server"],
+        stdout=ttyd_manager.subprocess.DEVNULL, stderr=ttyd_manager.subprocess.DEVNULL,
+    )
 
 
 def test_kill_user_tmux_sessions_deletes_each_tabs_debug_pod(monkeypatch):
@@ -423,7 +443,7 @@ def _reset_last_cwd_by_session():
 def _mock_run_has_session(exists: bool):
     def fake_run(argv, **kwargs):
         result = MagicMock()
-        if argv[1] == "has-session":
+        if argv[3] == "has-session":
             result.returncode = 0 if exists else 1
         else:
             result.returncode = 0
@@ -439,8 +459,9 @@ def test_ensure_session_creates_new_session_with_cwd(monkeypatch):
     inst = ttyd_manager.TtydInstance(tab_id=1)
     ttyd_manager.ensure_session(inst, cwd="/work/q104-01")
 
-    new_session_calls = [c for c in mock_run.call_args_list if c.args[0][1] == "new-session"]
+    new_session_calls = [c for c in mock_run.call_args_list if c.args[0][3] == "new-session"]
     assert len(new_session_calls) == 1
+    assert new_session_calls[0].args[0][1:3] == ["-L", inst.tmux_socket_name]
     assert new_session_calls[0].args[0][-2:] == ["-c", "/work/q104-01"]
     assert ttyd_manager._last_cwd_by_session[inst.tmux_session_name] == "/work/q104-01"
 
@@ -455,9 +476,9 @@ def test_ensure_session_cds_existing_session_on_question_change(monkeypatch):
 
     ttyd_manager.ensure_session(inst, cwd="/work/q104-02")
 
-    send_keys_calls = [c.args[0] for c in mock_run.call_args_list if c.args[0][1] == "send-keys"]
-    assert any(argv[4] == "C-u" for argv in send_keys_calls)
-    assert any("/work/q104-02" in argv[4] for argv in send_keys_calls if len(argv) > 4)
+    send_keys_calls = [c.args[0] for c in mock_run.call_args_list if c.args[0][3] == "send-keys"]
+    assert any(argv[6] == "C-u" for argv in send_keys_calls)
+    assert any("/work/q104-02" in argv[6] for argv in send_keys_calls if len(argv) > 6)
     assert ttyd_manager._last_cwd_by_session[inst.tmux_session_name] == "/work/q104-02"
 
 
@@ -471,5 +492,55 @@ def test_ensure_session_reconnect_to_same_question_does_not_cd(monkeypatch):
 
     ttyd_manager.ensure_session(inst, cwd="/work/q104-01")
 
-    send_keys_calls = [c for c in mock_run.call_args_list if c.args[0][1] == "send-keys"]
+    send_keys_calls = [c for c in mock_run.call_args_list if c.args[0][3] == "send-keys"]
     assert send_keys_calls == []
+
+
+# --- read_paste_buffer (terminal copy-to-clipboard bridge) -------------------
+
+def test_read_paste_buffer_returns_stdout_on_success(monkeypatch):
+    monkeypatch.setattr(ttyd_manager.shutil, "which", lambda name: "/usr/bin/tmux")
+    mock_run = MagicMock(return_value=MagicMock(returncode=0, stdout="kubectl get pods\n"))
+    monkeypatch.setattr(ttyd_manager.subprocess, "run", mock_run)
+
+    text = ttyd_manager.read_paste_buffer("alice")
+
+    assert text == "kubectl get pods\n"
+    mock_run.assert_called_once_with(
+        ["/usr/bin/tmux", "-L", "clusterdrill-1", "show-buffer"],
+        capture_output=True, text=True,
+    )
+
+
+def test_read_paste_buffer_empty_when_no_buffer_exists(monkeypatch):
+    # `tmux show-buffer` exits non-zero when nothing has ever been copied on
+    # this user's server yet - not an error condition this function needs
+    # its caller to distinguish from "tmux isn't installed" below.
+    monkeypatch.setattr(ttyd_manager.shutil, "which", lambda name: "/usr/bin/tmux")
+    monkeypatch.setattr(
+        ttyd_manager.subprocess, "run",
+        MagicMock(return_value=MagicMock(returncode=1, stdout="")),
+    )
+
+    assert ttyd_manager.read_paste_buffer("alice") == ""
+
+
+def test_read_paste_buffer_empty_without_tmux_binary(monkeypatch):
+    monkeypatch.setattr(ttyd_manager.shutil, "which", lambda name: None)
+    mock_run = MagicMock()
+    monkeypatch.setattr(ttyd_manager.subprocess, "run", mock_run)
+
+    assert ttyd_manager.read_paste_buffer("alice") == ""
+    mock_run.assert_not_called()
+
+
+def test_read_paste_buffer_scoped_to_the_requesting_users_own_socket(monkeypatch):
+    monkeypatch.setattr(ttyd_manager.shutil, "which", lambda name: "/usr/bin/tmux")
+    mock_run = MagicMock(return_value=MagicMock(returncode=0, stdout="alice's text"))
+    monkeypatch.setattr(ttyd_manager.subprocess, "run", mock_run)
+
+    ttyd_manager.read_paste_buffer("alice")
+    ttyd_manager.read_paste_buffer("bob")
+
+    sockets_used = [call.args[0][2] for call in mock_run.call_args_list]
+    assert sockets_used == ["clusterdrill-1", "clusterdrill-2"]

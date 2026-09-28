@@ -20,6 +20,14 @@ user's ttyd process at that user's RBAC-restricted kubeconfig (rbac.py)
 instead of the app's own admin one - separate ports/tmux sessions alone
 only stopped two users from *typing in the same shell*, not from one
 user's shell reading another user's namespace via kubectl.
+
+Every tmux invocation also targets a private per-user server (`-L
+clusterdrill-<slot>`, see _tmux_socket_name below) rather than the shared
+default socket - distinct session *names* on one shared server still let
+any user's shell `tmux attach` into another user's session outright, since
+tmux itself has no per-session access control. Session names/ports
+themselves are unaffected by this (still "clusterdrill-N", still the same
+port math) - only which server they live on changed.
 """
 from __future__ import annotations
 
@@ -63,6 +71,25 @@ _user_slot_lock = threading.Lock()
 # last connected" apart from "same question, just reconnecting/reloading" -
 # only the former should ever poke a live shell with an unrequested `cd`.
 _last_cwd_by_session: dict[str, str] = {}
+
+
+def _tmux_socket_name(user_id: str | None) -> str:
+    """Each user gets their own tmux *server* (a private `-L` socket), not
+    just a distinctly-named session on one shared default server. A shared
+    server means every tmux session on it - regardless of which user_id's
+    ttyd process created it - is visible and attachable via plain
+    `tmux attach -t <name>` from inside ANY of them, since tmux has no
+    per-session access control of its own. Session names already embed the
+    target user_id (_tmux_session_name), so a candidate could otherwise
+    simply guess or discover another candidate's session name and attach
+    into their live, already-RBAC'd shell. A private socket per user closes
+    that off outright: a session on one socket is invisible to a client
+    connected to a different socket, full stop. Keyed on the same
+    process-lifetime slot number ports already use (_user_slot), so it's
+    just as stable/collision-free per user_id, including the None
+    (no-accounts) slot 0.
+    """
+    return f"clusterdrill-{_user_slot(user_id)}"
 
 
 def _user_slot(user_id: str | None) -> int:
@@ -125,6 +152,10 @@ class TtydInstance:
         return _tmux_session_name(self.user_id, self.tab_id)
 
     @property
+    def tmux_socket_name(self) -> str:
+        return _tmux_socket_name(self.user_id)
+
+    @property
     def is_running(self) -> bool:
         return self._proc is not None and self._proc.poll() is None
 
@@ -146,7 +177,7 @@ class TtydInstance:
             # this same-session reattach to survive app restarts, and
             # that existing behavior must not regress.
             subprocess.run(
-                [tmux_bin, "kill-session", "-t", self.tmux_session_name],
+                [tmux_bin, "-L", self.tmux_socket_name, "kill-session", "-t", self.tmux_session_name],
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             )
 
@@ -281,14 +312,14 @@ class TtydPool:
         alone would not be enough, since ttyd's own tmux wrapper
         (_shell_command) recreates/reattaches a session on its next
         connection (`tmux new-session -A`) rather than requiring a dead one
-        to be explicitly torn down. Iterates every possible tab_id up to
-        max_tabs for every known user_id (not just self._tabs' currently-
-        tracked instances), so a tab whose ttyd process this app never
-        happened to spawn this run (e.g. after a restart) still gets its
-        tmux session killed if one is lingering from before. Leaves ttyd
-        itself running - harmless with no tmux session behind it, and it
-        lazily creates a fresh one the next time someone actually
-        reconnects after logging back in.
+        to be explicitly torn down. Since every known user_id now has their
+        own private tmux server (_tmux_socket_name), one `kill-server` per
+        user_id tears down every tab's session for that user in a single
+        call - simpler than the old shared-server design, which had to
+        iterate every possible tab_id and kill each session by name. Leaves
+        ttyd itself running - harmless with no tmux server behind it, and
+        the next real connection's `ensure_session` lazily starts a fresh
+        one.
 
         Still global across every user: the
         idle watchdog tracks one shared activity clock (idle.py), not a
@@ -298,7 +329,7 @@ class TtydPool:
 
         Also deletes any worker-node tab's debug pod (issue #122) for
         every known user_id, independent of whether tmux itself is even
-        installed - killing (or never having a) local tmux session
+        installed - killing (or never having a) local tmux server
         doesn't stop a debug pod, a separate Kubernetes object (see
         rbac.delete_debug_pod), so this always runs rather than being
         skipped when tmux_bin is None below.
@@ -313,39 +344,38 @@ class TtydPool:
         if tmux_bin is None:
             return
         for user_id in list(_user_slots.keys()):
-            for tab_id in range(1, self.max_tabs + 1):
-                session_name = _tmux_session_name(user_id, tab_id)
-                subprocess.run(
-                    [tmux_bin, "kill-session", "-t", session_name],
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                )
+            subprocess.run(
+                [tmux_bin, "-L", _tmux_socket_name(user_id), "kill-server"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
 
     def kill_user_tmux_sessions(self, user_id: str) -> None:
         """Every tmux session (and tracked ttyd process) belonging to one
         user - used when an admin deletes their account
         (routers/admin_router.py), so a deleted account doesn't leave a
-        still-live shell into the cluster with no owner behind it. Also
-        deletes any worker-node tab's debug pod (issue #122) for the same
-        reason - see kill_all_tmux_sessions' identical note on why a
-        killed tmux session doesn't stop one on its own. (Also called
+        still-live shell into the cluster with no owner behind it. A single
+        `kill-server` on that user's own private socket
+        (_tmux_socket_name) tears down every tab's session for them in one
+        call - see kill_all_tmux_sessions' identical note on why a killed
+        tmux server doesn't stop a debug pod on its own, hence the separate
+        per-tab rbac.delete_debug_pod loop below. (Also called
         independently by rbac.delete_user_service_account's own cleanup -
         harmless to run twice, kubectl delete --ignore-not-found is
         idempotent.)"""
         tmux_bin = shutil.which("tmux")
+        if tmux_bin is not None:
+            subprocess.run(
+                [tmux_bin, "-L", _tmux_socket_name(user_id), "kill-server"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
         for tab_id in range(1, self.max_tabs + 1):
             rbac.delete_debug_pod(user_id, tab_id)
-            if tmux_bin is not None:
-                session_name = _tmux_session_name(user_id, tab_id)
-                subprocess.run(
-                    [tmux_bin, "kill-session", "-t", session_name],
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                )
             inst = self._tabs.pop((user_id, tab_id), None)
             if inst is not None:
                 inst.stop()
 
 
-def _send_cd(tmux_bin: str, session_name: str, cwd: str) -> None:
+def _send_cd(tmux_bin: str, socket: str, session_name: str, cwd: str) -> None:
     """Best-effort: moves an already-running tmux session to cwd without
     losing its scrollback - fixes a terminal-continuity bug where a
     candidate switching questions was left in the previous question's
@@ -362,11 +392,11 @@ def _send_cd(tmux_bin: str, session_name: str, cwd: str) -> None:
     candidate can still scroll up to their prior work if they want it.
     """
     subprocess.run(
-        [tmux_bin, "send-keys", "-t", session_name, "C-u"],
+        [tmux_bin, "-L", socket, "send-keys", "-t", session_name, "C-u"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
     subprocess.run(
-        [tmux_bin, "send-keys", "-t", session_name, f"cd {shlex.quote(cwd)} && clear", "Enter"],
+        [tmux_bin, "-L", socket, "send-keys", "-t", session_name, f"cd {shlex.quote(cwd)} && clear", "Enter"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
 
@@ -393,6 +423,7 @@ def ensure_session(inst: TtydInstance, cwd: str | None) -> None:
     tmux_bin = shutil.which("tmux")
     if tmux_bin is None:
         return
+    socket = inst.tmux_socket_name
 
     # Ensure a server+session exists BEFORE touching any `-g` (server-wide)
     # option below: `tmux set-option -g` is a no-op (exit 1, "no server
@@ -404,18 +435,18 @@ def ensure_session(inst: TtydInstance, cwd: str | None) -> None:
     # session first guarantees the server stays up long enough for the
     # `set-option` calls further down to actually stick.
     exists = subprocess.run(
-        [tmux_bin, "has-session", "-t", inst.tmux_session_name],
+        [tmux_bin, "-L", socket, "has-session", "-t", inst.tmux_session_name],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     ).returncode == 0
     if not exists:
-        cmd = [tmux_bin, "new-session", "-d", "-s", inst.tmux_session_name]
+        cmd = [tmux_bin, "-L", socket, "new-session", "-d", "-s", inst.tmux_session_name]
         if cwd:
             cmd += ["-c", cwd]
         subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if cwd:
             _last_cwd_by_session[inst.tmux_session_name] = cwd
     elif cwd and _last_cwd_by_session.get(inst.tmux_session_name) != cwd:
-        _send_cd(tmux_bin, inst.tmux_session_name, cwd)
+        _send_cd(tmux_bin, socket, inst.tmux_session_name, cwd)
         _last_cwd_by_session[inst.tmux_session_name] = cwd
 
     # tmux always draws through the terminal's alternate screen buffer (how
@@ -437,7 +468,7 @@ def ensure_session(inst: TtydInstance, cwd: str | None) -> None:
     # only the first - simpler than tracking "have I already done this for
     # this server" separately.
     subprocess.run(
-        [tmux_bin, "set-option", "-g", "mouse", "on"],
+        [tmux_bin, "-L", socket, "set-option", "-g", "mouse", "on"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
 
@@ -453,9 +484,34 @@ def ensure_session(inst: TtydInstance, cwd: str | None) -> None:
     # gone. Matching xterm's value here (same `-g`/idempotent reasoning as
     # `mouse on` above) closes that gap.
     subprocess.run(
-        [tmux_bin, "set-option", "-g", "history-limit", "5000"],
+        [tmux_bin, "-L", socket, "set-option", "-g", "history-limit", "5000"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
+
+
+def read_paste_buffer(user_id: str | None) -> str:
+    """Returns whatever this user last copied via a mouse-drag in ANY of
+    their terminal tabs (tmux's default `MouseDragEnd1Pane` binding, active
+    because `ensure_session` turns mouse mode on, already copies a drag
+    selection into this tmux server's own paste buffer with zero extra
+    keystrokes - this just reads it back out). Scoped to the user's own
+    private tmux server (_tmux_socket_name, see ADR 0004) rather than a tab,
+    since tmux paste buffers are server-wide, not per-session - safe now
+    that isolation is per-user, not per-tab, which only matters if the same
+    user has more than one tab open and copies in a different one than they
+    paste from (same user's own data either way, not a cross-user leak).
+    Empty string on any failure (no tmux binary, no server yet for this
+    user, no buffer ever written) - the caller's job is deciding what "no
+    text yet" means, not this function's.
+    """
+    tmux_bin = shutil.which("tmux")
+    if tmux_bin is None:
+        return ""
+    result = subprocess.run(
+        [tmux_bin, "-L", _tmux_socket_name(user_id), "show-buffer"],
+        capture_output=True, text=True,
+    )
+    return result.stdout if result.returncode == 0 else ""
 
 
 # issue #122 (M7): the image a worker-node tab's debug pod runs - same
@@ -501,9 +557,10 @@ def _shell_command(tab_id: int, user_id: str | None = None, node_target: str | N
     # password-gate-off / no-accounts mode (user_id=None) simply never
     # offers a worker option in the UI (routers/terminal_router.py's node-
     # list endpoint), so this is a defensive fallback, not a real path.
+    socket = _tmux_socket_name(user_id)
     if node_target and node_target != "control-plane" and user_id:
-        return [tmux_bin, "new-session", "-A", "-s", session, *_debug_node_shell_command(node_target, user_id, tab_id)]
-    return [tmux_bin, "new-session", "-A", "-s", session]
+        return [tmux_bin, "-L", socket, "new-session", "-A", "-s", session, *_debug_node_shell_command(node_target, user_id, tab_id)]
+    return [tmux_bin, "-L", socket, "new-session", "-A", "-s", session]
 
 
 def _spawn_env(user_id: str | None = None) -> dict[str, str]:
