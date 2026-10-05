@@ -3,7 +3,7 @@
 Doc: https://helm.sh/docs/helm/helm_lint/
 
 ```sh
-CHART_DIR="questions/helm-crds/q110-23-helm-lint-fix-chart/chart"
+CHART_DIR="$HOME/practice-work/q110-23-helm-lint-fix-chart/chart"
 
 # Fix 1: add the required `version:` field to Chart.yaml.
 cat > "$CHART_DIR/Chart.yaml" <<'EOF'

@@ -3,8 +3,8 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-51-helm-named-template-label-fix`
 
 A local Helm chart named `webapp` is on disk at
-`questions/helm-crds/q110-51-helm-named-template-label-fix/chart` (relative to
-`practice-bank/`). `templates/_helpers.tpl` defines a named template `webapp.labels`, and both
+`$HOME/practice-work/q110-51-helm-named-template-label-fix/chart`.
+`templates/_helpers.tpl` defines a named template `webapp.labels`, and both
 `templates/deployment.yaml` and `templates/configmap.yaml` set `metadata.labels` via
 `{{ include "webapp.labels" . }}`. Neither resource currently gets an
 `app.kubernetes.io/version` label.

@@ -3,8 +3,7 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-52-helm-install-pinned-version-new-namespace`
 
 Two packaged versions of a local chart named `cache` are on disk at
-`questions/helm-crds/q110-52-helm-install-pinned-version-new-namespace/chart-pkgs/` (relative to
-`practice-bank/`):
+`$HOME/practice-work/q110-52-helm-install-pinned-version-new-namespace/chart-pkgs/`:
 
 - `cache-1.0.0.tgz` - defaults to `image: redis:7.2-alpine`
 - `cache-2.0.0.tgz` - defaults to `image: redis:7.4-alpine`

@@ -11,6 +11,7 @@ from sessions import (
     DAILY_TIMER_SECONDS,
     EXAM_DEFAULT_QUESTION_COUNT,
     EXAM_QUESTION_COUNT_CHOICES,
+    QUESTION_COUNT_ALL,
     SESSION_SIZE,
     TIMER_CHOICES_MINUTES,
     mode_availability,
@@ -54,6 +55,37 @@ def test_start_fixed_is_deterministic(question_bank_factory):
     session_a = start_fixed(bank, "topic-a")
     session_b = start_fixed(bank, "topic-a")
     assert session_a.question_ids == session_b.question_ids
+
+
+def test_start_fixed_question_count_all_lifts_the_session_size_cap(question_bank_factory):
+    bank = question_bank_factory({"topic-a": SESSION_SIZE + 5})
+    session = start_fixed(bank, "topic-a", question_count=QUESTION_COUNT_ALL)
+    assert len(session.question_ids) == SESSION_SIZE + 5
+
+
+def test_start_fixed_unknown_question_count_falls_back_to_session_size(question_bank_factory):
+    bank = question_bank_factory({"topic-a": SESSION_SIZE + 5})
+    session = start_fixed(bank, "topic-a", question_count="bogus")
+    assert len(session.question_ids) == SESSION_SIZE
+
+
+def test_start_randomized_question_count_all_lifts_the_session_size_cap(question_bank_factory):
+    bank = question_bank_factory({"topic-a": SESSION_SIZE + 5})
+    session = start_randomized(bank, "topic-a", question_count=QUESTION_COUNT_ALL)
+    assert len(session.question_ids) == SESSION_SIZE + 5
+    assert len(set(session.question_ids)) == SESSION_SIZE + 5
+
+
+def test_start_mixed_question_count_all_lifts_the_session_size_cap(question_bank_factory):
+    bank = question_bank_factory({"topic-a": SESSION_SIZE, "topic-b": SESSION_SIZE})
+    session = start_mixed(bank, question_count=QUESTION_COUNT_ALL)
+    assert len(session.question_ids) == SESSION_SIZE * 2
+
+
+def test_start_fixed_question_count_all_respects_difficulty_filter(question_bank_factory):
+    bank = question_bank_factory({"topic-a": ["easy"] * (SESSION_SIZE + 3) + ["hard"] * 4})
+    session = start_fixed(bank, "topic-a", difficulty="easy", question_count=QUESTION_COUNT_ALL)
+    assert len(session.question_ids) == SESSION_SIZE + 3
 
 
 def test_start_randomized_draws_from_pool(question_bank_factory):

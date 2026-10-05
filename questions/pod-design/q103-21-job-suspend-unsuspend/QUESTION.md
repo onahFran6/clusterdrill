@@ -2,8 +2,9 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-21-job-suspend-unsuspend`
 
-A Job named `archive-purge` already exists in namespace `q103-21-job-suspend-unsuspend`.
-The Job is created with `.spec.suspend` set to `true`, so it has `0` active pods and `0`
+Fusion Energy Laboratory's `archive-purge` Job clears out old simulation output. It already
+exists in namespace `q103-21-job-suspend-unsuspend`, created with `.spec.suspend` set to `true`
+during a storage migration and never flipped back - right now it has `0` active pods and `0`
 succeeded.
 
 Un-suspend `archive-purge` so it starts running and finishes. It is done only once it reports

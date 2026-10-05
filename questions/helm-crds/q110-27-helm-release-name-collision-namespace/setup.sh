@@ -16,8 +16,8 @@ kubectl label namespace "$QUESTION_ID" "clusterdrill-question=$QUESTION_ID" --ov
 apply_default_resource_limits "$QUESTION_ID"
 grant_user_namespace_access "$QUESTION_ID" "${CLUSTERDRILL_USER_ID:-}"
 
-CHART_V1_DIR="$SCRIPT_DIR/chart-v1"
-CHART_V2_DIR="$SCRIPT_DIR/chart-v2"
+CHART_V1_DIR="$HOME/practice-work/q110-27-helm-release-name-collision-namespace/chart-v1"
+CHART_V2_DIR="$HOME/practice-work/q110-27-helm-release-name-collision-namespace/chart-v2"
 rm -rf "$CHART_V1_DIR" "$CHART_V2_DIR"
 mkdir -p "$CHART_V1_DIR/templates" "$CHART_V2_DIR/templates"
 

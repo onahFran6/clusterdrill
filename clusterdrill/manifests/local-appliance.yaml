@@ -237,16 +237,35 @@ spec:
         # hosted multi-user service requires an isolated cluster per user.
         - name: CLUSTERDRILL_SINGLE_USER
           value: "true"
+        # requests give the appliance a guaranteed CPU/memory floor so a
+        # busy single-node dev cluster (many questions' setup.sh/check.sh
+        # running concurrently) can't starve it long enough to miss a
+        # probe deadline; limits cap it so it can't do the same to
+        # everything else sharing the node.
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+        # timeoutSeconds: 5, not the 1s default - under node contention
+        # (see resources.requests above) /healthz can take longer than 1s
+        # to answer without the process actually being stuck; a probe
+        # that times out that fast on a loaded dev cluster reads as a
+        # false "Unhealthy" and triggers an unnecessary restart.
         readinessProbe:
           httpGet:
             path: /healthz
             port: http
           initialDelaySeconds: 5
+          timeoutSeconds: 5
         livenessProbe:
           httpGet:
             path: /healthz
             port: http
           initialDelaySeconds: 15
+          timeoutSeconds: 5
         volumeMounts:
         - name: home
           mountPath: /home/clusterdrill

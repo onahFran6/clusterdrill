@@ -2,12 +2,13 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-19-cronjob-timezone-fix`
 
-A CronJob named `morning-standup-reminder` already exists in namespace
+Spectra Observatory's `morning-standup-reminder` CronJob already exists in namespace
 `q103-19-cronjob-timezone-fix`. Its `.spec.schedule` is `0 9 * * *`, meant for **9:00 AM
-America/New_York**, but the reminder fires at 9:00 UTC.
+America/New_York**, but the reminder fires at 9:00 UTC instead - the whole team is getting
+paged four to five hours early.
 
-Set `.spec.timeZone` so it fires at 9:00 AM **America/New_York**. Do not change `.spec.schedule`
-(`0 9 * * *`).
+Fix it so the reminder actually fires at 9:00 AM **America/New_York**, without changing
+`.spec.schedule` (`0 9 * * *`).
 
 ## Hint
 

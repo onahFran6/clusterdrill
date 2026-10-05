@@ -27,11 +27,7 @@ metadata:
   labels:
     clusterdrill-question: $QUESTION_ID
 spec:
-  # TODO: add .spec.affinity with BOTH:
-  #   - nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution matching
-  #     kubernetes.io/os In [linux]
-  #   - podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution
-  #     matching label app: legacy-worker, topologyKey kubernetes.io/hostname
+  # TODO: see the Task tab - this pod is missing its affinity rules
   containers:
     - name: constrained-worker
       image: busybox:1.36

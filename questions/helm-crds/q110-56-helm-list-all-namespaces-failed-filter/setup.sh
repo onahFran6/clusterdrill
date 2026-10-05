@@ -18,7 +18,7 @@ grant_user_namespace_access "$QUESTION_ID" "${CLUSTERDRILL_USER_ID:-}"
 WORK_DIR="$(question_workdir "$QUESTION_ID")"
 rm -f "$WORK_DIR/all-releases.json" "$WORK_DIR/failed-releases.json"
 
-CHART_DIR="$SCRIPT_DIR/chart"
+CHART_DIR="$HOME/practice-work/q110-56-helm-list-all-namespaces-failed-filter/chart"
 rm -rf "$CHART_DIR"
 mkdir -p "$CHART_DIR/templates"
 

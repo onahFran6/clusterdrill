@@ -3,7 +3,7 @@
 Doc: https://helm.sh/docs/helm/helm_install/#helm-install
 
 ```sh
-helm install web questions/helm-crds/q110-53-helm-set-nested-and-set-string/chart \
+helm install web $HOME/practice-work/q110-53-helm-set-nested-and-set-string/chart \
   -n q110-53-helm-set-nested-and-set-string \
   --set ingress.enabled=true \
   --set ingress.hosts[0].host=app.example.com \

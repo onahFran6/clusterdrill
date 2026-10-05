@@ -4,7 +4,7 @@ Doc: https://helm.sh/docs/topics/charts_hooks/
 
 ```sh
 NS=q110-39-helm-broken-posthook-fix
-CHART=questions/helm-crds/q110-39-helm-broken-posthook-fix/chart
+CHART=$HOME/practice-work/q110-39-helm-broken-posthook-fix/chart
 
 cat > "$CHART/templates/posthook.yaml" <<EOF
 apiVersion: batch/v1

@@ -2,13 +2,13 @@
 
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-40-helm-chart-local-subchart-dependency`
 
-Two local Helm charts are on disk (paths relative to `practice-bank/`):
+Two local Helm charts are on disk:
 
 - subchart `cache` at
-  `questions/helm-crds/q110-40-helm-chart-local-subchart-dependency/chart-cache` (templates a
+  `$HOME/practice-work/q110-40-helm-chart-local-subchart-dependency/chart-cache` (templates a
   ConfigMap)
 - parent chart `webapp` at
-  `questions/helm-crds/q110-40-helm-chart-local-subchart-dependency/chart`, whose `Chart.yaml`
+  `$HOME/practice-work/q110-40-helm-chart-local-subchart-dependency/chart`, whose `Chart.yaml`
   declares a dependency on `cache` via `file://../chart-cache` - but the dependency has not been
   fetched yet (no `charts/` directory under the parent)
 

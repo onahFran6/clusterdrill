@@ -3,8 +3,8 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-13-helm-uninstall-keep-history`
 
 A local Helm chart named `widget` is staged at
-`questions/helm-crds/q110-13-helm-uninstall-keep-history/chart` (relative to the
-`practice-bank/` directory) and is already installed as release `demo` into namespace
+`$HOME/practice-work/q110-13-helm-uninstall-keep-history/chart` and is already installed
+as release `demo` into namespace
 `q110-13-helm-uninstall-keep-history`. The chart templates a single-replica Deployment.
 
 Uninstall the `demo` release, but retain its release history so that

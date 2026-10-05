@@ -12,11 +12,11 @@ kubectl label namespace "$QUESTION_ID" "clusterdrill-question=$QUESTION_ID" --ov
 apply_default_resource_limits "$QUESTION_ID"
 grant_user_namespace_access "$QUESTION_ID" "${CLUSTERDRILL_USER_ID:-}"
 
-CHART_DIR="$SCRIPT_DIR/chart"
+CHART_DIR="$HOME/practice-work/q110-21-helm-multiple-value-files/chart"
 rm -rf "$CHART_DIR"
 mkdir -p "$CHART_DIR/templates"
 
-OVERRIDES_DIR="$SCRIPT_DIR/overrides"
+OVERRIDES_DIR="$HOME/practice-work/q110-21-helm-multiple-value-files/overrides"
 rm -rf "$OVERRIDES_DIR"
 mkdir -p "$OVERRIDES_DIR"
 

@@ -3,8 +3,8 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-41-helm-notes-txt-value-substitution`
 
 A local Helm chart named `onboarder` is on disk at
-`questions/helm-crds/q110-41-helm-notes-txt-value-substitution/chart` (relative to
-`practice-bank/`). Its `templates/NOTES.txt` renders
+`$HOME/practice-work/q110-41-helm-notes-txt-value-substitution/chart`. Its
+`templates/NOTES.txt` renders
 `Deployed {{ .Values.appName }} version {{ .Chart.AppVersion }}` (retrievable later with
 `helm get notes`).
 

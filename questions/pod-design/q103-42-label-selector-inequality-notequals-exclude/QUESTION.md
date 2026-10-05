@@ -2,8 +2,9 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-42-label-selector-inequality-notequals-exclude`
 
-Five pods already exist in namespace `q103-42-label-selector-inequality-notequals-exclude`, each
-with an `env` label:
+Atlas Scientific Computing is about to take its shared compute fleet down for maintenance, but
+production workloads must keep running undisturbed. Five pods already exist in namespace
+`q103-42-label-selector-inequality-notequals-exclude`, each with an `env` label:
 
 - `svc-dev` - `env=dev`
 - `svc-staging` - `env=staging`
@@ -11,9 +12,10 @@ with an `env` label:
 - `svc-prod-2` - `env=prod`
 - `svc-canary` - `env=canary`
 
-Using one `kubectl label pods` command whose selector is `env!=prod`, add
-`maintenance-window=true` to exactly `svc-dev`, `svc-staging`, and `svc-canary`. Do not add that
-label to `svc-prod-1` or `svc-prod-2`, and do not change any pod's existing `env` label.
+In one `kubectl label pods` command driven by a label selector (not by naming each pod), add
+`maintenance-window=true` to every pod whose `env` is not `prod` - that's exactly `svc-dev`,
+`svc-staging`, and `svc-canary`. Do not add that label to `svc-prod-1` or `svc-prod-2`, and do
+not change any pod's existing `env` label.
 
 ## Hint
 

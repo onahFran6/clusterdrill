@@ -49,16 +49,31 @@ spec:
             secretKeyRef:
               name: {{ required "auth.existingSecretName is required" .Values.auth.existingSecretName }}
               key: password
+        # requests give the appliance a guaranteed CPU/memory floor so a
+        # busy single-node dev cluster (many questions' setup.sh/check.sh
+        # running concurrently) can't starve it long enough to miss a
+        # probe deadline; limits cap it so it can't do the same to
+        # everything else sharing the node. Matches the raw manifest
+        # exactly - see test_deployment_security_context_matches_the_raw_manifest.
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 1000m
+            memory: 512Mi
         readinessProbe:
           httpGet:
             path: /healthz
             port: http
           initialDelaySeconds: 5
+          timeoutSeconds: 5
         livenessProbe:
           httpGet:
             path: /healthz
             port: http
           initialDelaySeconds: 15
+          timeoutSeconds: 5
         volumeMounts:
         - name: home
           mountPath: /home/clusterdrill

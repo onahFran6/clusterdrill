@@ -3,10 +3,9 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-60-helm-values-precedence-three-way`
 
 A local chart named `threeway` is on disk at
-`questions/helm-crds/q110-60-helm-values-precedence-three-way/chart` (relative to
-`practice-bank/`), with defaults `replicaCount: 1` and `extra.featureFlag: "off"`. A values
-file at
-`questions/helm-crds/q110-60-helm-values-precedence-three-way/chart-values/override-values.yaml`
+`$HOME/practice-work/q110-60-helm-values-precedence-three-way/chart`, with defaults
+`replicaCount: 1` and `extra.featureFlag: "off"`. A values file at
+`$HOME/practice-work/q110-60-helm-values-precedence-three-way/chart-values/override-values.yaml`
 contains:
 
 ```yaml

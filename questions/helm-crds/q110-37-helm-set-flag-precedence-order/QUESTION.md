@@ -3,8 +3,8 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-37-helm-set-flag-precedence-order`
 
 A local Helm chart named `tuner` is on disk at
-`questions/helm-crds/q110-37-helm-set-flag-precedence-order/chart` (relative to
-`practice-bank/`). Its default `values.yaml` sets `logLevel: info`, and a ConfigMap key
+`$HOME/practice-work/q110-37-helm-set-flag-precedence-order/chart`. Its default
+`values.yaml` sets `logLevel: info`, and a ConfigMap key
 `logLevel` is rendered from `.Values.logLevel`.
 
 Install the chart into this namespace as release `demo`, passing two separate

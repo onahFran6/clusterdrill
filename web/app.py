@@ -67,6 +67,7 @@ import users
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from grading_client import run_batch_cleanup
 from idle import tracker as idle_tracker
 from routers import (
     admin_router,
@@ -85,7 +86,7 @@ from starlette.requests import Request
 from templating import WEB_DIR, templates
 from ttyd_manager import manager as ttyd_manager
 
-from questions import bank
+from questions import LIB_DIR, bank
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("clusterdrill.app")
@@ -162,22 +163,69 @@ async def lifespan(app: FastAPI):
     # Local appliances therefore run in one-trusted-operator mode and never
     # provision shared-cluster terminal RBAC identities. Hosted multi-user
     # deployments must isolate each learner in a separate cluster.
+    existing_users = await asyncio.to_thread(users.list_users)
     if not users.single_user_mode():
         # One ServiceAccount + kubeconfig per existing account - best-effort
         # per user, like everything else in this block - one account's
         # provisioning failure doesn't block the others or startup.
-        for existing_user in await asyncio.to_thread(users.list_users):
+        for existing_user in existing_users:
             await asyncio.to_thread(rbac.ensure_user_service_account, existing_user.user_id)
     # Spawn the single app-lifetime ttyd process on startup, and
     # make sure it never survives the FastAPI process on shutdown (no
     # orphaned ttyd left running after the dev server stops).
     ttyd_manager.start()
     watchdog_task = asyncio.create_task(_idle_watchdog())
+    # Fire-and-forget, not awaited: batch_cleanup's up-to-30s-per-call
+    # subprocess timeout, run once per known account, can comfortably
+    # exceed local-appliance.yaml's liveness probe deadline (15s initial +
+    # 3 x 10s period) if awaited here before yield - Uvicorn does not bind
+    # its listening socket until lifespan startup returns, so the probe
+    # sees "connection refused" the whole time and kubelet kills the
+    # container before it ever serves a single request, in a crash loop.
+    # Scheduling it as a task instead lets Uvicorn start serving
+    # immediately while the sweep proceeds concurrently in the background.
+    asyncio.create_task(_startup_cluster_sweep(existing_users))
     try:
         yield
     finally:
         watchdog_task.cancel()
         ttyd_manager.stop()
+
+
+async def _startup_cluster_sweep(existing_users: list[users.User]) -> None:
+    """Sweeps every question's namespace/cluster-scoped resources for every
+    known account, plus once more unsuffixed for the password-gate-off case
+    (auth.current_user_id returns None there, so every namespace is bare).
+    Deliberately NOT gated on users.single_user_mode() - that flag only
+    limits how many accounts are *allowed*, not whether the bootstrap admin
+    account (which always exists once CLUSTERDRILL_PASSWORD is set,
+    single-user or not - see lifespan's ensure_bootstrap_admin call) suffixes
+    its own namespaces the same as any other account would.
+
+    session_store (which questions are "in play") is purely in-memory - it
+    resets to empty on every process boot regardless, but the cluster
+    resources a *previous* process's sessions provisioned do not reset with
+    it, since they live independently of this process in the cluster.
+    Without this sweep, any session active at the moment a prior process
+    died (redeploy, crash, OOM) leaves its namespaces/Helm releases
+    stranded forever, with no record left of which question caused it -
+    discoverable only by symptom (e.g. `helm install` refusing to reuse a
+    release name). Best-effort, like every other cluster call lifespan
+    makes: a cluster that isn't reachable yet must not block startup. This
+    makes every boot start from a guaranteed-clean cluster, matching this
+    app's existing disposable/re-provisionable cluster-state philosophy
+    (setup.sh is idempotent, per-question Reset already rebuilds from
+    nothing) - any lab genuinely mid-flight across a restart gets reset,
+    not resumed.
+    """
+    bank.refresh()
+    question_ids = [q.id for q in bank.questions]
+    sweep_user_ids: list[str | None] = [None, *(u.user_id for u in existing_users)]
+    for sweep_user_id in sweep_user_ids:
+        try:
+            await asyncio.to_thread(run_batch_cleanup, question_ids, LIB_DIR, sweep_user_id)
+        except Exception:
+            logger.exception("startup cluster sweep failed for user_id=%r", sweep_user_id)
 
 
 app = FastAPI(title="ClusterDrill", lifespan=lifespan)

@@ -3,7 +3,7 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-50-helm-values-schema-json-fix`
 
 A local Helm chart named `worker-pool` is on disk at
-`questions/helm-crds/q110-50-helm-values-schema-json-fix/chart` (relative to `practice-bank/`).
+`$HOME/practice-work/q110-50-helm-values-schema-json-fix/chart`.
 Its `values.schema.json` declares `replicaCount` as an integer with `"maximum": 3`. Installing
 with `--set replicaCount=5` is rejected before anything reaches the cluster.
 

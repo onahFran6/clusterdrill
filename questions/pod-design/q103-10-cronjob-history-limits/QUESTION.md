@@ -2,6 +2,9 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-10-cronjob-history-limits`
 
+Helix Genomics Institute's `audit-scan` CronJob runs every minute and, left on defaults, is
+quietly piling up finished Job objects nobody ever looks at again.
+
 A CronJob named `audit-scan` already exists in namespace `q103-10-cronjob-history-limits`,
 running every minute.
 

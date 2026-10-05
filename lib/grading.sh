@@ -99,9 +99,23 @@ EOF
 # manifest to fix) - no other question ever peeks at another's tmp files
 # used to make that safe by convention alone, but a real per-question folder
 # does it properly.
+#
+# Every caller passes its own already-suffixed $QUESTION_ID (namespace
+# name, "qNNN-...${CLUSTERDRILL_NAMESPACE_SUFFIX:-}"), but the terminal's
+# actual working directory - app.py's WORK_DIR_ROOT/question_workdir(qid) -
+# is always keyed on the *bare* qid (see question_view.py: the ttyd cwd is
+# resolved from the URL's qid, which is never suffixed). Strip the suffix
+# back off here, once, centrally, rather than expecting all ~40 setup.sh
+# callers to each pass a separately-tracked bare id: with a real logged-in
+# account, an un-stripped suffix silently writes into
+# practice-work/<qid>-<user>/ while the candidate's terminal (and every
+# QUESTION.md/ANSWER.md path, already bare per question_view.py's own
+# substitute_namespace) sits in practice-work/<qid>/ right next to it,
+# empty - `ls` shows nothing, and there is no error to point at why.
 question_workdir() {
   local question_id="$1"
-  local dir="$HOME/practice-work/$question_id"
+  local bare_id="${question_id%"${CLUSTERDRILL_NAMESPACE_SUFFIX:-}"}"
+  local dir="$HOME/practice-work/$bare_id"
   mkdir -p "$dir"
   echo "$dir"
 }

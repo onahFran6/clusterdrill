@@ -2,6 +2,10 @@
 
 Doc: https://kubernetes.io/docs/concepts/workloads/controllers/job/#controlling-parallelism
 
+`kubectl scale job/... --replicas=N` looks tempting (same reflex as Deployments) but batch/v1
+Jobs on this cluster expose no `scale` subresource - it 404s. `kubectl patch` (or `kubectl edit`)
+is the one real path here.
+
 ```sh
 NS=q103-43-job-parallelism-scale-up-live
 

@@ -2,7 +2,8 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-20-bulk-label-pods-by-selector`
 
-Six pods already exist in namespace `q103-20-bulk-label-pods-by-selector`:
+Catalyst Research Institute is rolling out a canary build of its backend services. Six pods
+already exist in namespace `q103-20-bulk-label-pods-by-selector`:
 
 - `api-1`, `api-2`, `api-3` - labeled `tier=backend`
 - `web-1`, `web-2` - labeled `tier=frontend`

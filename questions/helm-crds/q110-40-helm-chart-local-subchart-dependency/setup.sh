@@ -14,8 +14,8 @@ grant_user_namespace_access "$QUESTION_ID" "${CLUSTERDRILL_USER_ID:-}"
 
 # Directory names must match the topic's .gitignore pattern (*/chart*/) so
 # these generated-at-runtime chart trees never get committed.
-CACHE_DIR="$SCRIPT_DIR/chart-cache"
-WEBAPP_DIR="$SCRIPT_DIR/chart"
+CACHE_DIR="$HOME/practice-work/q110-40-helm-chart-local-subchart-dependency/chart-cache"
+WEBAPP_DIR="$HOME/practice-work/q110-40-helm-chart-local-subchart-dependency/chart"
 rm -rf "$CACHE_DIR" "$WEBAPP_DIR"
 mkdir -p "$CACHE_DIR/templates" "$WEBAPP_DIR/templates"
 

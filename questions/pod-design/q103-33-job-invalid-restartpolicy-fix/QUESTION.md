@@ -2,8 +2,10 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-33-job-invalid-restartpolicy-fix`
 
-A Job manifest is at `~/practice-work/q103-33-job-invalid-restartpolicy-fix/broken-once.yaml`
-in your terminal's working directory. It has not been applied. `kubectl apply` rejects it.
+Vector Bioinformatics Lab's platform team drafted a one-shot Job manifest to run a
+data-migration script, but nobody's applied it yet. It's sitting at
+`~/practice-work/q103-33-job-invalid-restartpolicy-fix/broken-once.yaml` in your terminal's
+working directory. `kubectl apply` rejects it outright.
 
 Fix `broken-once.yaml` so the API server accepts it, then apply it. Do not change the container
 image (`busybox:1.36`), the command (`echo done`), or the Job's name. Once applied, the Job must
@@ -11,13 +13,6 @@ complete successfully exactly once. Leave `.spec.completions` and `.spec.paralle
 
 ## Hint
 
-Search kubernetes.io/docs for **"job pod restart policy"** - the Jobs concept page's "Pod
-Template" section explains why `.spec.template.spec.restartPolicy` must be `Never` or
-`OnFailure` for a Job, never `Always`. Applying the manifest as written fails with:
-
-```
-error: Job.batch "broken-once" is invalid: spec.template.spec.restartPolicy:
-Unsupported value: "Always": supported values: "OnFailure", "Never"
-```
-
-`Always` would restart the container forever, so the Job could never complete.
+Run `kubectl apply -f broken-once.yaml` to see exactly why the API server rejects it. Then
+search kubernetes.io/docs for **"job pod restart policy"** - the Jobs concept page's "Pod
+Template" section explains which restart policies a Job's pod template accepts.

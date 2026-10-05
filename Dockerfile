@@ -4,9 +4,10 @@ FROM python:3.12-slim
 ARG TARGETARCH
 ARG KUBECTL_VERSION=v1.33.9
 ARG TTYD_VERSION=1.7.7
+ARG HELM_VERSION=v4.3.0
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl nano vim tmux \
+    && apt-get install -y --no-install-recommends ca-certificates curl nano vim tmux jq \
     && rm -rf /var/lib/apt/lists/* \
     && curl --fail --location --output /usr/local/bin/kubectl \
       "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${TARGETARCH}/kubectl" \
@@ -14,7 +15,13 @@ RUN apt-get update \
     && case "$TARGETARCH" in amd64) ttyd_arch=x86_64 ;; arm64) ttyd_arch=aarch64 ;; *) exit 1 ;; esac \
     && curl --fail --location --output /usr/local/bin/ttyd \
       "https://github.com/tsl0922/ttyd/releases/download/${TTYD_VERSION}/ttyd.${ttyd_arch}" \
-    && chmod 0755 /usr/local/bin/ttyd
+    && chmod 0755 /usr/local/bin/ttyd \
+    && curl --fail --location --output /tmp/helm.tar.gz \
+      "https://get.helm.sh/helm-${HELM_VERSION}-linux-${TARGETARCH}.tar.gz" \
+    && tar -xzf /tmp/helm.tar.gz -C /tmp \
+    && mv "/tmp/linux-${TARGETARCH}/helm" /usr/local/bin/helm \
+    && chmod 0755 /usr/local/bin/helm \
+    && rm -rf /tmp/helm.tar.gz "/tmp/linux-${TARGETARCH}"
 
 RUN useradd --create-home --uid 10001 --shell /bin/bash clusterdrill
 WORKDIR /opt/clusterdrill

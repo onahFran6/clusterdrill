@@ -3,10 +3,10 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-21-helm-multiple-value-files`
 
 A local Helm chart named `stacker` is available at
-`questions/helm-crds/q110-21-helm-multiple-value-files/chart` (relative to `practice-bank/`).
+`$HOME/practice-work/q110-21-helm-multiple-value-files/chart`.
 Its chart defaults include `image: nginx:1.25-alpine`, `replicaCount: 1`, and `envTier: dev`.
 A sibling override file at
-`questions/helm-crds/q110-21-helm-multiple-value-files/overrides/prod-values.yaml`
+`$HOME/practice-work/q110-21-helm-multiple-value-files/overrides/prod-values.yaml`
 sets `replicaCount: 3` and `envTier: prod` (it does not set `image`).
 
 Install the chart into this namespace as release `stack`, applying that override file on top of

@@ -2,16 +2,15 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-36-job-podtemplate-annotation-propagation`
 
-A Job named `metadata-tagger` already exists in namespace
-`q103-36-job-podtemplate-annotation-propagation`. Every pod it creates must carry the annotation
-`pipeline.example.com/build-id: "2026-09"`. The pod template does not have that annotation.
+Catalyst Research Institute tags every simulation run's output pods with the build that produced
+them, so results can be traced back to an exact pipeline version. A Job named `metadata-tagger`
+already exists in namespace `q103-36-job-podtemplate-annotation-propagation`. Every pod it
+creates must carry the annotation `pipeline.example.com/build-id: "2026-09"`. The pod template
+does not have that annotation.
 
-`.spec.template` is immutable. Delete `metadata-tagger` and recreate it with that annotation on
-`.spec.template.metadata.annotations`. Keep the same name, image (`busybox:1.36`), and command
-(`echo tagged`).
-
-Once recreated, the Job must complete successfully, and the pod it creates must carry the same
-annotation.
+Fix `metadata-tagger` so every pod it creates carries that annotation, keeping the same name,
+image (`busybox:1.36`), and command (`echo tagged`). Once fixed, the Job must complete
+successfully, and the pod it creates must carry the same annotation.
 
 ## Hint
 

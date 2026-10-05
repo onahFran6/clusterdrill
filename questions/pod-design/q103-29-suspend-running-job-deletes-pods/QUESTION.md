@@ -2,11 +2,12 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-29-suspend-running-job-deletes-pods`
 
-A Job named `report-builder` already exists in namespace
-`q103-29-suspend-running-job-deletes-pods`. Its pod is already `Running`.
+Entropy Research Systems' `report-builder` Job is already `Running` in namespace
+`q103-29-suspend-running-job-deletes-pods`, generating a report nobody needs anymore.
 
-Stop `report-builder` now without deleting the Job. Set `.spec.suspend` to `true` on the
-existing Job. Do not delete the Job, do not delete the pod directly, and do not scale anything.
+Stop `report-builder` right now, in a way that leaves the Job object itself in place and
+resumable the same way later - not by deleting the Job, not by deleting its pod directly, and
+not by scaling anything.
 
 The Job is suspended only once it reports zero active pods (`.status.active` absent or `0`) and
 no pods remain for it in the namespace.

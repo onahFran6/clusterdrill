@@ -12,7 +12,7 @@ kubectl label namespace "$QUESTION_ID" "clusterdrill-question=$QUESTION_ID" --ov
 apply_default_resource_limits "$QUESTION_ID"
 grant_user_namespace_access "$QUESTION_ID" "${CLUSTERDRILL_USER_ID:-}"
 
-CHART_DIR="$SCRIPT_DIR/chart"
+CHART_DIR="$HOME/practice-work/q110-59-helm-uninstall-keep-history-reinstate/chart"
 rm -rf "$CHART_DIR"
 mkdir -p "$CHART_DIR/templates"
 

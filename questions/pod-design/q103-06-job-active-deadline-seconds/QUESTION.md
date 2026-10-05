@@ -2,6 +2,9 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-06-job-active-deadline-seconds`
 
+Spectra Observatory's nightly frame-analysis pass occasionally gets stuck partway through, and a
+stuck run has chewed through cluster time long after its results would even be useful.
+
 In namespace `q103-06-job-active-deadline-seconds`, create a Job named `long-runner` that:
 
 - uses image `busybox:1.36`
