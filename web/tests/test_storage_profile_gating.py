@@ -128,7 +128,7 @@ def test_real_bank_provisioner_specific_questions_are_gated_by_storage_profile()
     expected_qids = {
         "q109-08-dynamic-provisioning-default-sc",
         "q109-09-custom-storageclass-provisioner",
-        "q109-11-pvc-resize-allow-expansion",
+        "q109-11-pvc-needs-more-storage",
         "q109-27-storageclass-waitforfirstconsumer",
         "q109-30-pvc-immutable-recreate-not-patch",
     }
