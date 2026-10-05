@@ -3,7 +3,7 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-48-helm-post-delete-hook-cleanup`
 
 A local Helm chart named `archiver` is on disk at
-`questions/helm-crds/q110-48-helm-post-delete-hook-cleanup/chart` (relative to `practice-bank/`).
+`$HOME/practice-work/q110-48-helm-post-delete-hook-cleanup/chart`.
 Release `demo` is already installed in this namespace; Deployment `demo-archiver` is running.
 The chart has a `post-delete` hook Job (`{{ .Release.Name }}-cleanup`) that is meant to run on
 uninstall, but that hook currently does not succeed.

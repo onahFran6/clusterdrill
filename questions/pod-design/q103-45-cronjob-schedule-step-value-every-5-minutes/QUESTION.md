@@ -2,10 +2,12 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-45-cronjob-schedule-step-value-every-5-minutes`
 
-Namespace `q103-45-cronjob-schedule-step-value-every-5-minutes` exists and has no workload yet.
+Helix Genomics Institute wants a lightweight heartbeat poll running in namespace
+`q103-45-cronjob-schedule-step-value-every-5-minutes`, which exists and has no workload yet.
 
-Create a CronJob named `metrics-poll` that runs `busybox:1.36` with the command `echo polling`
-on schedule `*/5 * * * *` (every 5 minutes: `:00`, `:05`, `:10`, and so on).
+Create a CronJob named `metrics-poll` that runs `busybox:1.36` with the command `echo polling`,
+firing every 5 minutes on the hour (`:00`, `:05`, `:10`, and so on). Express the schedule using
+step-value syntax (`*/N`), not an enumerated list of minutes.
 
 Leave the pod template `restartPolicy: Never`.
 

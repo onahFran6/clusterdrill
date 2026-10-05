@@ -3,8 +3,8 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-58-helm-template-zero-cluster-contact`
 
 A local chart named `payloadapp` is on disk at
-`questions/helm-crds/q110-58-helm-template-zero-cluster-contact/chart` (relative to
-`practice-bank/`). Its defaults are `replicaCount: 2` and `workerImage: busybox:1.36`.
+`$HOME/practice-work/q110-58-helm-template-zero-cluster-contact/chart`. Its defaults are
+`replicaCount: 2` and `workerImage: busybox:1.36`.
 
 Using release name `renderjob`, render the chart with `replicaCount` overridden to `4`, and
 save the full rendered manifests to

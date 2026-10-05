@@ -12,8 +12,8 @@ kubectl label namespace "$QUESTION_ID" "clusterdrill-question=$QUESTION_ID" --ov
 apply_default_resource_limits "$QUESTION_ID"
 grant_user_namespace_access "$QUESTION_ID" "${CLUSTERDRILL_USER_ID:-}"
 
-CHART_DIR="$SCRIPT_DIR/chart"
-VALUES_DIR="$SCRIPT_DIR/chart-values"
+CHART_DIR="$HOME/practice-work/q110-60-helm-values-precedence-three-way/chart"
+VALUES_DIR="$HOME/practice-work/q110-60-helm-values-precedence-three-way/chart-values"
 rm -rf "$CHART_DIR" "$VALUES_DIR"
 mkdir -p "$CHART_DIR/templates" "$VALUES_DIR"
 

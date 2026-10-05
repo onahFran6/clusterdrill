@@ -7,6 +7,6 @@ NS=q110-32-helm-uninstall-name-reuse
 
 helm uninstall demo -n "$NS"
 
-helm install demo questions/helm-crds/q110-32-helm-uninstall-name-reuse/chart \
+helm install demo $HOME/practice-work/q110-32-helm-uninstall-name-reuse/chart \
   -n "$NS" --wait
 ```

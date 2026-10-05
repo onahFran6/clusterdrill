@@ -3,7 +3,7 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-32-helm-uninstall-name-reuse`
 
 A local Helm chart named `widget` is on disk at
-`questions/helm-crds/q110-32-helm-uninstall-name-reuse/chart` (relative to `practice-bank/`).
+`$HOME/practice-work/q110-32-helm-uninstall-name-reuse/chart`.
 Release `demo` is already installed in this namespace with image override `busybox:1.36`
 (Deployment `demo-widget`).
 

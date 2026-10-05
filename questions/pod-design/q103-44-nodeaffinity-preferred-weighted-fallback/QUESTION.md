@@ -2,7 +2,8 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-44-nodeaffinity-preferred-weighted-fallback`
 
-An incomplete pod manifest is at
+Entropy Research Systems' compute fleet is a mix of Linux x86 nodes and a handful of
+power-efficient arm64 boards. An incomplete pod manifest is at
 `~/practice-work/q103-44-nodeaffinity-preferred-weighted-fallback/flexible-worker.yaml` in your
 terminal's working directory. It has not been applied yet.
 

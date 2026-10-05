@@ -14,7 +14,7 @@ grant_user_namespace_access "$QUESTION_ID" "${CLUSTERDRILL_USER_ID:-}"
 
 # Directory name must match the topic's .gitignore pattern (*/chart*/) so
 # this generated-at-runtime chart tree never gets committed.
-CHART_DIR="$SCRIPT_DIR/chart"
+CHART_DIR="$HOME/practice-work/q110-51-helm-named-template-label-fix/chart"
 rm -rf "$CHART_DIR"
 mkdir -p "$CHART_DIR/templates"
 

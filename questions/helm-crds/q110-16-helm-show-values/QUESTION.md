@@ -3,7 +3,7 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-16-helm-show-values`
 
 A local Helm chart named `lookup` is available at
-`questions/helm-crds/q110-16-helm-show-values/chart` (relative to `practice-bank/`). The chart
+`$HOME/practice-work/q110-16-helm-show-values/chart`. The chart
 is not installed anywhere - its `values.yaml` sets a top-level key `region` to some default
 value you don't know in advance.
 

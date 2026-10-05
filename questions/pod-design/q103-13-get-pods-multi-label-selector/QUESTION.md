@@ -2,7 +2,9 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-13-get-pods-multi-label-selector`
 
-Four pods already exist in namespace `q103-13-get-pods-multi-label-selector`:
+Neutrino Computing Center tags its detector-feed pods by `tier` and deployment `env` so the
+platform team can always find one exact combination fast. Four pods already exist in namespace
+`q103-13-get-pods-multi-label-selector`:
 
 - `frontend-a` - labels `tier=frontend`, `env=prod`
 - `frontend-b` - labels `tier=frontend`, `env=staging`

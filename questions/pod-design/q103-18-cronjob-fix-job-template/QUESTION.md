@@ -2,8 +2,9 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-18-cronjob-fix-job-template`
 
-A CronJob named `data-sync` already exists in namespace `q103-18-cronjob-fix-job-template`,
-scheduled every minute. Every run fails immediately because the container image cannot be pulled.
+Entropy Research Systems' `data-sync` CronJob already exists in namespace
+`q103-18-cronjob-fix-job-template`, scheduled every minute. Every run fails immediately because
+the container image cannot be pulled.
 
 Fix `data-sync`'s `jobTemplate` so its container uses image `busybox:1.36`, keeping the same
 command (`echo syncing`). Do not change the schedule or the CronJob's name.

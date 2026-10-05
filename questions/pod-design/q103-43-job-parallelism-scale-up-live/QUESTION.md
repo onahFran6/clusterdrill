@@ -2,8 +2,10 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-43-job-parallelism-scale-up-live`
 
-A Job named `speedy-batch` already exists in namespace `q103-43-job-parallelism-scale-up-live`
-with `.spec.completions: 6` and `.spec.parallelism: 1`. It is already running, one pod at a time.
+Quantum Research Laboratory's `speedy-batch` Job calibrates six qubit modules one at a time,
+in namespace `q103-43-job-parallelism-scale-up-live` (`.spec.completions: 6`,
+`.spec.parallelism: 1`). It's already running. Three more test rigs just freed up, and this run
+doesn't need to stay throttled to one at a time anymore.
 
 Without deleting or recreating `speedy-batch`, set `.spec.parallelism` to `3` and leave it at
 `3`. The Job is done once it reports all `6` successful completions with `.spec.parallelism`
@@ -11,7 +13,6 @@ still `3`.
 
 ## Hint
 
-Search kubernetes.io/docs for **"job parallelism mutable"** - the Jobs concept page's "Controlling
-parallelism" section notes that `.spec.parallelism` can be changed on a running Job. The
-controller uses the new value for completions that are still outstanding. `.spec.completions`
-does not work the same way.
+Search kubernetes.io/docs for **"controlling parallelism"** - the Jobs concept page's section by
+that name covers which of a running Job's spec fields you're allowed to touch after it's already
+started, and how the controller reacts when you do.

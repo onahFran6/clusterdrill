@@ -3,8 +3,8 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-01-helm-install-release`
 
 A local Helm chart named `greeter` is available at
-`questions/helm-crds/q110-01-helm-install-release/chart` (relative to the `practice-bank/`
-directory). The chart templates a single-replica Deployment.
+`$HOME/practice-work/q110-01-helm-install-release/chart`. The chart templates a
+single-replica Deployment.
 
 Install this chart into namespace `q110-01-helm-install-release` under the release name
 `hello-app`. Do not change any values - install with the chart's defaults.

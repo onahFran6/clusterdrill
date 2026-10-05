@@ -3,8 +3,8 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-02-helm-set-override`
 
 A local Helm chart named `counter` is available at
-`questions/helm-crds/q110-02-helm-set-override/chart` (relative to the `practice-bank/`
-directory). Its default `values.yaml` sets `replicaCount: 1`.
+`$HOME/practice-work/q110-02-helm-set-override/chart`. Its default `values.yaml` sets
+`replicaCount: 1`.
 
 Install this chart into namespace `q110-02-helm-set-override` under release name `ctr` so
 the resulting Deployment runs `3` replicas. Do not edit `values.yaml` on disk.

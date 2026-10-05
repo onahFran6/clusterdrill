@@ -58,8 +58,9 @@ EOF
 kubectl wait --for=condition=Established "crd/$CRD_NAME" --timeout=60s
 
 # Write the broken manifest to disk (NOT applied - candidate must fix it).
-mkdir -p "$SCRIPT_DIR/manifests"
-cat > "$SCRIPT_DIR/manifests/broken-quota.yaml" <<EOF
+MANIFEST_DIR="$HOME/practice-work/q110-26-crd-webhook-validation-mismatch-namespace/manifests"
+mkdir -p "$MANIFEST_DIR"
+cat > "$MANIFEST_DIR/broken-quota.yaml" <<EOF
 apiVersion: limits.clusterdrill.io/v1
 kind: Quota
 metadata:

@@ -3,7 +3,7 @@
 Doc: https://helm.sh/docs/topics/charts/#schema-files
 
 ```sh
-CHART=questions/helm-crds/q110-50-helm-values-schema-json-fix/chart
+CHART=$HOME/practice-work/q110-50-helm-values-schema-json-fix/chart
 
 python3 -c "
 import json

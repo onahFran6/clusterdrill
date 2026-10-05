@@ -3,7 +3,7 @@
 Doc: https://helm.sh/docs/topics/charts_hooks/
 
 ```sh
-CHART_DIR="questions/helm-crds/q110-25-helm-broken-hook-preinstall/chart"
+CHART_DIR="$HOME/practice-work/q110-25-helm-broken-hook-preinstall/chart"
 
 # Fix the pre-install hook Job's command so it exits 0 instead of 1, while
 # keeping the pre-install hook annotations intact.

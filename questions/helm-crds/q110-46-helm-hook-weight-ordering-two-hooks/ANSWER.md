@@ -3,7 +3,7 @@
 Doc: https://helm.sh/docs/topics/charts_hooks/#hook-weights
 
 ```sh
-CHART=questions/helm-crds/q110-46-helm-hook-weight-ordering-two-hooks/chart
+CHART=$HOME/practice-work/q110-46-helm-hook-weight-ordering-two-hooks/chart
 
 sed -i.bak 's/"helm.sh\/hook-weight": "10"/"helm.sh\/hook-weight": "5"/' \
   "$CHART/templates/hook-seed.yaml"

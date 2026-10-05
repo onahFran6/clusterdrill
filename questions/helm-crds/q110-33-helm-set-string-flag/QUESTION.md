@@ -3,7 +3,7 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-33-helm-set-string-flag`
 
 A local Helm chart named `flagger` is on disk at
-`questions/helm-crds/q110-33-helm-set-string-flag/chart` (relative to `practice-bank/`). It
+`$HOME/practice-work/q110-33-helm-set-string-flag/chart`. It
 templates a ConfigMap whose `status` key comes from
 `{{ if .Values.legacyMode }}enabled{{ else }}disabled{{ end }}`. Do not change that template.
 

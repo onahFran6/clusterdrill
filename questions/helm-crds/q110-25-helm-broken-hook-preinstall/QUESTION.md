@@ -3,7 +3,7 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-25-helm-broken-hook-preinstall`
 
 A local Helm chart named `gatekeeper` is at
-`questions/helm-crds/q110-25-helm-broken-hook-preinstall/chart` (relative to `practice-bank/`).
+`$HOME/practice-work/q110-25-helm-broken-hook-preinstall/chart`.
 It templates a Deployment plus a Job annotated as a `pre-install` hook. No release is installed
 yet. An install attempt fails because that pre-install hook does not succeed.
 

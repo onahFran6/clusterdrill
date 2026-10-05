@@ -3,7 +3,7 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-11-helm-chart-with-crd`
 
 A local Helm chart named `bakery` is available at
-`questions/helm-crds/q110-11-helm-chart-with-crd/chart` (relative to `practice-bank/`). The
+`$HOME/practice-work/q110-11-helm-chart-with-crd/chart`. The
 chart bundles a `CustomResourceDefinition` (kind `Cake`, group `bakery.clusterdrill.io/v1`)
 and templates one `Cake` custom resource using the chart's default `flavor` value
 (`vanilla`).

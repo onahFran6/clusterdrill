@@ -2,6 +2,10 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-01-job-fixed-completions`
 
+Helix Genomics Institute batch-verifies checksums for incoming sequencer output. Each file in a
+batch must be digested exactly once, and the lab wants files processed strictly in sequence so a
+single bad file's retry doesn't fall out of order with the rest.
+
 In namespace `q103-01-job-fixed-completions`, create a Job named `digest-batch` that:
 
 - uses image `busybox:1.36`

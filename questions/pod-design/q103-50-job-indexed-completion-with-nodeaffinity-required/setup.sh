@@ -31,15 +31,13 @@ metadata:
 spec:
   completions: 3
   parallelism: 3
-  # TODO: add completionMode: Indexed here (sibling of completions/parallelism)
+  # TODO: see the Task tab - this Job is missing a field here
   template:
     metadata:
       labels:
         clusterdrill-question: $QUESTION_ID
     spec:
-      # TODO: add affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
-      # matching kubernetes.io/hostname In [<this cluster's actual node name>]
-      # (find it with: kubectl get nodes -o name)
+      # TODO: see the Task tab - this pod template is missing a scheduling rule
       restartPolicy: Never
       containers:
         - name: sharded-worker

@@ -2,6 +2,10 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-02-job-parallelism-fanout`
 
+Quantum Research Laboratory needs 9 independent simulation frames rendered for a single sweep,
+but the shared cluster only has headroom for 3 renders running side by side without starving
+other workloads.
+
 In namespace `q103-02-job-parallelism-fanout`, create a Job named `render-fanout` that:
 
 - uses image `busybox:1.36`

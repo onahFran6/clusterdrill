@@ -3,10 +3,10 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-23-helm-lint-fix-chart`
 
 A local Helm chart named `checkup` is on disk at
-`questions/helm-crds/q110-23-helm-lint-fix-chart/chart` (relative to `practice-bank/`).
+`$HOME/practice-work/q110-23-helm-lint-fix-chart/chart`.
 `helm lint` on that chart currently reports errors, and the chart is not yet installed.
 
-Fix the chart files so `helm lint questions/helm-crds/q110-23-helm-lint-fix-chart/chart`
+Fix the chart files so `helm lint $HOME/practice-work/q110-23-helm-lint-fix-chart/chart`
 passes with no errors, then install it into this namespace as release `fixed` using the chart's
 own defaults (do not pass `--set`). The resulting Deployment `fixed-checkup` must run container
 image `nginx:1.25-alpine`.

@@ -3,9 +3,9 @@
 Doc: https://helm.sh/docs/helm/helm_install/#helm-install
 
 ```sh
-helm install threeway questions/helm-crds/q110-60-helm-values-precedence-three-way/chart \
+helm install threeway $HOME/practice-work/q110-60-helm-values-precedence-three-way/chart \
   -n q110-60-helm-values-precedence-three-way \
-  -f questions/helm-crds/q110-60-helm-values-precedence-three-way/chart-values/override-values.yaml \
+  -f $HOME/practice-work/q110-60-helm-values-precedence-three-way/chart-values/override-values.yaml \
   --set replicaCount=5 \
   --set extra.featureFlag=true \
   --set-string extra.featureFlag=true \

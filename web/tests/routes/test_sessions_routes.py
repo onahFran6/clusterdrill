@@ -113,6 +113,32 @@ async def test_start_session_difficulty_and_timer_minutes_pass_through(client, q
     assert session.timer_duration_seconds == 30 * 60
 
 
+async def test_start_session_all_question_count_lifts_the_session_size_cap(
+    client, question_bank_factory, wire_fake_bank,
+):
+    from sessions import SESSION_SIZE
+
+    wire_fake_bank(question_bank_factory({"topic-a": SESSION_SIZE + 7}))
+
+    res = await client.post(
+        "/sessions/start", data=_csrf_form(topic="topic-a") | {"session_size": "all"}, follow_redirects=False,
+    )
+    assert res.status_code == 303
+    assert len(session_store.get().question_ids) == SESSION_SIZE + 7
+
+
+async def test_start_session_default_question_count_still_caps_at_session_size(
+    client, question_bank_factory, wire_fake_bank,
+):
+    from sessions import SESSION_SIZE
+
+    wire_fake_bank(question_bank_factory({"topic-a": SESSION_SIZE + 7}))
+
+    res = await client.post("/sessions/start", data=_csrf_form(topic="topic-a"), follow_redirects=False)
+    assert res.status_code == 303
+    assert len(session_store.get().question_ids) == SESSION_SIZE
+
+
 async def test_start_session_unknown_difficulty_is_ignored(client, fake_bank):
     # An invalid/forged difficulty value must never 500 or leak through as
     # a literal filter string - it's coerced to "no filter" (routers/
@@ -244,6 +270,61 @@ async def test_start_daily_has_no_unlock_gate(client, fake_bank, monkeypatch):
     monkeypatch.setattr(profile_store, "has_achievement", lambda name, user_id=None: False)
     res = await client.post("/sessions/start-daily", data={"csrf_token": "x"}, follow_redirects=False)
     assert res.status_code == 303
+
+
+async def test_start_session_cleans_up_a_still_active_previous_session(client, fake_bank, monkeypatch):
+    # Navigating away without End session (or a redeploy killing the
+    # process mid-session) must not leak the previous session's namespaces
+    # forever - the next /sessions/start* call is the backstop.
+    mock_cleanup = MagicMock(return_value=ResetResult(ok=True, output=""))
+    monkeypatch.setattr(sessions_router, "run_batch_cleanup", mock_cleanup)
+
+    first_res = await client.post("/sessions/start", data=_csrf_form(), follow_redirects=False)
+    assert first_res.status_code == 303
+    first_qids = list(session_store.get().question_ids)
+    mock_cleanup.assert_not_called()  # nothing to clean up for the very first session
+
+    second_res = await client.post(
+        "/sessions/start", data=_csrf_form(mode="mixed", topic=""), follow_redirects=False,
+    )
+    assert second_res.status_code == 303
+    mock_cleanup.assert_called_once()
+    assert mock_cleanup.call_args.args[0] == first_qids
+    assert session_store.get().mode == "mixed"
+
+
+async def test_start_boss_cleans_up_a_still_active_previous_session(client, fake_bank, monkeypatch):
+    import profile_store
+    monkeypatch.setattr(profile_store, "boss_unlocked", lambda topic, user_id=None: True)
+    mock_cleanup = MagicMock(return_value=ResetResult(ok=True, output=""))
+    monkeypatch.setattr(sessions_router, "run_batch_cleanup", mock_cleanup)
+
+    first_res = await client.post("/sessions/start", data=_csrf_form(), follow_redirects=False)
+    assert first_res.status_code == 303
+    first_qids = list(session_store.get().question_ids)
+
+    second_res = await client.post(
+        "/sessions/start-boss", data={"topic": "topic-a", "csrf_token": "x"}, follow_redirects=False,
+    )
+    assert second_res.status_code == 303
+    mock_cleanup.assert_called_once()
+    assert mock_cleanup.call_args.args[0] == first_qids
+    assert session_store.get().mode == "boss"
+
+
+async def test_start_daily_cleans_up_a_still_active_previous_session(client, fake_bank, monkeypatch):
+    mock_cleanup = MagicMock(return_value=ResetResult(ok=True, output=""))
+    monkeypatch.setattr(sessions_router, "run_batch_cleanup", mock_cleanup)
+
+    first_res = await client.post("/sessions/start", data=_csrf_form(), follow_redirects=False)
+    assert first_res.status_code == 303
+    first_qids = list(session_store.get().question_ids)
+
+    second_res = await client.post("/sessions/start-daily", data={"csrf_token": "x"}, follow_redirects=False)
+    assert second_res.status_code == 303
+    mock_cleanup.assert_called_once()
+    assert mock_cleanup.call_args.args[0] == first_qids
+    assert session_store.get().mode == "daily"
 
 
 async def test_end_session_noop_when_nothing_active(client, fake_bank, monkeypatch):

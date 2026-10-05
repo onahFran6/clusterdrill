@@ -2,6 +2,10 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-09-cronjob-suspend-existing`
 
+Entropy Research Systems needs a maintenance window on its metrics pipeline tonight.
+`metrics-rollup` must stop firing new runs for now, but nobody wants to rebuild its
+configuration from scratch once the window closes.
+
 A CronJob named `metrics-rollup` already exists in namespace `q103-09-cronjob-suspend-existing`,
 scheduled to run every minute. Pause it for a maintenance window without losing its
 configuration, so it can be turned back on later.
