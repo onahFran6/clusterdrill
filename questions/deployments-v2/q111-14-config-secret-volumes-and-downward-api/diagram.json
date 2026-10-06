@@ -1,0 +1,104 @@
+{
+  "architecture": {
+    "title": "q111-14-config-secret-volumes-and-downward-api: Deployment, ConfigMap, Secret",
+    "description": "Resources involved: Deployment, ConfigMap, Secret",
+    "nodes": [
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "ConfigMap",
+        "label": "ConfigMap",
+        "type": "resource"
+      },
+      {
+        "id": "Secret",
+        "label": "Secret",
+        "type": "resource"
+      },
+      {
+        "id": "Container",
+        "label": "Container",
+        "type": "pod"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Deployment",
+        "to": "ConfigMap",
+        "label": "reads",
+        "animated": true,
+        "command": "envFrom / volumeMount; kubectl rollout restart on change"
+      },
+      {
+        "from": "Secret",
+        "to": "Container",
+        "label": "consumed by",
+        "animated": true,
+        "command": "via envFrom / volumeMount"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q111-14-config-secret-volumes-and-downward-api: Deployment, ConfigMap, Secret",
+    "description": "Resources involved: Deployment, ConfigMap, Secret",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "ConfigMap",
+        "label": "ConfigMap",
+        "type": "resource"
+      },
+      {
+        "id": "Secret",
+        "label": "Secret",
+        "type": "resource"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates Deployment"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "ConfigMap",
+        "label": "reads"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create secret ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      }
+    ]
+  }
+}
