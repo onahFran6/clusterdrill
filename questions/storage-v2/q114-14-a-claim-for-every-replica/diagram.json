@@ -1,0 +1,178 @@
+{
+  "architecture": {
+    "title": "q114-14-a-claim-for-every-replica: StatefulSet, Service, PersistentVolumeClaim",
+    "description": "Resources involved: StatefulSet, Service, PersistentVolumeClaim",
+    "nodes": [
+      {
+        "id": "StatefulSet",
+        "label": "StatefulSet",
+        "type": "external"
+      },
+      {
+        "id": "related_object",
+        "label": "related object",
+        "type": "external"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "StatefulSet",
+        "to": "related_object",
+        "label": "relates to",
+        "animated": true,
+        "command": "no special-cased relationship yet - see resource_kinds"
+      },
+      {
+        "from": "Service",
+        "to": "Pod",
+        "label": "routes to",
+        "animated": true,
+        "command": "via spec.selector label match"
+      },
+      {
+        "from": "PersistentVolumeClaim",
+        "to": "Pod",
+        "label": "mounted by",
+        "animated": true,
+        "command": "spec.volumes.persistentVolumeClaim.claimName"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q114-14-a-claim-for-every-replica: StatefulSet, Service, PersistentVolumeClaim",
+    "description": "Resources involved: StatefulSet, Service, PersistentVolumeClaim",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "StatefulSet",
+        "label": "StatefulSet",
+        "type": "external"
+      },
+      {
+        "id": "related_object",
+        "label": "related object",
+        "type": "external"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates StatefulSet"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "related_object",
+        "label": "relates to"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl expose ... / kubectl apply -f service.yaml"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "Pod",
+        "label": "routes to"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl apply -f pvc.yaml"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s) - mounted by PersistentVolumeClaim (spec.volumes.persistentVolumeClaim.claimName)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}
