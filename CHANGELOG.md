@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.1.9](https://github.com/onahFran6/clusterdrill/compare/v0.1.8...v0.1.9) (2026-10-06)
+
+
+### Features
+
+* **container-images-v2:** add container-images-v2 question set ([04d4ce7](https://github.com/onahFran6/clusterdrill/commit/04d4ce7dc925d427981035feec2af476850f48f4))
+* **container-images-v2:** add container-images-v2 question set (q115-01..03) ([41a5220](https://github.com/onahFran6/clusterdrill/commit/41a5220cb75c21bdcd754927111ad41f3eb0310a))
+* **deployments-v2:** add 20-question application-deployment topic ([b781e0f](https://github.com/onahFran6/clusterdrill/commit/b781e0fef5f44cfb990064bec8fb00c0a37bda50))
+* **deployments-v2:** add 20-question application-deployment topic ([f70fa5f](https://github.com/onahFran6/clusterdrill/commit/f70fa5f2be0332f58c893d48b39ab5991178f3a8))
+* **pods-v2:** add 20-question pod-design topic ([70297d6](https://github.com/onahFran6/clusterdrill/commit/70297d656c9831d3a53aeb7451cca6edf0e87b82))
+* **pods-v2:** add 20-question pod-design topic ([0a0b1b6](https://github.com/onahFran6/clusterdrill/commit/0a0b1b676217f9c3a4f68aa373a526a20d057839))
+* **questions:** add ingress-netpol-v2 question set (q116-01..20) ([ae0c75a](https://github.com/onahFran6/clusterdrill/commit/ae0c75a006ac716512a731d46d1b6824a16d08e1))
+* **questions:** add ingress-netpol-v2 question set (q116-01..20) ([9a6a513](https://github.com/onahFran6/clusterdrill/commit/9a6a5135feba202af7850807522ee64a08250597))
+* **questions:** add services-v2 question set (q113-01..20) ([e588003](https://github.com/onahFran6/clusterdrill/commit/e588003af1f7b1a14187abe7d06a83f06ffd312b))
+* **questions:** add services-v2 question set (q113-01..20) ([925f228](https://github.com/onahFran6/clusterdrill/commit/925f228f0489ddfedfb8e84e8ece33a3bea6f668))
+* six new v2 question topics, private-tmux terminal copy, and exam-realistic vim ([6dbd3a5](https://github.com/onahFran6/clusterdrill/commit/6dbd3a5ca001f0d385cef00e618c31f0b0d96e62))
+* **storage-v2:** add storage-v2 question set (q114-01..20) ([bb43506](https://github.com/onahFran6/clusterdrill/commit/bb435065a72af67b41606945d971a711bdb77f42))
+* **storage-v2:** add storage-v2 question set (q114-01..20) ([5d9a450](https://github.com/onahFran6/clusterdrill/commit/5d9a45084a8ee43f7073d03ad3a4aae35186547b))
+* **terminal:** copy dragged terminal text to the clipboard ([f0e8d08](https://github.com/onahFran6/clusterdrill/commit/f0e8d08ca2e94a7354e5913fb49bc78b47501212))
+* **terminal:** copy dragged terminal text to the clipboard ([19eedd3](https://github.com/onahFran6/clusterdrill/commit/19eedd39b54422b32fe414779501a0a698ae58b4))
+
+
+### Bug Fixes
+
+* configure vim for exam-realistic yaml indentation ([4d87c7f](https://github.com/onahFran6/clusterdrill/commit/4d87c7f7f139374ff42ad33929ade1b992e7f20f))
+* configure vim for exam-realistic yaml indentation ([bb86ae7](https://github.com/onahFran6/clusterdrill/commit/bb86ae7c8f74ac6e5331ffd57049fcdbb2409a10))
+* harden appliance startup and continue the full question-bank audit ([5cfca93](https://github.com/onahFran6/clusterdrill/commit/5cfca93b1609a810abe45a367224eea0d42b5cdc))
+* harden appliance startup and continue the full question-bank audit ([e6c4570](https://github.com/onahFran6/clusterdrill/commit/e6c45706773d820632638d3979aeae29e9d41790))
+* update storage_profile test for the pvc-needs-more-storage rename ([ceb689b](https://github.com/onahFran6/clusterdrill/commit/ceb689bf41b19458dc08c20dd0f27008bf3c047e))
+
 ## [0.1.8](https://github.com/onahFran6/clusterdrill/compare/v0.1.7...v0.1.8) (2026-09-27)
 
 
