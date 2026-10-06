@@ -1,0 +1,175 @@
+{
+  "architecture": {
+    "title": "q113-15-default-deny-allow-one-path: NetworkPolicy, Deployment, Service, Pod",
+    "description": "Resources involved: NetworkPolicy, Deployment, Service, Pod",
+    "nodes": [
+      {
+        "id": "NetworkPolicy",
+        "label": "NetworkPolicy",
+        "type": "service"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      }
+    ],
+    "edges": [
+      {
+        "from": "NetworkPolicy",
+        "to": "Deployment",
+        "label": "selects pods of",
+        "animated": true,
+        "command": "kubectl apply -f networkpolicy.yaml (spec.podSelector)"
+      },
+      {
+        "from": "NetworkPolicy",
+        "to": "Pod",
+        "label": "selects",
+        "animated": true,
+        "command": "kubectl apply -f networkpolicy.yaml (spec.podSelector)"
+      },
+      {
+        "from": "Deployment",
+        "to": "Service",
+        "label": "exposed by",
+        "animated": true,
+        "command": "kubectl expose deployment ... (selector matches pod-template labels)"
+      },
+      {
+        "from": "Deployment",
+        "to": "Pod",
+        "label": "manages via ReplicaSet",
+        "animated": true,
+        "command": "kubectl create deployment ..."
+      },
+      {
+        "from": "Service",
+        "to": "Pod",
+        "label": "routes to",
+        "animated": true,
+        "command": "kubectl expose ... (spec.selector)"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q113-15-default-deny-allow-one-path: NetworkPolicy, Deployment, Service, Pod",
+    "description": "Resources involved: NetworkPolicy, Deployment, Service, Pod",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "NetworkPolicy",
+        "label": "NetworkPolicy",
+        "type": "service"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl apply -f networkpolicy.yaml (spec.podSelector)"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "Deployment",
+        "label": "selects pods of (enforced at request time)"
+      },
+      {
+        "from": "API Server",
+        "to": "Pod",
+        "label": "selects (enforced at request time)"
+      },
+      {
+        "from": "API Server",
+        "to": "Service",
+        "label": "exposed by"
+      },
+      {
+        "from": "API Server",
+        "to": "Pod",
+        "label": "manages via ReplicaSet"
+      },
+      {
+        "from": "API Server",
+        "to": "Pod",
+        "label": "routes to"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}
