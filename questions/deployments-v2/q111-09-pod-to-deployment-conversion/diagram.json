@@ -1,0 +1,135 @@
+{
+  "architecture": {
+    "title": "q111-09-pod-to-deployment-conversion: Pod, Deployment, ServiceAccount",
+    "description": "Resources involved: Pod, Deployment, ServiceAccount",
+    "nodes": [
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Deployment",
+        "to": "Pod",
+        "label": "manages via ReplicaSet",
+        "animated": true,
+        "command": "kubectl create deployment ..."
+      },
+      {
+        "from": "ServiceAccount",
+        "to": "Pod",
+        "label": "identity for",
+        "animated": true,
+        "command": "kubectl create serviceaccount ...; spec.serviceAccountName"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q111-09-pod-to-deployment-conversion: Pod, Deployment, ServiceAccount",
+    "description": "Resources involved: Pod, Deployment, ServiceAccount",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create deployment ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "Pod",
+        "label": "manages via ReplicaSet"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create serviceaccount ...; spec.serviceAccountName"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s) - identity for ServiceAccount (kubectl create serviceaccount ...; spec.serviceAccountName)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "architecture": {
+    "title": "q111-10-three-faults-zero-pods: Deployment, ConfigMap, Secret, ServiceAccount",
+    "description": "Resources involved: Deployment, ConfigMap, Secret, ServiceAccount",
+    "nodes": [
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "ConfigMap",
+        "label": "ConfigMap",
+        "type": "resource"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      },
+      {
+        "id": "Secret",
+        "label": "Secret",
+        "type": "resource"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Deployment",
+        "to": "ConfigMap",
+        "label": "reads",
+        "animated": true,
+        "command": "envFrom / volumeMount; kubectl rollout restart on change"
+      },
+      {
+        "from": "ConfigMap",
+        "to": "ServiceAccount",
+        "label": "readable by",
+        "animated": true,
+        "command": "subject to RBAC on the ServiceAccount's bound Role"
+      },
+      {
+        "from": "Secret",
+        "to": "ServiceAccount",
+        "label": "accessible to",
+        "animated": true,
+        "command": "readable only if a bound Role/ClusterRole grants get/list on secrets"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q111-10-three-faults-zero-pods: Deployment, ConfigMap, Secret, ServiceAccount",
+    "description": "Resources involved: Deployment, ConfigMap, Secret, ServiceAccount",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "ConfigMap",
+        "label": "ConfigMap",
+        "type": "resource"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      },
+      {
+        "id": "Secret",
+        "label": "Secret",
+        "type": "resource"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates Deployment"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "ConfigMap",
+        "label": "reads"
+      },
+      {
+        "from": "API Server",
+        "to": "ServiceAccount",
+        "label": "readable by (enforced at request time)"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates Secret"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "ServiceAccount",
+        "label": "accessible to (enforced at request time)"
+      }
+    ]
+  }
+}
