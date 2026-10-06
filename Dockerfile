@@ -32,8 +32,10 @@ COPY --chown=clusterdrill:clusterdrill questions ./questions
 COPY --chown=clusterdrill:clusterdrill web ./web
 COPY --chown=clusterdrill:clusterdrill deploy/entrypoint.sh /usr/local/bin/clusterdrill-entrypoint
 COPY deploy/clusterdrill-aliases.sh /etc/profile.d/clusterdrill-aliases.sh
+COPY deploy/vimrc.local /etc/vim/vimrc.local
 RUN chmod 0755 /usr/local/bin/clusterdrill-entrypoint \
     && chmod 0644 /etc/profile.d/clusterdrill-aliases.sh \
+    && chmod 0644 /etc/vim/vimrc.local \
     && find web -type d -name __pycache__ -prune -exec rm -rf {} + \
     && find lib -name '*.sh' -exec chmod 0755 {} + \
     && find questions -name '*.sh' -exec chmod 0755 {} +
