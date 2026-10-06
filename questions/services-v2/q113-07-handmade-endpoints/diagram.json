@@ -1,0 +1,150 @@
+{
+  "architecture": {
+    "title": "q113-07-handmade-endpoints: Pod, Service, Endpoints",
+    "description": "Resources involved: Pod, Service, Endpoints",
+    "nodes": [
+      {
+        "id": "Endpoints",
+        "label": "Endpoints",
+        "type": "service"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Endpoints",
+        "to": "Pod",
+        "label": "targets",
+        "animated": true,
+        "command": "one subset entry per matching Pod IP:port"
+      },
+      {
+        "from": "Service",
+        "to": "Endpoints",
+        "label": "backed by",
+        "animated": true,
+        "command": "auto-created from spec.selector match"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q113-07-handmade-endpoints: Pod, Service, Endpoints",
+    "description": "Resources involved: Pod, Service, Endpoints",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Endpoints",
+        "label": "Endpoints",
+        "type": "service"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      },
+      {
+        "id": "Endpoints controller",
+        "label": "Endpoints controller",
+        "type": "controller"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates Endpoints"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "Pod",
+        "label": "targets"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates Service"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "Endpoints controller",
+        "to": "API Server",
+        "label": "watches Service objects"
+      },
+      {
+        "from": "Endpoints controller",
+        "to": "API Server",
+        "label": "backed by Endpoints (auto-created from spec.selector match)"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}
