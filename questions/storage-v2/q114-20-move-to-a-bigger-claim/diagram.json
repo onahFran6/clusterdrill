@@ -1,0 +1,136 @@
+{
+  "architecture": {
+    "title": "q114-20-move-to-a-bigger-claim: PersistentVolumeClaim, Deployment, Pod",
+    "description": "Resources involved: PersistentVolumeClaim, Deployment, Pod",
+    "nodes": [
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Deployment",
+        "to": "PersistentVolumeClaim",
+        "label": "mounts",
+        "animated": true,
+        "command": "pod template spec.volumes.persistentVolumeClaim.claimName"
+      },
+      {
+        "from": "PersistentVolumeClaim",
+        "to": "Pod",
+        "label": "mounted by",
+        "animated": true,
+        "command": "spec.volumes.persistentVolumeClaim.claimName"
+      },
+      {
+        "from": "Deployment",
+        "to": "Pod",
+        "label": "manages via ReplicaSet",
+        "animated": true,
+        "command": "kubectl create deployment ..."
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q114-20-move-to-a-bigger-claim: PersistentVolumeClaim, Deployment, Pod",
+    "description": "Resources involved: PersistentVolumeClaim, Deployment, Pod",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates Deployment"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "kubelet",
+        "to": "PersistentVolumeClaim",
+        "label": "mounts Deployment (pod template spec.volumes.persistentVolumeClaim.claimName)"
+      },
+      {
+        "from": "API Server",
+        "to": "Pod",
+        "label": "manages via ReplicaSet"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s) - mounted by PersistentVolumeClaim (spec.volumes.persistentVolumeClaim.claimName)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}

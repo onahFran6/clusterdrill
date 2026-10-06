@@ -1,0 +1,119 @@
+{
+  "architecture": {
+    "title": "q114-10-rollout-stuck-on-its-own-volume: PersistentVolume, PersistentVolumeClaim, Deployment",
+    "description": "Resources involved: PersistentVolume, PersistentVolumeClaim, Deployment",
+    "nodes": [
+      {
+        "id": "PersistentVolume",
+        "label": "PersistentVolume",
+        "type": "storage"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      }
+    ],
+    "edges": [
+      {
+        "from": "PersistentVolume",
+        "to": "PersistentVolumeClaim",
+        "label": "bound by",
+        "animated": true,
+        "command": "kubectl apply -f pv.yaml + pvc.yaml (capacity/accessMode match)"
+      },
+      {
+        "from": "Deployment",
+        "to": "PersistentVolumeClaim",
+        "label": "mounts",
+        "animated": true,
+        "command": "pod template spec.volumes.persistentVolumeClaim.claimName"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q114-10-rollout-stuck-on-its-own-volume: PersistentVolume, PersistentVolumeClaim, Deployment",
+    "description": "Resources involved: PersistentVolume, PersistentVolumeClaim, Deployment",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "PersistentVolume",
+        "label": "PersistentVolume",
+        "type": "storage"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      },
+      {
+        "id": "PV controller",
+        "label": "PV controller",
+        "type": "controller"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl apply -f pv.yaml + pvc.yaml (capacity/accessMode match)"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "PV controller",
+        "to": "API Server",
+        "label": "watches PersistentVolume objects"
+      },
+      {
+        "from": "PV controller",
+        "to": "API Server",
+        "label": "bound by PersistentVolumeClaim (kubectl apply -f pv.yaml + pvc.yaml (capacity/accessMode match))"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates Deployment"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "kubelet",
+        "to": "PersistentVolumeClaim",
+        "label": "mounts Deployment (pod template spec.volumes.persistentVolumeClaim.claimName)"
+      }
+    ]
+  }
+}

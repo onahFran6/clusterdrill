@@ -1,0 +1,119 @@
+{
+  "architecture": {
+    "title": "q114-15-the-reporter-never-starts: PersistentVolumeClaim, Deployment, StorageClass",
+    "description": "Resources involved: PersistentVolumeClaim, Deployment, StorageClass",
+    "nodes": [
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      },
+      {
+        "id": "StorageClass",
+        "label": "StorageClass",
+        "type": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Deployment",
+        "to": "PersistentVolumeClaim",
+        "label": "mounts",
+        "animated": true,
+        "command": "pod template spec.volumes.persistentVolumeClaim.claimName"
+      },
+      {
+        "from": "StorageClass",
+        "to": "PersistentVolumeClaim",
+        "label": "provisions for",
+        "animated": true,
+        "command": "spec.storageClassName references it; PV dynamically provisioned"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q114-15-the-reporter-never-starts: PersistentVolumeClaim, Deployment, StorageClass",
+    "description": "Resources involved: PersistentVolumeClaim, Deployment, StorageClass",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      },
+      {
+        "id": "StorageClass",
+        "label": "StorageClass",
+        "type": "storage"
+      },
+      {
+        "id": "PV controller",
+        "label": "PV controller",
+        "type": "controller"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates Deployment"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "kubelet",
+        "to": "PersistentVolumeClaim",
+        "label": "mounts Deployment (pod template spec.volumes.persistentVolumeClaim.claimName)"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates StorageClass"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "PV controller",
+        "to": "API Server",
+        "label": "watches StorageClass objects"
+      },
+      {
+        "from": "PV controller",
+        "to": "API Server",
+        "label": "provisions for PersistentVolumeClaim (spec.storageClassName references it; PV dynamically provisioned)"
+      }
+    ]
+  }
+}

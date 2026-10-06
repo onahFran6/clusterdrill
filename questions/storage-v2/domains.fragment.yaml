@@ -1,0 +1,142 @@
+topic: storage-v2
+questions:
+  - id: q114-01-pick-the-fast-volume
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-02-pending-access-mode
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-03-which-size-wins
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-04-reserve-for-a-future-claim
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-05-get-data-back-after-delete
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-06-storageclass-for-local-disks
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [StorageClass, PersistentVolume, PersistentVolumeClaim, Pod, Node]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-07-dynamic-by-default-static-on-purpose
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-08-can-this-claim-grow
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolumeClaim, StorageClass, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-09-once-per-node-or-pod
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-10-rollout-stuck-on-its-own-volume
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim, Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-11-seed-once-keep-edits
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [ConfigMap, PersistentVolumeClaim, Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-12-two-apps-one-claim
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolumeClaim, Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-13-one-folder-per-replica
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolumeClaim, Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-14-a-claim-for-every-replica
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [StatefulSet, Service, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-15-the-reporter-never-starts
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolumeClaim, Deployment, StorageClass]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-16-deleted-while-in-use
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [PersistentVolumeClaim, PersistentVolume, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-17-permission-denied-on-the-volume
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim, Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-18-rotate-a-secret-watch-it-land
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [Secret, PersistentVolumeClaim, Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-19-immutable-config-persistent-output
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [ConfigMap, PersistentVolumeClaim, Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q114-20-move-to-a-bigger-claim
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [PersistentVolumeClaim, Deployment, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
