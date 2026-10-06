@@ -1,0 +1,22 @@
+# Installed at /etc/vim/vimrc.local - Debian's vim package's own
+# /etc/vim/vimrc sources this file if present, for every user, so this is
+# the one place that reaches every terminal tab's `vi`/`vim` regardless of
+# deployment path (local Minikube, standalone Helm, or clusterdrill-lab),
+# same reach as /etc/profile.d/clusterdrill-aliases.sh.
+#
+# Mirrors a real proctored CKAD/CKA exam terminal's own pre-configured
+# vimrc - stock vim otherwise defaults to tabstop=8/noexpandtab, which
+# writes broken (tab-indented, not 2-space) YAML the moment a candidate
+# presses Tab. `filetype plugin indent on` turns on vim's own bundled
+# indent/yaml.vim (ships with vim itself, no plugin manager needed): on
+# Enter it carries the current line's indent and adds one more shiftwidth
+# after a line ending in ":" or starting a "- " list item. `autoindent` is
+# deliberately left unset - no filetype-agnostic indent-carry fallback
+# beyond what yaml.vim's own indentexpr already provides for recognized
+# filetypes.
+set number
+set expandtab
+set shiftwidth=2
+set tabstop=2
+syntax on
+filetype plugin indent on
