@@ -1,0 +1,212 @@
+topic: ingress-netpol-v2
+questions:
+- id: q116-01-exact-or-prefix
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Ingress
+  - Service
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-02-default-deny-broke-the-site
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - NetworkPolicy
+  - Ingress
+  - Service
+  - Deployment
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-03-two-teams-one-hostname
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Ingress
+  - Service
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-04-strip-the-prefix
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Ingress
+  - Service
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-05-the-default-class-came-too-late
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - IngressClass
+  - Ingress
+  - Service
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-06-route-by-port-name
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Ingress
+  - Service
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-07-longest-prefix-wins
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Ingress
+  - Service
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-08-two-hosts-two-certificates
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Ingress
+  - Secret
+  - Service
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-09-a-503-with-two-causes
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Ingress
+  - Service
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-10-canary-for-testers-only
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Ingress
+  - Service
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-11-users-and-monitoring-on-separate-ports
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - NetworkPolicy
+  - Deployment
+  - Service
+  - Ingress
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-12-internet-yes-cluster-and-metadata-no
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - NetworkPolicy
+  - Pod
+  - Service
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-13-lock-the-namespace-keep-it-working-inside
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - NetworkPolicy
+  - Pod
+  - Service
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-14-a-range-of-ports
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - NetworkPolicy
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-15-three-tiers-locked-both-ways
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - NetworkPolicy
+  - Pod
+  - Service
+  - Ingress
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-16-selecting-with-expressions
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - NetworkPolicy
+  - Pod
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-17-the-policy-that-protects-nothing
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - NetworkPolicy
+  - Pod
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-18-which-policy-let-it-in
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - NetworkPolicy
+  - Pod
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-19-neighbours-and-the-ingress-only
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - NetworkPolicy
+  - Ingress
+  - Pod
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q116-20-end-to-end-four-faults-one-request
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Ingress
+  - Service
+  - NetworkPolicy
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
