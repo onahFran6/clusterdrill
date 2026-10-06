@@ -217,7 +217,7 @@ full_reset() {
     return 1
   fi
 
-  if ! kubectl delete clusterrole,clusterrolebinding,pv,storageclass,crd \
+  if ! kubectl delete clusterrole,clusterrolebinding,pv,storageclass,crd,ingressclass \
     -l "${CLUSTERDRILL_LABEL_KEY}=${question_id_lc}" \
     --ignore-not-found --wait=true >/dev/null 2>&1; then
     echo "full_reset: failed to delete cluster-scoped resources for $question_id_lc" >&2
@@ -246,7 +246,7 @@ batch_cleanup() {
 
   local joined
   joined="$(IFS=,; echo "$*")"
-  kubectl delete clusterrole,clusterrolebinding,pv,storageclass,crd \
+  kubectl delete clusterrole,clusterrolebinding,pv,storageclass,crd,ingressclass \
     -l "${CLUSTERDRILL_LABEL_KEY} in (${joined})" \
     --ignore-not-found --wait=false >/dev/null 2>&1
 
