@@ -1,0 +1,23 @@
+topic: container-images-v2
+questions:
+  - id: q115-01-docker-run-to-pod-yaml
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q115-02-pull-secrets-via-serviceaccount
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [ServiceAccount, Secret, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q115-03-pin-by-digest
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [Deployment, Pod, Image]
+    points: 5
+    requirements:
+      min_nodes: 1
