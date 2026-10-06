@@ -3,7 +3,7 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-34-helm-set-list-index-values`
 
 A local Helm chart named `router` is on disk at
-`questions/helm-crds/q110-34-helm-set-list-index-values/chart` (relative to `practice-bank/`).
+`$HOME/practice-work/q110-34-helm-set-list-index-values/chart`.
 Its default `values.yaml` sets `hosts` to a one-element list, and a ConfigMap key `hosts` joins
 that list with commas.
 

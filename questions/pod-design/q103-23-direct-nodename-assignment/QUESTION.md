@@ -2,6 +2,10 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-23-direct-nodename-assignment`
 
+Quantum Research Laboratory has a workload that must land on this cluster's exact node because
+it needs a peripheral wired to that physical machine - the scheduler's normal node-picking is
+not welcome here.
+
 An incomplete pod manifest is at
 `$HOME/practice-work/q103-23-direct-nodename-assignment/node-pinned.yaml`
 (this question's terminal working directory). It has not been applied, so no pod exists in

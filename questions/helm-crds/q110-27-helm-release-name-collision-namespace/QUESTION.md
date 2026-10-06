@@ -4,10 +4,10 @@
 
 Two local charts named `engine` are on disk:
 
-- `questions/helm-crds/q110-27-helm-release-name-collision-namespace/chart-v1` (version `1.0.0`),
+- `$HOME/practice-work/q110-27-helm-release-name-collision-namespace/chart-v1` (version `1.0.0`),
   already installed as release `core` in this namespace (revision 1, status `deployed`), with
   Deployment `core-engine` running `nginx:1.25-alpine`.
-- `questions/helm-crds/q110-27-helm-release-name-collision-namespace/chart-v2` (version `2.0.0`),
+- `$HOME/practice-work/q110-27-helm-release-name-collision-namespace/chart-v2` (version `2.0.0`),
   not yet used. Its Deployment template adds container port `8443` and env `PROTOCOL=https`.
 
 Upgrade the existing `core` release in place to chart-v2 so revision 2 reflects that shape

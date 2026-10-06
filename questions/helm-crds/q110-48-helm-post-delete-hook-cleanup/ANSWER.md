@@ -3,7 +3,7 @@
 Doc: https://helm.sh/docs/topics/charts_hooks/
 
 ```sh
-CHART=questions/helm-crds/q110-48-helm-post-delete-hook-cleanup/chart
+CHART=$HOME/practice-work/q110-48-helm-post-delete-hook-cleanup/chart
 NS=q110-48-helm-post-delete-hook-cleanup
 
 sed -i.bak 's/exit 1/exit 0/' "$CHART/templates/postdelete.yaml"

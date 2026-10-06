@@ -3,8 +3,8 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-19-helm-upgrade-install-idempotent`
 
 A local Helm chart named `toggle` is staged at
-`questions/helm-crds/q110-19-helm-upgrade-install-idempotent/chart` (relative to the
-`practice-bank/` directory). The chart's `values.yaml` sets `featureFlag: "off"`, and its
+`$HOME/practice-work/q110-19-helm-upgrade-install-idempotent/chart`. The chart's
+`values.yaml` sets `featureFlag: "off"`, and its
 templates render a Deployment whose container has an env var `FEATURE_FLAG` sourced from
 `.Values.featureFlag`, plus a ConfigMap named `{{ .Release.Name }}-toggle-cm` whose
 `data.flag` carries the same value. No Helm release has been installed yet.

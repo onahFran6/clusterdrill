@@ -55,6 +55,20 @@ def test_substitute_namespace_does_not_touch_a_different_id_sharing_a_prefix():
     assert substitute_namespace(text, "q101-01-example", "alice") == text
 
 
+def test_substitute_namespace_does_not_touch_a_filesystem_path_segment():
+    # A bare qid immediately followed by "/" is always a path (e.g. the
+    # question's own chart directory), never a namespace reference - the
+    # physical directory is never namespace-suffixed on disk, so rewriting
+    # it here would point a copy-pasted command at a path that doesn't
+    # exist. The bare "-n <qid>" namespace argument on the same line must
+    # still be rewritten.
+    text = "helm install app $HOME/practice-work/q101-01-example/chart -n q101-01-example --wait"
+    rewritten = substitute_namespace(text, "q101-01-example", "alice")
+    assert rewritten == (
+        "helm install app $HOME/practice-work/q101-01-example/chart -n q101-01-example-alice --wait"
+    )
+
+
 def test_render_markdown_substitutes_before_rendering():
     html = render_markdown("Namespace: `q101-01-example`", qid="q101-01-example", user_id="alice")
     assert "q101-01-example-alice" in html

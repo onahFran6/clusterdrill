@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$SCRIPT_DIR/../../../lib/grading.sh"
 
-CHART_DIR="$SCRIPT_DIR/chart"
+CHART_DIR="$HOME/practice-work/q110-23-helm-lint-fix-chart/chart"
 
 RELEASE_STATUS="$(helm status fixed -n "$QUESTION_ID" -o json 2>/dev/null)"
 

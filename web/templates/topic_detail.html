@@ -39,6 +39,14 @@
         </select>
       </label>
 
+      <label class="practice-setup-field">
+        <span class="practice-setup-label">Questions</span>
+        <select name="session_size">
+          <option value="">Default ({{ session_size }})</option>
+          <option value="all">All in pool</option>
+        </select>
+      </label>
+
       <div class="practice-setup-modes">
         <button type="submit" name="mode" value="fixed" class="btn btn-primary">Fixed</button>
         <button type="submit" name="mode" value="randomized" class="btn btn-mode"
@@ -49,7 +57,9 @@
     </form>
     <p class="practice-setup-hint">
       Fixed and Randomized draw from <strong>{{ topic }}</strong>'s pool.
-      Mixed draws across every topic's pool instead, at the same difficulty and timer chosen above.
+      Mixed draws across every topic's pool instead, at the same difficulty, timer, and question count chosen above.
+      "All in pool" lifts the {{ session_size }}-question default and takes every question matching the difficulty
+      filter above.
     </p>
   </section>
 

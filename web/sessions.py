@@ -38,6 +38,16 @@ from questions import Question, QuestionBank
 # Fixed mode - see start_fixed's short-pool behavior below.
 SESSION_SIZE = 15
 
+# Fixed/Randomized/Mixed's session-setup panel offers exactly one override
+# of SESSION_SIZE: "All in pool" (topic_detail.html's session_size
+# <select>) - a candidate who explicitly wants to drill an entire
+# (optionally difficulty-filtered) pool in one sitting, not just its
+# first/a shuffled SESSION_SIZE slice. Not a free-text count (same
+# "bounded preset, not arbitrary input" rule as TIMER_CHOICES_MINUTES/
+# EXAM_QUESTION_COUNT_CHOICES) - there are exactly two choices, default or
+# everything.
+QUESTION_COUNT_ALL = "all"
+
 # Revision, 2026-08-23: the timer used to be a
 # per-session opt-in toggle. Direct product direction this session changed
 # that: every session now starts its clock automatically, the same way a
@@ -145,6 +155,17 @@ def _resolve_timer_seconds(mode: SessionMode, timer_minutes: Optional[int]) -> i
     if timer_minutes is not None and timer_minutes in TIMER_CHOICES_MINUTES:
         return timer_minutes * 60
     return default_timer_seconds(mode)
+
+
+def _cap_session_size(ids: list, question_count: Optional[str]) -> list:
+    """Shared by start_fixed/start_randomized/start_mixed: SESSION_SIZE
+    unless the candidate explicitly asked for QUESTION_COUNT_ALL, same
+    "unknown/stray value -> silent default" rule as
+    _resolve_timer_seconds/_resolve_exam_question_count above - anything
+    other than the exact "all" sentinel is treated as "no override"."""
+    if question_count == QUESTION_COUNT_ALL:
+        return ids
+    return ids[:SESSION_SIZE]
 
 
 def _filter_by_difficulty(pool: list[Question], difficulty) -> list[Question]:
@@ -295,6 +316,7 @@ def _timer_fields(mode: SessionMode, timer_minutes: Optional[int] = None) -> dic
 
 def start_fixed(
     bank: QuestionBank, topic: str, difficulty: Optional[str] = None, timer_minutes: Optional[int] = None,
+    question_count: Optional[str] = None,
 ) -> ActiveSession:
     """Deterministic: the topic's first N questions in the bank's existing
     (alphabetical-by-folder-name, i.e. numeric) order. Reproducible run to
@@ -306,9 +328,11 @@ def start_fixed(
     in order (e.g. state-persistence's 12 questions all show up, not
     12-of-15-that-don't-exist) - same graceful "take what's there" behavior
     a difficulty filter gets for free, no separate small-pool branch needed.
+    question_count=QUESTION_COUNT_ALL lifts the SESSION_SIZE cap entirely -
+    see _cap_session_size.
     """
     pool = _filter_by_difficulty(topic_pool(bank, topic), difficulty)
-    chosen = pool[:SESSION_SIZE]
+    chosen = _cap_session_size(pool, question_count)
     return ActiveSession(
         mode="fixed",
         topic=topic,
@@ -319,17 +343,20 @@ def start_fixed(
 
 def start_randomized(
     bank: QuestionBank, topic: str, difficulty: Optional[str] = None, timer_minutes: Optional[int] = None,
+    question_count: Optional[str] = None,
 ) -> ActiveSession:
     """A freshly shuffled N-question subset of one topic's pool (after an
     optional difficulty filter). Reshuffled every time a new session is
     started (not persisted/seeded), so repeat practice on the same topic
     doesn't mean memorizing the same order or even the same subset once the
-    (filtered) pool exceeds SESSION_SIZE.
+    (filtered) pool exceeds SESSION_SIZE. question_count=QUESTION_COUNT_ALL
+    lifts the SESSION_SIZE cap entirely - see _cap_session_size (the draw is
+    still freshly shuffled either way, so "all" is a reordering, not a no-op).
     """
     pool = _filter_by_difficulty(topic_pool(bank, topic), difficulty)
     ids = [q.id for q in pool]
     random.shuffle(ids)
-    chosen = ids[:SESSION_SIZE]
+    chosen = _cap_session_size(ids, question_count)
     return ActiveSession(
         mode="randomized",
         topic=topic,
@@ -340,15 +367,17 @@ def start_randomized(
 
 def start_mixed(
     bank: QuestionBank, difficulty: Optional[str] = None, timer_minutes: Optional[int] = None,
+    question_count: Optional[str] = None,
 ) -> ActiveSession:
     """A shuffled N-question draw across every topic's pool combined (after
     an optional difficulty filter) - a mock-exam-style mix. topic=None on
     the resulting session since it isn't
-    scoped to one topic.
+    scoped to one topic. question_count=QUESTION_COUNT_ALL lifts the
+    SESSION_SIZE cap entirely - see _cap_session_size.
     """
     ids = [q.id for q in _filter_by_difficulty(bank.questions, difficulty)]
     random.shuffle(ids)
-    chosen = ids[:SESSION_SIZE]
+    chosen = _cap_session_size(ids, question_count)
     return ActiveSession(
         mode="mixed",
         topic=None,

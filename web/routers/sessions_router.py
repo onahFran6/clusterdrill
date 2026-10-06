@@ -41,10 +41,12 @@ router = APIRouter()
 @router.post("/sessions/start", dependencies=[Depends(auth.csrf_protect_form)])
 def start_session(
     request: Request,
+    background_tasks: BackgroundTasks,
     mode: str = Form(...),
     topic: str = Form(""),
     difficulty: str = Form(""),
     timer_minutes: int = Form(0),
+    session_size: str = Form(""),
     topics: list[str] = Form([]),
     difficulties: list[str] = Form([]),
     question_count: int = Form(0),
@@ -66,6 +68,13 @@ def start_session(
     a 500; an out-of-preset timer_minutes falls back to the default) so a
     forged form post can't do anything worse than "no questions matched" or
     "ran with the default clock."
+
+    session_size ("" | "all") is fixed/randomized/mixed's own question-count
+    override - "" keeps the usual SESSION_SIZE cap, "all" takes every
+    question in the (optionally difficulty-filtered) pool instead of just
+    its first/a shuffled SESSION_SIZE slice. Same "unknown value -> silent
+    default" validation rule as difficulty/timer_minutes, enforced again in
+    sessions.py's _cap_session_size.
 
     topics/difficulties/question_count are exam mode's own setup-form
     fields - a multi-select of topics and a
@@ -102,7 +111,9 @@ def start_session(
     elif mode == "mixed":
         if len(bank) == 0:
             raise HTTPException(status_code=404, detail="no questions discovered in the bank")
-        session = start_mixed(bank, difficulty=difficulty, timer_minutes=timer_minutes or None)
+        session = start_mixed(
+            bank, difficulty=difficulty, timer_minutes=timer_minutes or None, question_count=session_size,
+        )
     else:
         if topic not in bank.topics():
             raise HTTPException(status_code=404, detail=f"unknown topic '{topic}'")
@@ -123,20 +134,28 @@ def start_session(
                 f"(pool size {pool_size})",
             )
         session = (
-            start_fixed(bank, topic, difficulty=difficulty, timer_minutes=timer_minutes or None)
+            start_fixed(
+                bank, topic, difficulty=difficulty, timer_minutes=timer_minutes or None,
+                question_count=session_size,
+            )
             if mode == "fixed"
-            else start_randomized(bank, topic, difficulty=difficulty, timer_minutes=timer_minutes or None)
+            else start_randomized(
+                bank, topic, difficulty=difficulty, timer_minutes=timer_minutes or None,
+                question_count=session_size,
+            )
         )
 
     if not session.question_ids:
         raise HTTPException(status_code=404, detail="selected topic/pool has no questions")
 
-    session_store.set_active(session, auth.current_user_id(request.session))
+    user_id = auth.current_user_id(request.session)
+    _end_previous_session_if_any(user_id, background_tasks)
+    session_store.set_active(session, user_id)
     return RedirectResponse(url=f"/questions/{session.question_ids[0]}", status_code=303)
 
 
 @router.post("/sessions/start-boss", dependencies=[Depends(auth.csrf_protect_form)])
-def start_boss_session(request: Request, topic: str = Form(...)):
+def start_boss_session(request: Request, background_tasks: BackgroundTasks, topic: str = Form(...)):
     """Starts a topic's boss mini-exam - a separate route from
     /sessions/start rather than a fourth `mode` value there, since a boss
     fight has none of the regular session-setup panel's choices (no
@@ -159,12 +178,13 @@ def start_boss_session(request: Request, topic: str = Form(...)):
     if not session.question_ids:
         raise HTTPException(status_code=404, detail="selected topic has no questions")
 
+    _end_previous_session_if_any(user_id, background_tasks)
     session_store.set_active(session, user_id)
     return RedirectResponse(url=f"/questions/{session.question_ids[0]}", status_code=303)
 
 
 @router.post("/sessions/start-daily", dependencies=[Depends(auth.csrf_protect_form)])
-def start_daily_session(request: Request):
+def start_daily_session(request: Request, background_tasks: BackgroundTasks):
     """Starts the daily/session mixed challenge - deliberately no
     form fields at all (no topic, no difficulty, no timer override; see
     start_daily's docstring for why) and no unlock gate, unlike
@@ -180,7 +200,9 @@ def start_daily_session(request: Request):
     if not session.question_ids:
         raise HTTPException(status_code=404, detail="no questions available")
 
-    session_store.set_active(session, auth.current_user_id(request.session))
+    user_id = auth.current_user_id(request.session)
+    _end_previous_session_if_any(user_id, background_tasks)
+    session_store.set_active(session, user_id)
     return RedirectResponse(url=f"/questions/{session.question_ids[0]}", status_code=303)
 
 
@@ -208,6 +230,26 @@ def _cleanup_finished_session(
     # again, in this session or a future one.
     for qid in session.question_ids:
         shutil.rmtree(question_view.question_workdir(qid), ignore_errors=True)
+
+
+def _end_previous_session_if_any(user_id: str | None, background_tasks: BackgroundTasks) -> None:
+    """Every /sessions/start* route calls this right before
+    session_store.set_active() for the new session it's about to create.
+
+    Without this, starting a new session while a previous one is still
+    tracked (navigated away without End session, or the timer's client-side
+    expiry call hasn't landed yet) just overwrites the old ActiveSession
+    object - its namespaces/releases are never coming back into view, but
+    nothing ever cleans them up, so they sit on the cluster forever. Same
+    cleanup end_session performs, just triggered by the next session start
+    instead of an explicit End session click. Deliberately placed after
+    the new session has already been validated (topic/pool checks etc.
+    above each call site) so a rejected start request never tears down a
+    still-legitimately-active previous session.
+    """
+    previous = session_store.get(user_id)
+    if previous is not None:
+        _cleanup_finished_session(previous, user_id, background_tasks)
 
 
 @router.post("/sessions/submit", dependencies=[Depends(auth.csrf_protect_header)])

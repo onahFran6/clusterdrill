@@ -18,7 +18,11 @@ kubectl label namespace "$QUESTION_ID" "clusterdrill-question=$QUESTION_ID" --ov
 apply_default_resource_limits "$QUESTION_ID"
 grant_user_namespace_access "$QUESTION_ID" "${CLUSTERDRILL_USER_ID:-}"
 
-CHART_DIR="$SCRIPT_DIR/chart"
+# Chart fixture is regenerated per run into the candidate's writable
+# practice-work directory, not under $SCRIPT_DIR - that's this file's own
+# location inside the packaged appliance image, which is mounted read-only
+# (readOnlyRootFilesystem: true in local-appliance.yaml).
+CHART_DIR="$HOME/practice-work/q110-01-helm-install-release/chart"
 rm -rf "$CHART_DIR"
 mkdir -p "$CHART_DIR/templates"
 

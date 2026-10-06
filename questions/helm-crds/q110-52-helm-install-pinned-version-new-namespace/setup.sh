@@ -21,9 +21,9 @@ kubectl label namespace "$QUESTION_ID" "clusterdrill-question=$QUESTION_ID" --ov
 apply_default_resource_limits "$QUESTION_ID"
 grant_user_namespace_access "$QUESTION_ID" "${CLUSTERDRILL_USER_ID:-}"
 
-CHART_V1="$SCRIPT_DIR/chart-v1"
-CHART_V2="$SCRIPT_DIR/chart-v2"
-PKG_DIR="$SCRIPT_DIR/chart-pkgs"
+CHART_V1="$HOME/practice-work/q110-52-helm-install-pinned-version-new-namespace/chart-v1"
+CHART_V2="$HOME/practice-work/q110-52-helm-install-pinned-version-new-namespace/chart-v2"
+PKG_DIR="$HOME/practice-work/q110-52-helm-install-pinned-version-new-namespace/chart-pkgs"
 rm -rf "$CHART_V1" "$CHART_V2" "$PKG_DIR"
 mkdir -p "$CHART_V1/templates" "$CHART_V2/templates" "$PKG_DIR"
 

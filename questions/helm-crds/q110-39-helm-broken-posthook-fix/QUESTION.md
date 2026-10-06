@@ -3,7 +3,7 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-39-helm-broken-posthook-fix`
 
 A local Helm chart named `notifier` is on disk at
-`questions/helm-crds/q110-39-helm-broken-posthook-fix/chart` (relative to `practice-bank/`).
+`$HOME/practice-work/q110-39-helm-broken-posthook-fix/chart`.
 An install of release `demo` left the release in `failed` status: Deployment `demo-notifier` is
 Running, but the chart's `post-install` hook Job `demo-notifier-posthook` did not succeed.
 

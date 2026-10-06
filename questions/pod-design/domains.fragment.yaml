@@ -206,7 +206,7 @@ questions:
   points: 5
   requirements:
     min_nodes: 1
-- id: q103-26-podantiaffinity-required-pending-on-single-node
+- id: q103-26-cache-replica-stuck-pending
   domain: Application Design and Build
   difficulty: hard
   resource_kinds:
@@ -214,7 +214,7 @@ questions:
   points: 5
   requirements:
     min_nodes: 1
-- id: q103-27-job-activedeadline-interrupts-backoff
+- id: q103-27-job-outlasts-its-time-budget
   domain: Application Design and Build
   difficulty: hard
   resource_kinds:
@@ -222,7 +222,7 @@ questions:
   points: 5
   requirements:
     min_nodes: 1
-- id: q103-28-combined-matchlabels-matchexpressions-selector
+- id: q103-28-promote-worker-pods-by-label
   domain: Application Design and Build
   difficulty: hard
   resource_kinds:
@@ -252,7 +252,7 @@ questions:
   points: 5
   requirements:
     min_nodes: 1
-- id: q103-31-podantiaffinity-required-running-on-two-nodes
+- id: q103-31-cache-replicas-must-spread-across-nodes
   domain: Application Design and Build
   difficulty: hard
   resource_kinds:

@@ -132,6 +132,7 @@ def test_deployment_security_context_matches_the_raw_manifest():
     assert chart_container["securityContext"] == raw_container["securityContext"]
     assert chart_container["readinessProbe"] == raw_container["readinessProbe"]
     assert chart_container["livenessProbe"] == raw_container["livenessProbe"]
+    assert chart_container["resources"] == raw_container["resources"]
 
 
 def test_clusterrole_rules_are_identical_to_the_raw_manifest():

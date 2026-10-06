@@ -44,7 +44,7 @@ EOF
 kubectl wait --for=jsonpath='{.status.phase}'=Succeeded pod/clean-helper -n "$QUESTION_ID" --timeout=60s
 kubectl delete pod clean-helper -n "$QUESTION_ID" --wait=true
 
-CHART_DIR="$SCRIPT_DIR/chart"
+CHART_DIR="$HOME/practice-work/q110-46-helm-hook-weight-ordering-two-hooks/chart"
 rm -rf "$CHART_DIR"
 mkdir -p "$CHART_DIR/templates"
 

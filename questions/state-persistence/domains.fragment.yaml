@@ -65,14 +65,14 @@ questions:
     requirements:
       min_nodes: 1
       storage_profile: minikube
-  - id: q109-10-access-mode-rwo-vs-rwx
+  - id: q109-10-pvc-pending-shared-directory
     domain: "Application Design and Build"
     difficulty: hard
     resource_kinds: [PersistentVolume, PersistentVolumeClaim]
     points: 5
     requirements:
       min_nodes: 1
-  - id: q109-11-pvc-resize-allow-expansion
+  - id: q109-11-pvc-needs-more-storage
     domain: "Application Design and Build"
     difficulty: hard
     resource_kinds: [StorageClass, PersistentVolumeClaim]
@@ -80,7 +80,7 @@ questions:
     requirements:
       min_nodes: 1
       storage_profile: minikube
-  - id: q109-12-pv-capacity-access-mode-mismatch
+  - id: q109-12-pvc-request-too-large
     domain: "Application Design and Build"
     difficulty: hard
     resource_kinds: [PersistentVolume, PersistentVolumeClaim]
@@ -171,7 +171,7 @@ questions:
     points: 5
     requirements:
       min_nodes: 1
-  - id: q109-25-multi-container-subpath-partitioned-pvc
+  - id: q109-25-multi-container-shared-pvc-isolated-writes
     domain: "Application Design and Build"
     difficulty: hard
     resource_kinds: [Pod, PersistentVolumeClaim]

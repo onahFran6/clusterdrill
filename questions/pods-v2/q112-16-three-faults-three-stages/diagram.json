@@ -1,0 +1,130 @@
+{
+  "architecture": {
+    "title": "q112-16-three-faults-three-stages: Pod, Secret, PersistentVolumeClaim",
+    "description": "Resources involved: Pod, Secret, PersistentVolumeClaim",
+    "nodes": [
+      {
+        "id": "Secret",
+        "label": "Secret",
+        "type": "resource"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Secret",
+        "to": "Pod",
+        "label": "consumed by",
+        "animated": true,
+        "command": "kubectl create secret ...; envFrom / valueFrom / volumeMount"
+      },
+      {
+        "from": "PersistentVolumeClaim",
+        "to": "Pod",
+        "label": "mounted by",
+        "animated": true,
+        "command": "spec.volumes.persistentVolumeClaim.claimName"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q112-16-three-faults-three-stages: Pod, Secret, PersistentVolumeClaim",
+    "description": "Resources involved: Pod, Secret, PersistentVolumeClaim",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Secret",
+        "label": "Secret",
+        "type": "resource"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create secret ...; envFrom / valueFrom / volumeMount"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates PersistentVolumeClaim"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s) - consumed by Secret (kubectl create secret ...; envFrom / valueFrom / volumeMount), mounted by PersistentVolumeClaim (spec.volumes.persistentVolumeClaim.claimName)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}

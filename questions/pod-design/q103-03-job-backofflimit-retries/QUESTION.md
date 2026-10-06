@@ -2,6 +2,10 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-03-job-backofflimit-retries`
 
+Neutrino Computing Center's `flaky-task` Job talks to a detector interface that never comes back
+healthy once it starts failing. Letting it retry indefinitely just burns cluster time on a job
+that was never going to succeed.
+
 A Job named `flaky-task` already exists in namespace `q103-03-job-backofflimit-retries`.
 Its container always exits non-zero.
 

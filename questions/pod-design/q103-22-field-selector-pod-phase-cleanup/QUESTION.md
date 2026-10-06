@@ -2,6 +2,7 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-22-field-selector-pod-phase-cleanup`
 
+Helix Genomics Institute's sequencing pipeline left behind a mix of pods after its last batch.
 Five pods already exist in namespace `q103-22-field-selector-pod-phase-cleanup`:
 
 - `worker-1` and `worker-2` - long-running application pods, still `Running`.

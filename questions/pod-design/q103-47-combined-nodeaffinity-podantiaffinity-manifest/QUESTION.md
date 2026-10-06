@@ -2,6 +2,8 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-47-combined-nodeaffinity-podantiaffinity-manifest`
 
+Spectra Observatory's `constrained-worker` pod processes telescope readings and must never share
+a node with one of the observatory's legacy pods, which still spikes CPU during its own startup.
 An incomplete pod manifest is at
 `~/practice-work/q103-47-combined-nodeaffinity-podantiaffinity-manifest/constrained-worker.yaml`
 in your terminal's working directory. It has not been applied yet.

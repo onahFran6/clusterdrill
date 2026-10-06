@@ -3,7 +3,7 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-18-helm-template-dry-run`
 
 A local Helm chart named `render-only` is available at
-`questions/helm-crds/q110-18-helm-template-dry-run/chart` (relative to `practice-bank/`). The
+`$HOME/practice-work/q110-18-helm-template-dry-run/chart`. The
 chart is not installed anywhere - its templates include a Deployment with a container whose
 name you must discover from the rendered output.
 
@@ -19,5 +19,5 @@ in the namespace afterward.
 
 Search kubernetes.io/docs for **"helm template"** - the Helm CLI reference explains how to
 locally render a chart's manifests to stdout without creating a release (for example
-`helm template preview questions/helm-crds/q110-18-helm-template-dry-run/chart`), which is the
+`helm template preview $HOME/practice-work/q110-18-helm-template-dry-run/chart`), which is the
 recommended way to preview output before installing.

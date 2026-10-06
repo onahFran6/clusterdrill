@@ -2,8 +2,9 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-49-combined-fieldselector-setbased-labelselector-delete`
 
-Five pods already exist in namespace
-`q103-49-combined-fieldselector-setbased-labelselector-delete`:
+Neutrino Computing Center's staging and production analysis runs share namespace
+`q103-49-combined-fieldselector-setbased-labelselector-delete` with a dev run and two still-active
+ones. Five pods already exist:
 
 - `stale-1` - `env=staging`, phase `Succeeded`.
 - `stale-2` - `env=prod`, phase `Succeeded`.
@@ -14,12 +15,11 @@ Five pods already exist in namespace
 Delete finished pods only when `env` is `staging` or `prod`. `stale-3` and both `active-*` pods
 must remain.
 
-Using one `kubectl delete pods` command that combines a phase field selector with the set-based
-selector `env in (staging,prod)`, delete exactly `stale-1` and `stale-2`.
+Do this with one `kubectl delete pods` command - no listing pods by name, no multiple commands.
 
 ## Hint
 
-Search kubernetes.io/docs for **"field selectors"** - the field selectors page notes
-`--field-selector` can be combined with `-l`/`--selector` on the same command, and the Labels
-and Selectors page shows `in (...)`. Phase `Succeeded` is
-`--field-selector=status.phase=Succeeded`. Two separate `=` clauses are not the set-based form.
+Search kubernetes.io/docs for **"field selectors"** - that page covers matching pods on their
+`status.phase` and notes a field selector can be combined with a label selector on the same
+command; the Labels and Selectors page covers matching a label against a list of values in one
+clause.

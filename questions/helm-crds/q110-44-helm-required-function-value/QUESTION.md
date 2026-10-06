@@ -3,7 +3,7 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-44-helm-required-function-value`
 
 A local Helm chart named `gateway` is on disk at
-`questions/helm-crds/q110-44-helm-required-function-value/chart` (relative to `practice-bank/`).
+`$HOME/practice-work/q110-44-helm-required-function-value/chart`.
 Its Secret template calls Helm's `required` function on `.Values.apiKey`. Installing with the
 chart defaults fails at template-render time.
 

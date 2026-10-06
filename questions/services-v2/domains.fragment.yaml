@@ -1,0 +1,190 @@
+topic: services-v2
+questions:
+- id: q113-01-expose-deployment-different-port
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-02-fixed-nodeport
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-03-one-service-two-ports
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-04-copied-wrong-labels
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-05-headless-see-every-pod
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-06-externalname-points-outside
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-07-handmade-endpoints
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Pod
+  - Service
+  - Endpoints
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-08-cross-namespace-dns
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-09-quarantine-pod-from-service
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-10-sticky-canary-session-affinity
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-11-ingress-path-routing
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Ingress
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-12-bluegreen-ingress-preview-host
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - Ingress
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-13-ingress-three-faults
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Ingress
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-14-ingress-tls
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Ingress
+  - Secret
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-15-default-deny-allow-one-path
+  domain: Services and Networking
+  difficulty: medium
+  resource_kinds:
+  - NetworkPolicy
+  - Deployment
+  - Service
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-16-egress-without-breaking-dns
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - NetworkPolicy
+  - Pod
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-17-and-vs-or-selector-semantics
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - NetworkPolicy
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-18-policy-port-name-not-number
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - NetworkPolicy
+  - Deployment
+  - Service
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-19-service-down-three-faults
+  domain: Services and Networking
+  difficulty: hard
+  resource_kinds:
+  - Service
+  - NetworkPolicy
+  - Deployment
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q113-20-loadbalancer-pending-port-forward
+  domain: Services and Networking
+  difficulty: easy
+  resource_kinds:
+  - Deployment
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1

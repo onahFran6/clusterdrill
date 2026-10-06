@@ -2,7 +2,8 @@
 
 **Domain:** Application Design and Build · **Points:** 5 · **Namespace:** `q103-34-pod-terminationgraceperiod-window`
 
-An incomplete pod manifest is at
+Entropy Research Systems runs a batch process that flushes buffered results to disk before
+exiting - killed too early, it loses unsaved work. An incomplete pod manifest for it is at
 `~/practice-work/q103-34-pod-terminationgraceperiod-window/slow-shutdown.yaml` in your terminal's
 working directory. It has not been applied yet.
 

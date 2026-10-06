@@ -1,0 +1,162 @@
+{
+  "architecture": {
+    "title": "q116-19-neighbours-and-the-ingress-only: NetworkPolicy, Ingress, Pod, Service",
+    "description": "Resources involved: NetworkPolicy, Ingress, Pod, Service",
+    "nodes": [
+      {
+        "id": "NetworkPolicy",
+        "label": "NetworkPolicy",
+        "type": "service"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Ingress",
+        "label": "Ingress",
+        "type": "service"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      }
+    ],
+    "edges": [
+      {
+        "from": "NetworkPolicy",
+        "to": "Pod",
+        "label": "selects",
+        "animated": true,
+        "command": "kubectl apply -f networkpolicy.yaml (spec.podSelector)"
+      },
+      {
+        "from": "Ingress",
+        "to": "Service",
+        "label": "routes to",
+        "animated": true,
+        "command": "kubectl create ingress --rule=\"host/path=svc:port\""
+      },
+      {
+        "from": "Service",
+        "to": "Pod",
+        "label": "routes to",
+        "animated": true,
+        "command": "kubectl expose ... (spec.selector)"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q116-19-neighbours-and-the-ingress-only: NetworkPolicy, Ingress, Pod, Service",
+    "description": "Resources involved: NetworkPolicy, Ingress, Pod, Service",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "NetworkPolicy",
+        "label": "NetworkPolicy",
+        "type": "service"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Ingress",
+        "label": "Ingress",
+        "type": "service"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl apply -f networkpolicy.yaml (spec.podSelector)"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "Pod",
+        "label": "selects (enforced at request time)"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create ingress --rule=\"host/path=svc:port\""
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "Service",
+        "label": "routes to"
+      },
+      {
+        "from": "API Server",
+        "to": "Pod",
+        "label": "routes to"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "architecture": {
+    "title": "q115-02-pull-secrets-via-serviceaccount: ServiceAccount, Secret, Pod",
+    "description": "Resources involved: ServiceAccount, Secret, Pod",
+    "nodes": [
+      {
+        "id": "Secret",
+        "label": "Secret",
+        "type": "resource"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Secret",
+        "to": "ServiceAccount",
+        "label": "accessible to",
+        "animated": true,
+        "command": "readable only if a bound Role/ClusterRole grants get/list on secrets"
+      },
+      {
+        "from": "ServiceAccount",
+        "to": "Pod",
+        "label": "identity for",
+        "animated": true,
+        "command": "kubectl create serviceaccount ...; spec.serviceAccountName"
+      },
+      {
+        "from": "Secret",
+        "to": "Pod",
+        "label": "consumed by",
+        "animated": true,
+        "command": "kubectl create secret ...; envFrom / valueFrom / volumeMount"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q115-02-pull-secrets-via-serviceaccount: ServiceAccount, Secret, Pod",
+    "description": "Resources involved: ServiceAccount, Secret, Pod",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Secret",
+        "label": "Secret",
+        "type": "resource"
+      },
+      {
+        "id": "ServiceAccount",
+        "label": "ServiceAccount",
+        "type": "external"
+      },
+      {
+        "id": "Pod",
+        "label": "Pod",
+        "type": "pod"
+      },
+      {
+        "id": "Scheduler",
+        "label": "Scheduler",
+        "type": "controller"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates Secret"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "ServiceAccount",
+        "label": "accessible to (enforced at request time)"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "watches for unscheduled Pods"
+      },
+      {
+        "from": "Scheduler",
+        "to": "API Server",
+        "label": "binds the Pod to a Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "watches Pods bound to its Node"
+      },
+      {
+        "from": "kubelet",
+        "to": "Pod",
+        "label": "pulls image(s), starts container(s) - identity for ServiceAccount (kubectl create serviceaccount ...; spec.serviceAccountName), consumed by Secret (kubectl create secret ...; envFrom / valueFrom / volumeMount)"
+      },
+      {
+        "from": "kubelet",
+        "to": "API Server",
+        "label": "reports Running status",
+        "dashed": true
+      }
+    ]
+  }
+}

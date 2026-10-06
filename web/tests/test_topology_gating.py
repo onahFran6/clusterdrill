@@ -124,7 +124,7 @@ def test_real_bank_multi_node_question_is_gated_by_node_count():
     is excluded at node_count=1 and included at node_count=2, proving the
     real fragment entry (not just the test's synthetic data) is wired up
     correctly end to end."""
-    qid = "q103-31-podantiaffinity-required-running-on-two-nodes"
+    qid = "q103-31-cache-replicas-must-spread-across-nodes"
     bank = QuestionBank(questions_dir=QUESTIONS_DIR)
     question = next(q for q in bank.questions if q.id == qid)
     assert question.min_nodes == 2

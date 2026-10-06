@@ -163,6 +163,24 @@ Nothing in this app reads ttyd's terminal output or wires it into `check.sh`
 criteria in any way; it is purely an additive UI surface for the candidate's
 own convenience.
 
+Copy-to-clipboard is the one place this app *does* read something out of a
+terminal, and only that: `ensure_session` turns tmux's own mouse mode on
+(fixes a real scroll-wheel-vs-shell-history bug), which as a side effect
+means a plain click-drag is captured by tmux instead of becoming a native
+browser text selection - there is nothing for the browser to copy on its
+own. `terminal_proxy_http_tab` injects `static/terminal-copy-bridge.js` into
+ttyd's own served page (a text replace before `</body>` - ttyd ships its
+whole UI as one embedded, minified bundle, there's no template to hook into
+otherwise); that script notices a real mouse-drag and calls
+`POST /terminal-clipboard/{tab_id}`, which reads back whatever tmux's
+default drag-release binding already copied into that user's own tmux paste
+buffer (`ttyd_manager.read_paste_buffer`) and pushes it into the real
+browser clipboard. Safe to read per-user only because of the per-user tmux
+socket in [Multi-user isolation](#multi-user-isolation) mechanism 4 - tmux
+paste buffers are server-wide, not per-session, so this would leak another
+candidate's clipboard text on the old shared server (see
+[ADR 0004](adr/0004-per-user-tmux-socket.md)).
+
 ### State storage: Kubernetes objects, not a database
 
 Per-user profile/achievement progress lives as ConfigMaps
@@ -269,7 +287,7 @@ it's already scheduled."
 ## Multi-user isolation
 
 Classroom/multi-user mode (still experimental, gated behind its own opt-in)
-layers three independent mechanisms, each answering a different question:
+layers four independent mechanisms, each answering a different question:
 
 1. **Where does a user's data live?** Every question namespace and every
    cluster-scoped object is labeled `clusterdrill-question=<qid>`; combined
@@ -291,6 +309,20 @@ layers three independent mechanisms, each answering a different question:
    third mechanism, mechanism 1 alone would still let one learner's shell
    run `kubectl get pods -n <another-learners-namespace>` directly, since
    every terminal would otherwise share the same cluster-admin credential.
+4. **Can one account reach into another's live shell?** Each user's tmux
+   sessions live on their own private tmux server - `ttyd_manager.py` passes
+   `-L clusterdrill-<slot>` (the same per-user slot number that already
+   scopes ports) to every tmux invocation, rather than the shared default
+   socket. Session names alone (`clusterdrill-<user_id>-<tab_id>`) are not
+   sufficient: on one shared server they're still just names, and any
+   candidate's own shell can run `tmux attach -t <name>` against any
+   session on that server regardless of who created it - landing inside
+   another candidate's already-RBAC'd shell (mechanism 3 authenticates the
+   *terminal*, not the human sitting at a given browser tab). A private
+   socket per user makes a session on one socket genuinely invisible and
+   unattachable from another - see ADR
+   [0004](adr/0004-per-user-tmux-socket.md) for how this was found and
+   verified.
 
 ## The question bank as data
 

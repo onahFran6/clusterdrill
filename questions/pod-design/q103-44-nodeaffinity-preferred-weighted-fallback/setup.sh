@@ -27,9 +27,7 @@ metadata:
   labels:
     clusterdrill-question: $QUESTION_ID
 spec:
-  # TODO: add .spec.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution
-  # with two weighted terms: weight 80 preferring kubernetes.io/os In [linux],
-  # weight 20 preferring kubernetes.io/arch In [arm64].
+  # TODO: see the Task tab - this pod is missing its affinity rules
   containers:
     - name: flexible-worker
       image: busybox:1.36

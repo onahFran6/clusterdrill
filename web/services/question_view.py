@@ -120,8 +120,13 @@ def substitute_namespace(text: str, qid: str, user_id: Optional[str]) -> str:
     # a sibling id that happens to start with this one) as a valid boundary
     # and match inside it. Require the char on each side to be neither
     # alphanumeric nor "-" instead, so only a whole, standalone occurrence
-    # of this exact id is rewritten.
-    return re.sub(rf"(?<![a-z0-9-]){re.escape(qid)}(?![a-z0-9-])", namespace, text)
+    # of this exact id is rewritten. Also exclude a trailing "/": every
+    # qid-immediately-followed-by-"/" occurrence in the whole question bank
+    # is a filesystem path segment (e.g. questions/helm-crds/<qid>/chart),
+    # never a namespace reference - namespaces are only ever written as a
+    # bare, space- or EOL-terminated token. Suffixing the id inside a path
+    # produces a directory that doesn't exist on disk.
+    return re.sub(rf"(?<![a-z0-9-]){re.escape(qid)}(?![a-z0-9-/])", namespace, text)
 
 
 def render_markdown(text: str, qid: Optional[str] = None, user_id: Optional[str] = None) -> str:

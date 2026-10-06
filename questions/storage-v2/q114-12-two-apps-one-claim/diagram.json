@@ -1,0 +1,76 @@
+{
+  "architecture": {
+    "title": "q114-12-two-apps-one-claim: PersistentVolumeClaim, Deployment",
+    "description": "Resources involved: PersistentVolumeClaim, Deployment",
+    "nodes": [
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Deployment",
+        "to": "PersistentVolumeClaim",
+        "label": "mounts",
+        "animated": true,
+        "command": "pod template spec.volumes.persistentVolumeClaim.claimName"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q114-12-two-apps-one-claim: PersistentVolumeClaim, Deployment",
+    "description": "Resources involved: PersistentVolumeClaim, Deployment",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates Deployment"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "kubelet",
+        "to": "PersistentVolumeClaim",
+        "label": "mounts Deployment (pod template spec.volumes.persistentVolumeClaim.claimName)"
+      }
+    ]
+  }
+}

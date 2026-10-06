@@ -13,10 +13,11 @@ single container named `loader` and `restartPolicy: Never`:
 
 Fix `.spec.podFailurePolicy` on both Jobs so that:
 
-1. `code42-loader`: exit code `42` fails the Job immediately (`action: FailJob`) via a matching
-   `onExitCodes` rule, without extra retry pods.
-2. `flaky-loader`: exits other than `42` are not matched by a `FailJob` rule, so the Job retries
-   them until `.spec.backoffLimit` is exhausted.
+1. `code42-loader` fails the Job immediately on its very first attempt - no retry pods wasted on
+   a result that will never come out differently.
+2. `flaky-loader` keeps retrying its actual failures up to `.spec.backoffLimit`, same as it
+   would with no policy at all - only the part that's currently killing it on the first failure
+   needs correcting.
 
 Do not change either Job's `backoffLimit`, container image, or command. Both pod templates must
 stay `restartPolicy: Never`.

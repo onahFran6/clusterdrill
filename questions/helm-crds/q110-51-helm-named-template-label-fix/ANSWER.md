@@ -6,7 +6,7 @@ Edit `templates/_helpers.tpl` so the `webapp.labels` block also emits
 `app.kubernetes.io/version`, then install:
 
 ```sh
-CHART=questions/helm-crds/q110-51-helm-named-template-label-fix/chart
+CHART=$HOME/practice-work/q110-51-helm-named-template-label-fix/chart
 
 cat > "$CHART/templates/_helpers.tpl" <<'EOF'
 {{/*

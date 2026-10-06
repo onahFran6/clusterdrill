@@ -1,0 +1,142 @@
+topic: deployments-v2
+questions:
+  - id: q111-01-deployment-envfrom-and-secretkeyref
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, ConfigMap, Secret]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-02-probes-by-behaviour
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-03-resources-then-autoscale
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, HorizontalPodAutoscaler]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-04-rollingupdate-bounds-and-one-revision
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, ReplicaSet]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-05-rollout-restart-stale-env
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-06-rollback-by-change-cause
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, ReplicaSet]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-07-canary-shared-service-selector
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, Service]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-08-bluegreen-cutover
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, Service]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-09-pod-to-deployment-conversion
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Pod, Deployment, ServiceAccount]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-10-three-faults-zero-pods
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment, ConfigMap, Secret, ServiceAccount]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-11-recreate-strategy-no-overlap
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-12-init-container-builds-content
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, Container]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-13-log-sidecar-independent-update
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, Container]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-14-config-secret-volumes-and-downward-api
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, ConfigMap, Secret]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-15-progress-deadline-then-rollback
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, ReplicaSet]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-16-readiness-probe-blocks-rollout
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-17-immutable-selector-replace
+    domain: "Application Deployment"
+    difficulty: hard
+    resource_kinds: [Deployment]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-18-limitrange-largest-allowed
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, LimitRange]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-19-pending-nodeselector-and-cpu
+    domain: "Application Deployment"
+    difficulty: medium
+    resource_kinds: [Deployment, Node]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q111-20-expose-by-named-port
+    domain: "Application Deployment"
+    difficulty: easy
+    resource_kinds: [Deployment, Service]
+    points: 5
+    requirements:
+      min_nodes: 1

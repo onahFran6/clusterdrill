@@ -1,0 +1,142 @@
+topic: pods-v2
+questions:
+  - id: q112-01-command-versus-args
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-02-env-file-prefixed-configmap
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [ConfigMap, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-03-secret-two-ways-in
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [Secret, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-04-replace-one-file-keep-the-rest
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [ConfigMap, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-05-shared-memory-cache
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-06-persistent-data-survives-pod-deletion
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [PersistentVolume, PersistentVolumeClaim, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-07-storageclass-waitforfirstconsumer
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [PersistentVolumeClaim, StorageClass, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-08-init-container-wait-for-dns
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [Pod, Service]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-09-add-sidecars-to-running-pod
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-10-slow-starter-probes
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-11-locked-down-security-context
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-12-four-pods-four-qos-predictions
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-13-serviceaccount-token-access
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [ServiceAccount, Role, RoleBinding, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-14-downward-api-pod-knows-itself
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-15-crashloop-mountpath-mismatch
+    domain: "Application Design and Build"
+    difficulty: medium
+    resource_kinds: [Pod, ConfigMap]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-16-three-faults-three-stages
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [Pod, Secret, PersistentVolumeClaim]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-17-restart-policies-and-exit-codes
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-18-selecting-pods-by-label
+    domain: "Application Design and Build"
+    difficulty: easy
+    resource_kinds: [Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-19-projected-volume-everything-in-one-directory
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [ConfigMap, Secret, Pod]
+    points: 5
+    requirements:
+      min_nodes: 1
+  - id: q112-20-expose-pod-and-debug-ephemeral-container
+    domain: "Application Design and Build"
+    difficulty: hard
+    resource_kinds: [Pod, Service]
+    points: 5
+    requirements:
+      min_nodes: 1

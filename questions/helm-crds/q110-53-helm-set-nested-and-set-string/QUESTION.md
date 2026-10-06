@@ -3,8 +3,8 @@
 **Domain:** Application Deployment · **Points:** 5 · **Namespace:** `q110-53-helm-set-nested-and-set-string`
 
 A local Helm chart named `web` is on disk at
-`questions/helm-crds/q110-53-helm-set-nested-and-set-string/chart` (relative to
-`practice-bank/`). Its `values.yaml` defaults include:
+`$HOME/practice-work/q110-53-helm-set-nested-and-set-string/chart`. Its `values.yaml`
+defaults include:
 
 ```yaml
 ingress:

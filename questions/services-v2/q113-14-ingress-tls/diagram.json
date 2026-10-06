@@ -1,0 +1,104 @@
+{
+  "architecture": {
+    "title": "q113-14-ingress-tls: Ingress, Secret, Service",
+    "description": "Resources involved: Ingress, Secret, Service",
+    "nodes": [
+      {
+        "id": "Ingress",
+        "label": "Ingress",
+        "type": "service"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      },
+      {
+        "id": "Secret",
+        "label": "Secret",
+        "type": "resource"
+      },
+      {
+        "id": "Container",
+        "label": "Container",
+        "type": "pod"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Ingress",
+        "to": "Service",
+        "label": "routes to",
+        "animated": true,
+        "command": "kubectl create ingress --rule=\"host/path=svc:port\""
+      },
+      {
+        "from": "Secret",
+        "to": "Container",
+        "label": "consumed by",
+        "animated": true,
+        "command": "via envFrom / volumeMount"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q113-14-ingress-tls: Ingress, Secret, Service",
+    "description": "Resources involved: Ingress, Secret, Service",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "Ingress",
+        "label": "Ingress",
+        "type": "service"
+      },
+      {
+        "id": "Service",
+        "label": "Service",
+        "type": "service"
+      },
+      {
+        "id": "Secret",
+        "label": "Secret",
+        "type": "resource"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create ingress --rule=\"host/path=svc:port\""
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "Service",
+        "label": "routes to"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create secret ..."
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      }
+    ]
+  }
+}
