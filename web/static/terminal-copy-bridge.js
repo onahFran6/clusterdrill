@@ -53,6 +53,24 @@
     window.setTimeout(fetchAndCopyBuffer, POST_DRAG_DELAY_MS);
   }
 
+  // navigator.clipboard needs a secure context (https, or localhost) - a
+  // plain-http deployment (LAN, tunnel, or an exam-realistic IP:port like
+  // the one this bridge is most useful on) never has it, so writeText is
+  // silently undefined there and the drag-select-then-paste bridge this
+  // whole file exists for would otherwise do nothing with no error at all.
+  // Same hidden-textarea + execCommand fallback app.js already uses for
+  // the Task/Hint/Solution copy buttons.
+  function fallbackCopy(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch { /* nothing left to try */ }
+    document.body.removeChild(ta);
+  }
+
   function fetchAndCopyBuffer() {
     fetch("/terminal-clipboard/" + tabId, {
       method: "POST",
@@ -63,8 +81,9 @@
         if (!data || !data.text || data.text === lastCopiedText) return;
         lastCopiedText = data.text;
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          return navigator.clipboard.writeText(data.text);
+          return navigator.clipboard.writeText(data.text).catch(() => fallbackCopy(data.text));
         }
+        fallbackCopy(data.text);
       })
       .catch(() => {
         // Best-effort - a candidate whose browser blocks this is no worse
