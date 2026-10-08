@@ -1,0 +1,124 @@
+{
+  "architecture": {
+    "title": "q118-19-quota-blocks-pods-with-no-resources: CronJob, Job, ResourceQuota",
+    "description": "Resources involved: CronJob, Job, ResourceQuota",
+    "nodes": [
+      {
+        "id": "CronJob",
+        "label": "CronJob",
+        "type": "controller"
+      },
+      {
+        "id": "Job",
+        "label": "Job",
+        "type": "controller"
+      },
+      {
+        "id": "ResourceQuota",
+        "label": "ResourceQuota",
+        "type": "policy"
+      },
+      {
+        "id": "Namespace",
+        "label": "Namespace",
+        "type": "external"
+      }
+    ],
+    "edges": [
+      {
+        "from": "CronJob",
+        "to": "Job",
+        "label": "schedules",
+        "animated": true,
+        "command": "kubectl create cronjob ... --schedule=... (fires on each tick)"
+      },
+      {
+        "from": "ResourceQuota",
+        "to": "Namespace",
+        "label": "constrains",
+        "animated": true,
+        "command": "aggregate usage capped per namespace"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q118-19-quota-blocks-pods-with-no-resources: CronJob, Job, ResourceQuota",
+    "description": "Resources involved: CronJob, Job, ResourceQuota",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "CronJob",
+        "label": "CronJob",
+        "type": "controller"
+      },
+      {
+        "id": "Job",
+        "label": "Job",
+        "type": "controller"
+      },
+      {
+        "id": "CronJob controller",
+        "label": "CronJob controller",
+        "type": "controller"
+      },
+      {
+        "id": "ResourceQuota",
+        "label": "ResourceQuota",
+        "type": "policy"
+      },
+      {
+        "id": "Namespace",
+        "label": "Namespace",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create cronjob ... --schedule=... (fires on each tick)"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "CronJob controller",
+        "to": "API Server",
+        "label": "watches CronJob objects"
+      },
+      {
+        "from": "CronJob controller",
+        "to": "API Server",
+        "label": "schedules Job (kubectl create cronjob ... --schedule=... (fires on each tick))"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl apply -f resourcequota.yaml"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "API Server",
+        "to": "Namespace",
+        "label": "constrains (enforced at request time)"
+      }
+    ]
+  }
+}
