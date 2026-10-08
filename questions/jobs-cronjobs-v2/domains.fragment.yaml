@@ -1,0 +1,187 @@
+topic: jobs-cronjobs-v2
+questions:
+- id: q118-01-ttl-cleans-up-after-itself
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-02-completions-and-parallelism
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-03-never-vs-onfailure-retries
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-04-hard-deadline-beats-retries
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-05-indexed-job-shards
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Job
+  - ConfigMap
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-06-migration-with-config-and-secret
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Job
+  - ConfigMap
+  - Secret
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-07-results-outlive-the-job
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Job
+  - PersistentVolumeClaim
+  - Pod
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-08-wait-for-the-service
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Job
+  - Service
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-09-pod-failure-policy-skips-pointless-retries
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-10-a-job-you-cant-edit
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-11-heartbeat-schedule-and-manual-run
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - CronJob
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-12-forbid-stops-overlap
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - CronJob
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-13-history-limits
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - CronJob
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-14-pause-then-resume-with-deadline
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - CronJob
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-15-timezone-not-cron-tz
+  domain: Application Design and Build
+  difficulty: easy
+  resource_kinds:
+  - CronJob
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-16-rbac-scoped-scale
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - CronJob
+  - Job
+  - ServiceAccount
+  - Role
+  - RoleBinding
+  - Deployment
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-17-timestamped-backups-no-overlap
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - CronJob
+  - PersistentVolumeClaim
+  - Deployment
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-18-cronjob-with-three-faults
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - CronJob
+  - Secret
+  - Job
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-19-quota-blocks-pods-with-no-resources
+  domain: Application Design and Build
+  difficulty: medium
+  resource_kinds:
+  - CronJob
+  - Job
+  - ResourceQuota
+  points: 5
+  requirements:
+    min_nodes: 1
+- id: q118-20-cronjob-behind-deny-all
+  domain: Application Design and Build
+  difficulty: hard
+  resource_kinds:
+  - CronJob
+  - Job
+  - Pod
+  - Service
+  - NetworkPolicy
+  points: 5
+  requirements:
+    min_nodes: 1
