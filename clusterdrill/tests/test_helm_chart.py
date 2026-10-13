@@ -75,14 +75,32 @@ def test_template_rejects_a_mutable_image_tag():
     assert result.returncode != 0, "chart rendered with a mutable 'latest' digest value - should have been rejected"
 
 
-def test_template_requires_an_existing_secret_name():
+def test_default_install_has_no_password_gate():
+    """auth.existingSecretName is optional and empty by default (R01-R04's
+    'no password gate by default' posture, matching cli.py's
+    _resolve_install_password) - a bare install must render successfully
+    and must not wire CLUSTERDRILL_PASSWORD at all, the same as the env
+    var simply being absent (web/auth.py's password_gate_enabled())."""
     result = subprocess.run(
         ["helm", "template", "clusterdrill", str(HELM_CHART_DIR), "--namespace", "clusterdrill-system",
          "--set", "image.repository=docker.io/w00dson/clusterdrill",
          "--set", "image.digest=sha256:" + "a" * 64],
         capture_output=True, text=True,
     )
-    assert result.returncode != 0, "chart rendered without auth.existingSecretName - should have been rejected"
+    assert result.returncode == 0, f"chart should render without auth.existingSecretName: {result.stderr}"
+    docs = [doc for doc in yaml.safe_load_all(result.stdout) if doc]
+    deployment = _by_kind(docs, "Deployment")[0]
+    env_names = {e["name"] for e in deployment["spec"]["template"]["spec"]["containers"][0]["env"]}
+    assert "CLUSTERDRILL_PASSWORD" not in env_names
+
+
+def test_existing_secret_name_still_wires_the_password_env_var():
+    docs = _chart_documents()
+    deployment = _by_kind(docs, "Deployment")[0]
+    env = {e["name"]: e for e in deployment["spec"]["template"]["spec"]["containers"][0]["env"]}
+    assert env["CLUSTERDRILL_PASSWORD"]["valueFrom"]["secretKeyRef"] == {
+        "name": "clusterdrill-web-auth", "key": "password",
+    }
 
 
 def test_no_clusterrolebinding_targets_cluster_admin():

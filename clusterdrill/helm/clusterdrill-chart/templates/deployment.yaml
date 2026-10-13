@@ -67,11 +67,13 @@ spec:
               fieldPath: metadata.namespace
         - name: CLUSTERDRILL_CONTAINER
           value: web
+        {{- if .Values.auth.existingSecretName }}
         - name: CLUSTERDRILL_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ required "auth.existingSecretName is required" .Values.auth.existingSecretName }}
+              name: {{ .Values.auth.existingSecretName }}
               key: password
+        {{- end }}
         # requests give the appliance a guaranteed CPU/memory floor so a
         # busy single-node dev cluster (many questions' setup.sh/check.sh
         # running concurrently) can't starve it long enough to miss a
