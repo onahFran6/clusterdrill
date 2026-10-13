@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.11](https://github.com/onahFran6/clusterdrill/compare/v0.1.10...v0.1.11) (2026-10-13)
+
+
+### Bug Fixes
+
+* **helm:** default to no password gate on chart install ([e15166d](https://github.com/onahFran6/clusterdrill/commit/e15166db69a22f8eced0048c4012f620e51c55f9))
+* **helm:** default to no password gate on chart install ([783c43d](https://github.com/onahFran6/clusterdrill/commit/783c43d22eff1e533d0c54dea2216faa4f51d441))
+
 ## [0.1.10](https://github.com/onahFran6/clusterdrill/compare/v0.1.9...v0.1.10) (2026-10-13)
 
 
