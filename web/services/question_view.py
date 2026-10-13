@@ -22,6 +22,7 @@ import auth
 import markdown as md
 import node_topology
 import profile_store
+import users
 from fastapi import HTTPException
 from grading_client import namespaced_id, run_setup
 from sessions import BOSS_MAX_HP
@@ -30,6 +31,7 @@ from starlette.requests import Request
 from ttyd_manager import manager as ttyd_manager
 
 from questions import bank
+from services.workspace import workspace_context
 
 logger = logging.getLogger("clusterdrill.question_view")
 
@@ -327,6 +329,7 @@ def question_context(qid: str, tab: str = "task", user_id: Optional[str] = None)
 
     if in_session:
         session.visited_qids.add(qid)
+        session.current_qid = qid
         total = len(session)
         position = session_index + 1
         prev_id = session.question_ids[session_index - 1] if session_index > 0 else None
@@ -385,18 +388,10 @@ def question_context(qid: str, tab: str = "task", user_id: Optional[str] = None)
         timer_deadline = None
         palette = []
 
-    # Deferred grading: a real exam gives no
-    # interim feedback and, per this ticket's own explicit call, no peek
-    # at the reference solution mid-attempt either - a candidate shouldn't
-    # be able to see how a task is meant to be solved before submitting.
-    # tab is forced away from "solution" (a stale bookmark/link, or a
-    # forged ?tab=solution query param) rather than merely hiding the tab
-    # in the nav - and answer_html/discovery_path_html below are never
-    # even computed from the real ANSWER.md in that case, so the real
-    # solution text never reaches the rendered page at all (not just
-    # hidden client-side, where view-source would still reveal it).
-    is_exam_session = session_mode == "exam"
-    if is_exam_session and tab == "solution":
+    # The restriction applies to every question for the current user while
+    # their exam is active, including questions outside its selected pool.
+    is_exam_session = session is not None and session.mode == "exam"
+    if is_exam_session:
         tab = "task"
 
     task_html, hint_html = "", ""
@@ -406,7 +401,8 @@ def question_context(qid: str, tab: str = "task", user_id: Optional[str] = None)
         task_html = "<p><em>QUESTION.md missing for this question.</em></p>"
 
     if is_exam_session:
-        answer_html = "<p><em>Solutions are hidden during a live exam - available after you submit.</em></p>"
+        hint_html = ""
+        answer_html = ""
         discovery_path_html = None
     else:
         answer_html = "<p><em>ANSWER.md missing for this question.</em></p>"
@@ -451,7 +447,9 @@ def question_context(qid: str, tab: str = "task", user_id: Optional[str] = None)
     profile_snapshot = profile_store.get_profile(user_id).spec.get("questions", {}).get(qid, {})
     combo = session.combo if in_session else 0
 
-    if show_topic_primer:
+    if is_exam_session:
+        diagram_mmd, diagram_fallback, diagram_label, diagram_data = None, None, None, None
+    elif show_topic_primer:
         diagram_mmd, diagram_fallback = read_diagram_mmd(
             bank.topic_diagram_mmd(question.topic),
             missing_message=f"No topic primer diagram found for '{question.topic}'.",
@@ -513,11 +511,16 @@ def question_context(qid: str, tab: str = "task", user_id: Optional[str] = None)
         "next_id": next_id,
         "palette": palette,
         "can_reset": question.setup_sh.exists(),
-        "workdir": _current_question_workdir,
+        "workdir": str(workdir),
+        "workspace": workspace_context(qid, user_id, workdir),
         "session_mode": session_mode,
         "session_topic": session_topic,
         "in_active_session": in_session,
+        "attempt_id": session.attempt_id if in_session else "",
         "is_exam_session": is_exam_session,
+        # Practice stays on Skip until this question has fully passed.
+        # An exam has no per-question Check, so moving ahead is Next.
+        "advance_ready": is_exam_session or (in_session and qid in session.passed_qids),
         # Server-authoritative countdown. deadline is a unix
         # timestamp computed once at session-start (sessions.py) - the
         # template/JS only ever read it, never compute or extend it, so a
@@ -540,7 +543,7 @@ def question_context(qid: str, tab: str = "task", user_id: Optional[str] = None)
         # terminal iframe was unreachable over that tunnel before this
         # change, since 7681 was never forwarded.
         "terminal_available": ttyd_manager.is_running,
-        "terminal_url": "/terminal/t/1/",
+        "terminal_url": f"/terminal/q/{qid}/t/1/",
         "terminal_max_tabs": ttyd_manager.max_tabs,
         # issue #122 (M7): which worker nodes (if any) a new terminal tab
         # can target, from a live topology query - never hardcoded, so
@@ -586,9 +589,16 @@ def base_context(request: Request) -> dict:
     _shell.html's nav, both read straight from the session cookie's cached
     copies rather than a fresh users.py lookup - see auth.py's
     USERNAME_KEY/IS_ADMIN_KEY docstring for why a cached hint is fine for
-    display but never for the /admin routes' own authorization check."""
+    display but never for the /admin routes' own authorization check.
+
+    is_admin_hint is also gated on single_user_mode (I04): the bootstrap
+    admin account's own IS_ADMIN_KEY is still True there, but
+    admin_router.admin_page always 404s in single-user mode regardless -
+    without this, the single-owner appliance showed an Admin nav link that
+    could only ever lead to a dead end.
+    """
     return {
         "csrf_token": auth.get_csrf_token(request),
         "username": auth.current_username(request.session),
-        "is_admin_hint": bool(request.session.get(auth.IS_ADMIN_KEY)),
+        "is_admin_hint": bool(request.session.get(auth.IS_ADMIN_KEY)) and not users.single_user_mode(),
     }

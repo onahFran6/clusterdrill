@@ -198,14 +198,18 @@ def _current_cluster_info() -> Optional[dict]:
     """Reads the *app's own* admin kubeconfig's current-context cluster
     (server URL + CA data) - reused as the `clusters:` entry in every
     per-user kubeconfig this module writes, since every user talks to the
-    same API server, just as a different identity. `--raw` so a CA
-    referenced by file path (common on minikube) is resolved and inlined
-    rather than left as a path that may not resolve the same way inside
-    ttyd's spawned shell environment.
+    same API server, just as a different identity. `--raw` unredacts
+    inline cert data that's already there, but does NOT resolve a CA
+    referenced by file path (common on minikube) into inline data - that
+    needs `--flatten` too (R02: without it, a file-path CA silently looked
+    identical to "no CA data at all" to _write_kubeconfig below, which
+    responded by disabling TLS verification entirely for every per-user
+    kubeconfig, even though a real CA was configured and simply hadn't been
+    embedded).
     """
     try:
         proc = subprocess.run(
-            ["kubectl", "config", "view", "--minify", "--raw", "-o", "json"],
+            ["kubectl", "config", "view", "--minify", "--raw", "--flatten", "-o", "json"],
             capture_output=True, text=True, timeout=KUBECTL_TIMEOUT_SECONDS,
         )
     except (subprocess.TimeoutExpired, OSError):
@@ -219,18 +223,37 @@ def _current_cluster_info() -> Optional[dict]:
         return None
 
 
-def _write_kubeconfig(user_id: str, token: str, cluster: dict) -> Path:
+def _allow_insecure_kubeconfig() -> bool:
+    """Explicit opt-in required before a per-user kubeconfig is ever written
+    with insecure-skip-tls-verify (R02): with _current_cluster_info's
+    --flatten fix, a real CA - file-path or inline - now always resolves to
+    embeddable data, so reaching this fallback means there genuinely is no
+    CA configured anywhere (e.g. a deliberately TLS-disabled dev cluster),
+    not just an unresolved file reference. That's rare enough, and risky
+    enough (a long-lived ServiceAccount token sent to whatever answers on
+    that address, with no server identity check at all), to require an
+    operator to say so rather than default to it silently."""
+    return os.environ.get("CLUSTERDRILL_ALLOW_INSECURE_KUBECONFIG", "").lower() in {"1", "true", "yes"}
+
+
+def _write_kubeconfig(user_id: str, token: str, cluster: dict) -> Optional[Path]:
+    """Returns None (fails closed) instead of writing a kubeconfig at all
+    if there's no CA to embed and insecure operation wasn't explicitly
+    opted into - see _allow_insecure_kubeconfig."""
     server = cluster.get("server", "")
     ca_data = cluster.get("certificate-authority-data")
     cluster_entry: dict = {"server": server}
     if ca_data:
         cluster_entry["certificate-authority-data"] = ca_data
-    else:
-        # No CA data at all (e.g. a dev cluster with TLS verification
-        # disabled) - matches the admin kubeconfig's own trust posture
-        # rather than silently downgrading security beyond what the app's
-        # own connection already accepts.
+    elif _allow_insecure_kubeconfig():
         cluster_entry["insecure-skip-tls-verify"] = True
+    else:
+        logger.warning(
+            "RBAC provisioning: no CA data available for user %s's kubeconfig and "
+            "CLUSTERDRILL_ALLOW_INSECURE_KUBECONFIG is not set - refusing to write an "
+            "unverified kubeconfig", user_id,
+        )
+        return None
 
     kubeconfig = {
         "apiVersion": "v1",
@@ -336,7 +359,8 @@ def ensure_user_service_account(user_id: str) -> bool:
         logger.warning("RBAC provisioning: could not read cluster info for user %s's kubeconfig", user_id)
         return False
 
-    _write_kubeconfig(user_id, token, cluster)
+    if _write_kubeconfig(user_id, token, cluster) is None:
+        return False
     return True
 
 

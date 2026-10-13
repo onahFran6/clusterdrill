@@ -18,6 +18,7 @@ from sessions import (
     DAILY_TIMER_MINUTES,
     EXAM_DEFAULT_QUESTION_COUNT,
     EXAM_QUESTION_COUNT_CHOICES,
+    MAX_TIMER_MINUTES,
     MIXED_TIMER_SECONDS,
     SESSION_SIZE,
     TIMER_CHOICES_MINUTES,
@@ -32,7 +33,7 @@ from sessions import (
 from starlette.requests import Request
 from templating import templates
 
-from questions import bank
+from questions import bank, canonical_topic
 
 router = APIRouter()
 
@@ -64,6 +65,10 @@ def list_topics(request: Request):
             {
                 "name": topic,
                 "pool_size": pool_size,
+                "difficulty_counts": {
+                    level: sum(q.topic == topic and q.difficulty == level for q in bank.questions)
+                    for level in ("easy", "medium", "hard")
+                },
                 "fixed_available": availability["fixed"],
                 "randomized_available": availability["randomized"],
                 # Mixed is gated on the combined pool across every topic,
@@ -96,6 +101,7 @@ def list_topics(request: Request):
             "topics": topics,
             "session_size": SESSION_SIZE,
             "total_pool": len(bank),
+            "max_timer_minutes": MAX_TIMER_MINUTES,
             "active_session": active,
             # Every session is timed automatically now (see sessions.py's
             # revision note) - these are shown as plain info, not a
@@ -128,6 +134,8 @@ def topic_detail(request: Request, topic: str, filter: str = "all", difficulty: 
     read as one connected choice instead of unrelated controls that happen
     to share a word.
     """
+    if canonical_topic(topic) != topic:
+        return RedirectResponse(url=str(request.url.replace(path=f"/topics/{canonical_topic(topic)}")), status_code=307)
     bank.refresh()
     if topic not in bank.topics():
         raise HTTPException(status_code=404, detail=f"unknown topic '{topic}'")
@@ -172,6 +180,13 @@ def topic_detail(request: Request, topic: str, filter: str = "all", difficulty: 
 
     pool_size = bank.pool_size(topic)
     availability = mode_availability(pool_size)
+    mixed_difficulty_counts = {
+        "all": len(bank),
+        **{
+            level: sum(1 for question in bank.questions if question.difficulty == level)
+            for level in ("easy", "medium", "hard")
+        },
+    }
 
     return templates.TemplateResponse(
         request,
@@ -184,6 +199,7 @@ def topic_detail(request: Request, topic: str, filter: str = "all", difficulty: 
             "counts": counts,
             "filter": filter,
             "difficulty_counts": difficulty_counts,
+            "mixed_difficulty_counts": mixed_difficulty_counts,
             "selected_difficulty": difficulty,
             "pool_size": pool_size,
             "session_size": min(pool_size, SESSION_SIZE),
@@ -193,6 +209,7 @@ def topic_detail(request: Request, topic: str, filter: str = "all", difficulty: 
             "topic_timer_minutes": TOPIC_TIMER_SECONDS // 60,
             "mixed_timer_minutes": MIXED_TIMER_SECONDS // 60,
             "timer_choices_minutes": TIMER_CHOICES_MINUTES,
+            "max_timer_minutes": MAX_TIMER_MINUTES,
             # Boss mini-exam unlock state - see
             # profile_store.boss_unlocked's docstring for why this reuses
             # the clean-sweep achievement rather than a second flag.
@@ -205,54 +222,8 @@ def topic_detail(request: Request, topic: str, filter: str = "all", difficulty: 
 
 @router.get("/practice-tests")
 def practice_tests(request: Request):
-    """Topic-scoped practice sets reframed with real
-    correct-rate/attempt-count from the stored profile, per the Figma prototype's
-    "Practice Tests" page. Note on scope: there is no per-*session*
-    attempt history here (Fixed/Randomized sessions were never recorded as
-    discrete attempts, unlike Mixed - see record_exam_attempt()) - "attempts"
-    below is the sum of each topic's individual question-level Check
-    attempts instead, which needs no new session-history data structure and
-    still answers the real question ("have I engaged with this topic, and
-    how well am I doing"). Revisit if per-session history turns out to
-    matter more than this.
-    """
-    bank.refresh()
-    profile = profile_store.get_profile(auth.current_user_id(request.session))
-    questions_status = profile.spec.get("questions", {})
-
-    topic_stats = []
-    for topic in bank.topics():
-        topic_qids = [q.id for q in bank.questions if q.topic == topic]
-        pool_size = bank.pool_size(topic)
-        availability = mode_availability(pool_size)
-        topic_stats.append({
-            "name": topic,
-            "pool_size": pool_size,
-            "session_size": min(pool_size, SESSION_SIZE),
-            "attempts": sum(questions_status.get(qid, {}).get("attempts", 0) for qid in topic_qids),
-            "correct_pct": topic_progress_pct(profile.spec, topic_qids),
-            "randomized_available": availability["randomized"],
-            "mixed_available": len(bank) > SESSION_SIZE,
-        })
-
-    attempted = [t for t in topic_stats if t["attempts"] > 0]
-    focus_area = min(attempted, key=lambda t: t["correct_pct"]) if attempted else None
-    avg_score = round(sum(t["correct_pct"] for t in attempted) / len(attempted)) if attempted else 0
-
-    return templates.TemplateResponse(
-        request,
-        "practice_tests.html",
-        {
-            **base_context(request),
-            "active_nav": "practice-tests",
-            "topic_stats": topic_stats,
-            "focus_area": focus_area,
-            "total_attempts": sum(t["attempts"] for t in topic_stats),
-            "avg_score": avg_score,
-            "practice_sets_count": len(topic_stats),
-            "topic_timer_minutes": TOPIC_TIMER_SECONDS // 60,
-        },
-    )
+    """Keep existing bookmarks pointing to the unified practice library."""
+    return RedirectResponse(url="/topics", status_code=307)
 
 
 @router.get("/progress")
@@ -373,6 +344,7 @@ def mock_exam_page(request: Request):
             "exam_question_count_choices": EXAM_QUESTION_COUNT_CHOICES,
             "exam_default_question_count": EXAM_DEFAULT_QUESTION_COUNT,
             "timer_choices_minutes": TIMER_CHOICES_MINUTES,
+            "max_timer_minutes": MAX_TIMER_MINUTES,
             "exam_default_timer_minutes": default_exam_timer_minutes(EXAM_DEFAULT_QUESTION_COUNT),
             "exam_attempts": list(reversed(spec.get("examAttempts", []))),
             "domain_weights": CNCF_DOMAIN_WEIGHTS,

@@ -6,9 +6,11 @@
   <title>{% block title %}ClusterDrill{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <!-- "Terminal Ops" identity, unchanged since the original design. -->
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=20261011b">
+  <link rel="stylesheet" href="/static/design.css?v=20261011b">
+  <link rel="stylesheet" href="/static/hub.css?v=20261012d">
+  <link rel="stylesheet" href="/static/refinement.css?v=20261011a">
   <!-- Read by static/app.js's idle-lifecycle block and sent as the
        X-CSRF-Token header on its mutating fetch() calls - see auth.py's
        CSRF section. Empty when there's no session yet (pre-login) or the
@@ -18,19 +20,16 @@
   <meta name="csrf-token" content="{{ csrf_token }}">
   {% block head_extra %}{% endblock %}
 </head>
-<body>
+<body class="hub-page">
   <div class="hub-shell">
-    <!-- The persistent left nav - only these four "return
-         to this dashboard" pages get it; the question/practice page stays
-         chrome-less by design, to keep that page focused on the task at
-         hand. -->
-    <aside class="sidebar">
+    <!-- Persistent hub navigation; the question workspace has its own controls. -->
+    <header class="sidebar">
       <a class="sidebar-brand" href="/topics"><span class="wheel" aria-hidden="true">&#9096;</span> ClusterDrill</a>
+      <p class="sidebar-caption">CKAD practice lab</p>
       <nav class="sidebar-nav" aria-label="Main navigation">
-        <a class="sidebar-nav-item {{ 'active' if active_nav == 'topics' else '' }}" href="/topics">Topics</a>
-        <a class="sidebar-nav-item {{ 'active' if active_nav == 'practice-tests' else '' }}" href="/practice-tests">Practice Tests</a>
-        <a class="sidebar-nav-item {{ 'active' if active_nav == 'progress' else '' }}" href="/progress">Progress</a>
-        <a class="sidebar-nav-item {{ 'active' if active_nav == 'mock-exam' else '' }}" href="/mock-exam">Mock Exam</a>
+        <a class="sidebar-nav-item {{ 'active' if active_nav == 'topics' else '' }}" href="/topics" {% if active_nav == 'topics' %}aria-current="page"{% endif %}><span aria-hidden="true">&#9638;</span> Practice</a>
+        <a class="sidebar-nav-item {{ 'active' if active_nav == 'mock-exam' else '' }}" href="/mock-exam" {% if active_nav == 'mock-exam' %}aria-current="page"{% endif %}><span aria-hidden="true">&#9719;</span> Mock exam</a>
+        <a class="sidebar-nav-item {{ 'active' if active_nav == 'progress' else '' }}" href="/progress" {% if active_nav == 'progress' %}aria-current="page"{% endif %}><span aria-hidden="true">&#8599;</span> Progress</a>
         {% if is_admin_hint %}
           <!-- is_admin_hint is a display-only cache from login time - the /admin routes themselves re-check live via
                auth.require_admin, so a stale hint here can only ever hide
@@ -56,17 +55,20 @@
           </form>
         </div>
       {% endif %}
+    </header>
+    <main class="hub-content">
+      {% block content %}{% endblock %}
+    </main>
+    <footer class="hub-footer">
       <!-- Trademark disclaimer - always rendered,
            independent of login state, since it's about the product's own
            brand claim, not something conditional on a session existing. -->
       <p class="sidebar-disclaimer">Not affiliated with, endorsed by, or sponsored by the Linux
         Foundation or the Cloud Native Computing Foundation. "Certified Kubernetes Application
         Developer" and "CKAD" are trademarks of the Linux Foundation.</p>
-    </aside>
-    <main class="hub-content">
-      {% block content %}{% endblock %}
-    </main>
+    </footer>
   </div>
+  <script src="/static/setup.js?v=20261012a" defer></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

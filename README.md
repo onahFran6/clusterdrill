@@ -11,6 +11,7 @@ it at).
 - [Login, upgrade, and removal](#login-upgrade-and-removal)
 - [Installing on a cluster you already have](#installing-on-a-cluster-you-already-have)
 - [Architecture](#architecture)
+- [Using your own terminal](#using-your-own-terminal)
 - [Security limits](#security-limits)
 - [Troubleshooting](#troubleshooting)
 - [Release policy](#release-policy)
@@ -35,8 +36,8 @@ against a dedicated `clusterdrill` Minikube profile that never touches an
 existing cluster or kubectl context.
 
 ```sh
-git clone <this-repository>
-cd <this-repository>
+git clone https://github.com/onahFran6/clusterdrill.git
+cd clusterdrill
 
 # Installs the clusterdrill CLI from this checkout (no PyPI package
 # published yet - see Release policy below). Prefer pipx: it puts
@@ -63,10 +64,10 @@ clusterdrill local url              # opens/prints the local service URL
 ```
 
 `local url` prints the appliance's URL and keeps the connection open in
-that terminal (Ctrl-C when done) - open the printed URL in your browser.
-If `local install` printed a password, log in with username `admin` and
-that password; with `--no-password`, the URL opens straight to the topic
-list, no login screen at all.
+that terminal (Ctrl-C when done) - open the printed URL in your browser. By
+default it opens straight to the topic list, no login screen at all; if you
+installed with `--password <value>`, log in with username `admin` and that
+password instead.
 
 Swap `linux/arm64` for `linux/amd64` on an Intel/AMD machine. `local doctor`
 is safe to run at any time and never changes anything - it fails loudly (in
@@ -74,9 +75,12 @@ under a second) if a prerequisite is wrong, so it's the first thing to run
 after `git clone` and the first thing to reach for when something later
 fails.
 
-`local install` prints a generated local login password unless
-`--no-password` (a localhost-only drill with no login screen) or
-`--password <value>` is given. Save the printed password now - see
+**No password gate by default.** `local install` only sets one if you pass
+`--password <value>` - appropriate because the appliance is already a
+single-trusted-operator, disposable-cluster tool with no other access
+control in front of it; a login screen only matters once something else
+(a tunnel, a shared machine) puts the appliance within reach of someone
+else. Pass `--password <value>` before doing that - see
 [Login, upgrade, and removal](#login-upgrade-and-removal) for how to
 retrieve or reset it later.
 
@@ -126,12 +130,31 @@ with `local destroy && local init --storage-profile local-path`.
 
 ## Login, upgrade, and removal
 
-**Forgot the password, or need to reset it?** There is no separate
-"forgot password" flow - re-run `local install` with an explicit
-`--password <new-value>` (or `--no-password` to disable the gate
-entirely). It's safe to re-run against an already-installed appliance: it
-reuses the existing login password unless you override it, and only
-restarts the `clusterdrill-web` Deployment, not the whole cluster.
+**Forgot an account's password?** If you're still logged in as an admin,
+use the Admin page to reset another account's password - there is no
+self-service "change my own password" flow yet. Re-running `local install
+--password <new-value>` does **not** change an existing account's
+password: it deliberately refuses (`Refusing to change it because existing
+accounts retain their current password hash`) once any account exists, so
+a Secret an attacker with cluster access could otherwise edit can't
+silently take over a login. `--password` only takes effect the first time,
+before any account exists.
+
+**Locked out of every admin account, with no other admin to ask?** Delete
+the account Secrets directly so the bootstrap admin reseeds from
+`CLUSTERDRILL_PASSWORD` on the next restart - this does not lose any
+profile/achievement progress, which is stored separately and keyed by the
+same `admin` user id:
+
+```sh
+kubectl --context clusterdrill delete secret -n clusterdrill-system -l clusterdrill-kind=user
+clusterdrill local install --password <new-value>   # restarts the Deployment, reseeds "admin"
+```
+
+**Disabling the password gate entirely**: `local install --no-password`.
+Re-running `local install` is otherwise safe against an already-installed
+appliance - it only restarts the `clusterdrill-web` Deployment, not the
+whole cluster.
 
 **Upgrading**: rebuild the image from an updated checkout (or resolve a
 newer published release, once one exists - see
@@ -220,15 +243,16 @@ clusterdrill/helm/clusterdrill-chart`, adding `--set
 image.repository=...`/`--set image.digest=...` to point at a self-built
 image as described above.)
 
-Its Service is a `NodePort` on 8000, so once installed you reach it
-directly, no CLI tunnel needed:
+Its Service is `ClusterIP` by default, same as the raw manifest path -
+reach it with a port-forward:
 
 ```sh
-kubectl get svc -n clusterdrill-system clusterdrill   # find the NodePort
-# then browse http://<any-node-ip>:<the-nodeport>
-# or, if node IPs aren't directly reachable (a typical managed/cloud cluster):
 kubectl -n clusterdrill-system port-forward svc/clusterdrill 8000:8000
 ```
+
+Set `--set service.type=NodePort` at install time only on a network you
+already trust - this chart doesn't configure TLS termination or Secure
+cookies for you either way (see [Security limits](#security-limits)).
 
 Remove it with `helm uninstall clusterdrill --namespace clusterdrill-system`.
 See [`clusterdrill/helm/clusterdrill-chart/README.md`](clusterdrill/helm/clusterdrill-chart/README.md)
@@ -237,8 +261,8 @@ for the full picture: what's fixed vs. configurable, and `helm upgrade`.
 ### Fallback: the raw manifest, applied by hand
 
 `clusterdrill/manifests/local-appliance.yaml` is also cluster-agnostic, but
-it's a template with three placeholders the CLI normally fills in for you
-(`${CLUSTERDRILL_IMAGE}`, `${CLUSTERDRILL_PASSWORD}`, `${CLUSTERDRILL_VERSION}`),
+it's a template with four placeholders the CLI normally fills in for you
+(`${CLUSTERDRILL_IMAGE}`, `${CLUSTERDRILL_PASSWORD}`, `${CLUSTERDRILL_VERSION}`, `${CLUSTERDRILL_PRACTICE_CONTEXT}`),
 and there's no CLI command to render it outside the Minikube flow, so
 substitute them yourself. Use any published release's digest (see
 [Release policy](#release-policy)), or substitute a self-built image as
@@ -248,13 +272,14 @@ described above to test unreleased source:
 sed -e "s|\${CLUSTERDRILL_IMAGE}|docker.io/w00dson/clusterdrill@sha256:<the published digest>|" \
     -e "s|\${CLUSTERDRILL_PASSWORD}|$(openssl rand -base64 24 | tr -d '=+/')|" \
     -e "s|\${CLUSTERDRILL_VERSION}|<version>|" \
+    -e 's|${CLUSTERDRILL_PRACTICE_CONTEXT}||' \
     clusterdrill/manifests/local-appliance.yaml | kubectl apply -f -
 ```
 
-Unlike the Helm chart, this manifest's Service is `ClusterIP` (it's designed
-around `clusterdrill local url`'s tunnel, which only exists for the Minikube
-path), so reach it with `kubectl -n clusterdrill-system port-forward
-svc/clusterdrill 8000:8000` instead. This path also isn't exercised
+Like the Helm chart's own default, this manifest's Service is `ClusterIP`
+(it's designed around `clusterdrill local url`'s tunnel, which only exists
+for the Minikube path), so reach it with `kubectl -n clusterdrill-system
+port-forward svc/clusterdrill 8000:8000` instead. This path also isn't exercised
 end-to-end by this project's own tests the way the Minikube flow is - prefer
 the Helm chart above unless you have a specific reason not to. Remove it
 with `kubectl delete -f <the-same-rendered-manifest>`.
@@ -289,6 +314,30 @@ below.
   creates an admin-provisioned account model (see
   [Security limits](#security-limits)).
 
+## Using your own terminal
+
+Each question page can hide the embedded terminal and keep that choice in
+this browser. Hiding it does not stop question setup, and it does not pause
+an exam timer. The same page's "Use your own terminal" section shows the
+runtime namespace and the workspace directory inside the application.
+
+Seeded task files live in that application workspace
+(`$HOME/practice-work/<question-id>` on the process that runs ClusterDrill).
+They are not automatically present on your laptop, or in an SSH home
+directory on a control-plane or worker host. For the local single-user
+appliance, the page can show a `kubectl exec` command into the running web
+container so a laptop terminal, or a node shell that already has API
+access, sees those same files. That command uses the application identity.
+It is not a restricted learner shell, and signing out of the browser does
+not revoke a kubeconfig or SSH key you already have.
+
+With the password gate on, a quiet browser is logged out and its embedded
+terminals are stopped. The practice or exam attempt itself stays until you
+end it, the exam deadline is graded, or the app process restarts. Sign in
+again to continue an unexpired attempt or to open exam results. The Helm
+chart does not set single-user mode, so it does not show that owner exec
+command; the local appliance manifest does.
+
 ## Security limits
 
 Read this before putting the appliance anywhere reachable beyond your own
@@ -316,12 +365,34 @@ machine.
 - **Accounts, when enabled, are admin-provisioned only** - there is no
   public sign-up route. Passwords are hashed with PBKDF2-HMAC-SHA256 (260k
   iterations, a per-user random salt); login is rate-limited per client IP
-  (5 attempts / 15 minutes).
-- **Classroom/multi-user mode is experimental**, gated behind its own
-  explicit opt-in, and still only supported on a single dedicated
-  disposable cluster - it is per-account isolation (separate namespaces,
-  quotas, and RBAC-restricted terminal kubeconfigs), not safe multi-tenant
-  isolation for an untrusted or production-adjacent cluster.
+  (5 attempts / 15 minutes). That limit keys on the real TCP peer unless
+  `CLUSTERDRILL_TRUSTED_PROXY_IPS` (comma-separated IPs) names a proxy
+  actually in front of this app - only then are `CF-Connecting-IP`/
+  `X-Forwarded-For` trusted, since otherwise any direct client could set
+  those headers itself and dodge the limit entirely. Logging out, or an
+  admin resetting a password, revokes that account's sessions including
+  any already-open terminal connection, not just the browser cookie that
+  triggered it.
+- **Terminal credentials fail closed, not insecure, if a CA can't be
+  resolved.** Each account's terminal authenticates with its own
+  RBAC-scoped kubeconfig, never the app's own. If no certificate authority
+  can be found for it, provisioning fails rather than silently falling
+  back to no TLS verification - set
+  `CLUSTERDRILL_ALLOW_INSECURE_KUBECONFIG=true` only if you understand and
+  accept that trade-off (e.g. a deliberately TLS-disabled dev cluster).
+- **Session cookies aren't marked Secure by default**, matching local
+  dev/an SSH tunnel/a loopback-only proxy hop (nothing public ever sees
+  that hop either way, so requiring HTTPS there would only break access
+  for no protection). Set `CLUSTERDRILL_SECURE_COOKIES=true` once this
+  appliance is actually served over real HTTPS (a NodePort/Ingress install
+  with a TLS-terminating proxy in front).
+- **There is no classroom/multi-user mode.** This appliance supports
+  exactly one account (the bootstrap admin) - a security review found that
+  per-account namespace/RBAC isolation alone didn't actually isolate
+  learners sharing one appliance process (a shared OS user/filesystem
+  still let one learner's terminal reach another's, or the application's
+  own, kubeconfig). Supporting more than one person safely means a
+  separate disposable cluster per person, not more accounts on this one.
 - **A human security review of the full RBAC contract is still
   outstanding** - `clusterdrill/tests/test_manifest.py`'s static checks
   (no cluster-admin binding, no wildcard API group, no directly-exposed

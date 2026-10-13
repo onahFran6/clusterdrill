@@ -15,7 +15,7 @@
   "use strict";
 
   function currentTabId() {
-    const match = window.location.pathname.match(/\/terminal\/t\/(\d+)\//);
+    const match = window.location.pathname.match(/\/terminal\/(?:q\/[^/]+\/)?t\/(\d+)\//);
     return match ? match[1] : "1";
   }
 

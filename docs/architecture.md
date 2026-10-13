@@ -13,7 +13,7 @@ choice (naming, metadata, a scanner exception) was made over another.
 - [The web app](#the-web-app)
 - [The grading contract](#the-grading-contract)
 - [The CLI and appliance lifecycle](#the-cli-and-appliance-lifecycle)
-- [Multi-user isolation](#multi-user-isolation)
+- [Isolation history](#isolation-history)
 - [The question bank as data](#the-question-bank-as-data)
 
 ## The web app
@@ -52,7 +52,24 @@ On startup, in order:
    torn down on shutdown so nothing outlives the FastAPI process.
 6. An idle-watchdog background task starts (`_idle_watchdog`, polling every
    `IDLE_WATCHDOG_INTERVAL_SECONDS = 15`), active only when the password gate
-   is enabled - see [Idle timeout](#idle-timeout) below.
+   is enabled - see [Idle timeout and attempt lifetime](#idle-timeout-and-attempt-lifetime) below.
+7. An exam-deadline task starts (`_exam_watchdog`, polling every
+   `EXAM_WATCHDOG_INTERVAL_SECONDS = 1`) whether or not the password gate is
+   on. It finalizes due exams through the same path as Submit Exam.
+8. `_startup_cluster_sweep()` is scheduled as a background task, not
+   awaited - sweeps every known account's namespaces/cluster-scoped
+   objects, cleaning up anything a prior process's crash/redeploy left
+   stranded. Fire-and-forget so Uvicorn can bind its socket and start
+   answering `/healthz` immediately rather than blocking `lifespan()`
+   past the liveness probe's deadline. `readiness.mark_sweep_complete()`
+   fires once this finishes (success or failure per account) - `/readyz`
+   (the **readiness**Probe target, not `/healthz`'s liveness one) 503s
+   until then, so a freshly started pod never receives new sessions until
+   cleanup is actually done. The Deployment's `strategy: Recreate` (both
+   manifests) closes the other half of this race: it fully terminates the
+   old pod before this one starts, so by the time this sweep runs, there
+   is no still-live pod whose active session it could mistake for orphaned
+   state (R10).
 
 ### Middleware order
 
@@ -78,14 +95,21 @@ to the idle watchdog.
 
 | Module | Routes | Purpose |
 | --- | --- | --- |
-| `pages.py` | `GET /`, `/topics`, `/topics/{topic}`, `/practice-tests`, `/progress`, `/mock-exam`, `/sessions/results` | Hub/landing pages. |
+| `pages.py` | `GET /`, `/topics`, `/topics/{topic}`, `/practice-tests`, `/progress`, `/mock-exam`, `/sessions/results` | Hub/landing pages; `/practice-tests` redirects to the unified Practice library at `/topics`. |
 | `questions_router.py` | `GET /questions/{qid}`, `POST /questions/{qid}/check`, `POST /questions/{qid}/reset` | The core question view + grading loop. |
 | `sessions_router.py` | `POST /sessions/start`, `/sessions/start-boss`, `/sessions/start-daily`, `/sessions/submit`, `/sessions/end` | Session-mode lifecycle (see below). |
 | `auth_router.py` | `GET/POST /login`, `POST /logout` | Login form + session cookie issuance. Reachable pre-login even when the gate is on. |
 | `admin_router.py` | `GET /admin`, `POST /admin/users`, `/admin/users/{user_id}/reset-password`, `/admin/users/{user_id}/delete` | Admin-only account management - the whole router is gated by `Depends(auth.require_admin)` at the `APIRouter` level, not per-route. |
 | `idle_router.py` | `POST /heartbeat`, `GET /idle-status` | Client-side idle tracking, feeds `idle.py`'s tracker. |
 | `terminal_router.py` | `WS /terminal/t/{tab_id}/{path}`, `WS /terminal/{path}` (legacy, no tab id) | Reverse-proxies ttyd's websocket; validates the `Origin` header itself since browsers don't enforce same-origin on WebSocket upgrades. |
-| `health.py` | `GET /healthz` | Question-count health check, reachable pre-login. |
+| `health.py` | `GET /healthz`, `GET /readyz` | `/healthz` is always-instant (liveness; also reachable pre-login). `/readyz` (readiness only) 503s until this process's startup cluster sweep finishes - see [Request lifecycle](#request-lifecycle-lifespan-in-apppy) step 8 (R10). |
+
+The Practice library progressively enhances topic links with an adjacent session-setup panel.
+It fetches the existing topic page and reuses its server-rendered form; without JavaScript, links open that page normally.
+Topic switches cancel stale requests, and loading forms cannot be submitted until their settings are ready.
+Practice and exam forms accept custom positive question counts and whole-minute timers from 1 to 240 minutes.
+The session-start route rejects invalid explicit values before replacing an active session; the session builder caps question counts to the matching pool.
+The existing default counts, default timers, and legacy `all` practice requests remain supported.
 
 State-changing POST routes are protected by CSRF (`auth.csrf_protect_form`
 for HTML `<form>` posts, `auth.csrf_protect_header` for `fetch()`-driven JSON
@@ -109,11 +133,16 @@ work; `questions_router.py`'s route handler is a thin wrapper:
    disk and hand them to the Task/Hint/Solution/Diagram tabs. Diagram content
    is read server-side but rendered client-side by Mermaid.js (loaded from a
    CDN in `question.html`) - `app.py` never renders Mermaid itself.
-4. Render `question.html`, which embeds the ttyd terminal as an iframe and
-   wires the "Check" button to `POST /questions/{qid}/check` via a small
-   fetch call in `static/app.js` (the only place this app uses client-side
-   JS beyond DOM updates for the live checklist - no SPA framework, no build
-   step).
+4. Render `question.html` and wire the practice "Check" button to `POST /questions/{qid}/check` through `static/app.js`.
+   The same-origin `static/workspace-preferences.js` runs in the document head, before the workspace paints.
+   It validates the versioned `clusterdrill-workspace-v2` localStorage preference and migrates legacy pixel tracks to bounded fractions.
+   These display preferences are shared by tabs and accounts on the same browser origin; they are not authorization or attempt state.
+   CSS applies the fractions in the wide workspace and uses document flow below 1100px or 650px viewport height.
+   A hidden terminal gives the task the workspace width and ignores saved pane sizes.
+   The initial ttyd iframe carries its URL as data and receives a `src` only when the terminal is shown.
+   Hiding an already connected terminal retains its iframe until navigation; it never shuts down ttyd, kills tmux, or changes session lifetime.
+   Question provisioning still occurs before rendering, regardless of terminal visibility.
+   Reset layout restores sizing defaults without changing visibility or the attempt.
 
 ### Grading integrity invariant
 
@@ -137,17 +166,74 @@ visit). Starting a session (`POST /sessions/start` and its `-boss`/`-daily`
 variants) makes it the single active session for that user; `question_view.py`
 is what actually reads "is there an active session" on every question view.
 
-### Idle timeout
+While a user's exam is active, `questions_router.check_question` rejects interim grading with HTTP 403 before invoking a grader or recording progress.
+The rule covers every question for that user, including questions outside the exam selection; other users' practice sessions are unaffected.
+`question_view.py` forces reference-tab requests back to Task, discards hints, and skips answer and diagram loading.
+The exam template omits all reference panels, embedded diagram data, the grading checklist, and its divider; its task occupies one grid row regardless of saved practice sizing.
+The dedicated `POST /sessions/submit` path still grades the selected questions at submission.
+See [ADR 0005](adr/0005-active-exam-reference-restrictions.md) for the restriction's scope and limitations.
+
+A failed question setup exposes Retry setup and an accessible status message inside the provisioning banner, including during an exam.
+A successful retry records the question as provisioned so navigation does not rerun setup over the learner's work.
+In an exam, the recovery button disappears after success; ordinary Reset is not rendered after successful provisioning.
+
+**Exam scoring and selection model (I06), stated explicitly rather than
+left implicit:** `start_exam`'s draw is a uniform `random.shuffle` + slice
+over the filtered pool (topics/difficulty/`exam_eligible` applied first) -
+it does not stratify the sample to match the real CKAD curriculum's
+published per-domain weight percentages, and two draws of the same size
+from the same filters will not generally contain the same per-domain mix.
+`finalize_exam`'s score is a simple count of fully-passed questions
+(`sum(passed for q in questions)`) - a question's `points` fragment field
+is cosmetic display only (the "N pts" pill on the question page) and does
+not weight the final score, and a question with some but not all
+criteria passing counts as a plain fail, not partial credit. The "By
+domain" breakdown on the results page is "% of *this attempt's sampled*
+questions in that domain that were passed," not a statement about how
+that domain's official CKAD weight was represented in the sample. None of
+this is a bug - it is a documented product decision, not a correctness
+gap - but a candidate comparing their percentage against the real exam's
+published domain weights should know the two numbers answer different
+questions.
+
+### Idle timeout and attempt lifetime
 
 `idle.py` tracks activity independently of the session cookie's own max-age.
 The watchdog in `app.py` (`_idle_watchdog`, `_perform_idle_kill`) only acts
 when the password gate is enabled - idle-kill is meaningless for local dev
 or an SSH-tunnel deployment, which already have their own trust boundary
-(your machine, your SSH key) and no login to revoke. On timeout it clears
-all sessions, revokes login cookies, and kills tmux sessions
+(your machine, your SSH key) and no login to revoke. On timeout it revokes
+login cookies and kills embedded tmux sessions
 (`ttyd_manager.kill_all_tmux_sessions`) via `asyncio.to_thread` so the
 synchronous, sequential `tmux kill-session` calls never stall the single
-event loop this whole app runs on.
+event loop this whole app runs on. It leaves the active practice or exam
+attempt in place. Hiding the terminal does not pause that clock, and work
+in an external shell does not count as browser activity.
+
+Exam deadlines stay server-authoritative. `_exam_watchdog` finalizes a due
+exam even when the browser is closed, through the same
+`session_lifecycle.finalize_exam()` path as manual Submit Exam. Re-login
+resumes an unexpired attempt at its last question, or opens the stored
+result when the deadline has already been graded. The attempt store is
+still in memory, so a process restart drops it. Browser logout does not
+revoke SSH or Kubernetes credentials the learner holds outside the app.
+See [ADR 0006](adr/0006-attempt-lifetime-versus-browser-idle.md).
+
+`finalize_exam()` itself severs the candidate's terminal before it grades
+a single question: `ttyd_manager.kill_user_tmux_sessions(user_id)` kills
+that user's tmux server outright, ending any command still running in it.
+This is the mechanism that actually matters in the live
+single-trusted-operator app (see [Isolation history](#isolation-history)) -
+the terminal there inherits the application's own full kubeconfig
+directly, with no narrower per-namespace RBAC grant to revoke instead.
+`finalize_exam()` also calls `run_freeze_exam_namespaces()`, which revokes
+`grant_user_namespace_access`'s namespace-scoped RoleBinding - correct
+defense-in-depth for that retained-but-unreachable per-user mechanism, but
+currently a no-op live, since that RoleBinding is never granted to begin
+with under `single_user_mode()`. `terminal_router.py`'s revocation watcher
+(R04) also closes the open terminal WebSocket the instant finalization
+starts, as a prompt signal following the kill that already happened. See
+[ADR 0010](adr/0010-revoke-rbac-at-exam-finalization.md).
 
 ### Terminal (`ttyd_manager.py`)
 
@@ -155,13 +241,28 @@ A single long-lived `ttyd` process is spawned on FastAPI startup and bound
 to loopback only (127.0.0.1) - never exposed on its own port, only reachable
 through `terminal_router.py`'s reverse proxy. Multi-tab support runs
 separate tmux sessions per `(user_id, tab_id)`, slot-allocated so
-reconnecting users don't collide on ports. On first terminal access for a
-given question, the tab's shell `cd`s into that question's working
-directory (`$HOME/practice-work/<qid>`, the same path `lib/grading.sh`'s
-`question_workdir()` uses - see [The grading contract](#the-grading-contract)).
+reconnecting users don't collide on ports. On first terminal access for a lab-workspace tab, the shell `cd`s into
+that question's working directory (`$HOME/practice-work/<qid>`, the same
+path `lib/grading.sh`'s `question_workdir()` uses - see
+[The grading contract](#the-grading-contract)).
 Nothing in this app reads ttyd's terminal output or wires it into `check.sh`
 criteria in any way; it is purely an additive UI surface for the candidate's
 own convenience.
+
+A worker-node tab is not that lab shell. `ensure_session()` does not create
+a plain tmux session for it and does not send `cd`, because `tmux new-session -A`
+would attach to that plain session and skip the node command. The pane
+command itself turns mouse mode on, then runs `kubectl debug`. Successful
+`chroot /host` still depends on the debug pod's security context; constructing
+the command does not prove the shell reached the node. The question page's
+"Use your own terminal" disclosure shows the resolved namespace and the
+application workspace path. The copyable container exec command is rendered
+whenever the pod identity env vars are present (`users.single_user_mode()` is
+now unconditionally True - see [Isolation history](#isolation-history)),
+which the local appliance manifest sets and the Helm chart does not.
+That command enters the application container with the application's cluster
+privileges. It is not a restricted learner shell, and it is not a path on the
+node.
 
 Copy-to-clipboard is the one place this app *does* read something out of a
 terminal, and only that: `ensure_session` turns tmux's own mouse mode on
@@ -175,10 +276,11 @@ otherwise); that script notices a real mouse-drag and calls
 `POST /terminal-clipboard/{tab_id}`, which reads back whatever tmux's
 default drag-release binding already copied into that user's own tmux paste
 buffer (`ttyd_manager.read_paste_buffer`) and pushes it into the real
-browser clipboard. Safe to read per-user only because of the per-user tmux
-socket in [Multi-user isolation](#multi-user-isolation) mechanism 4 - tmux
-paste buffers are server-wide, not per-session, so this would leak another
-candidate's clipboard text on the old shared server (see
+browser clipboard. Reads a per-user tmux paste buffer via the per-user tmux
+socket mechanism described in [Isolation history](#isolation-history) -
+retained infrastructure, not a live multi-tenant guarantee (see that
+section for why): tmux paste buffers are server-wide, not per-session, so
+this would leak another candidate's clipboard text on a shared server (see
 [ADR 0004](adr/0004-per-user-tmux-socket.md)).
 
 ### State storage: Kubernetes objects, not a database
@@ -210,9 +312,9 @@ defines the parsing contract both `verify-question.sh` and the web UI
   ResourceQuota + LimitRange pair to every question namespace except the two
   questions that are themselves about authoring a LimitRange - see the
   function's own comment in `lib/grading.sh` for the exact sizing rationale.
-- `grant_user_namespace_access <namespace> <user_id>` is what actually
-  prevents one learner's terminal from reading another's namespace directly
-  - see [Multi-user isolation](#multi-user-isolation).
+- `grant_user_namespace_access <namespace> <user_id>` scopes a second
+  identity's terminal to one namespace - part of the retained-but-unreachable
+  machinery covered in [Isolation history](#isolation-history).
 
 `check.sh` never uses `set -e` (a failing criterion must not abort the rest
 of the checklist) and may only assert against **live cluster state** - never
@@ -284,45 +386,71 @@ execs `uvicorn app:app` from `/opt/clusterdrill/web`. If you're looking for
 Helm chart, not this file - this file is "what the container runs once
 it's already scheduled."
 
-## Multi-user isolation
+## Isolation history
 
-Classroom/multi-user mode (still experimental, gated behind its own opt-in)
-layers four independent mechanisms, each answering a different question:
+`users.single_user_mode()` is unconditionally `True`. There is no
+`CLUSTERDRILL_SINGLE_USER` toggle, no classroom/multi-user mode, and no
+supported way to create a second account: `create_user()` only ever lets
+the one bootstrap `admin` account through. This is a deliberate removal,
+not a default, decided after a security audit (2026-10) found that the
+isolation mechanisms below - while real, independently-correct code -
+never actually delivered what "multi-user mode" implied:
 
-1. **Where does a user's data live?** Every question namespace and every
+- A learner's terminal shared the application's own OS user, filesystem,
+  and process environment; a kubeconfig-provisioning failure silently fell
+  back to the application's own unrestricted kubeconfig rather than
+  refusing the terminal outright.
+- Every provisioned account could create arbitrary Pods in the
+  application's own `clusterdrill-system` namespace (Kubernetes RBAC
+  cannot scope `create` by resource name), which can mount that
+  namespace's Secrets and service-account tokens.
+
+Supporting untrusted learners safely needs a separate execution boundary
+per learner (a disposable cluster each), not more RBAC layered onto one
+shared appliance - see the audit's F02 disposition. The supported shape is
+one trusted operator per dedicated disposable cluster, full stop.
+
+The per-account isolation machinery below is **retained in the codebase,
+unreachable in the supported app** (`single_user_mode()` short-circuits
+before any of it runs) - kept as working, tested infrastructure rather than
+deleted outright, not as a currently-active guarantee. Four independent
+mechanisms, each answering a different question:
+
+1. **Where would a user's data live?** Every question namespace and every
    cluster-scoped object is labeled `clusterdrill-question=<qid>`; combined
-   with `apply_default_resource_limits`, one account cannot starve another
-   by running something unbounded in its own namespace.
-2. **Who can this account act as, cluster-wide?** `rbac.py` provisions one
+   with `apply_default_resource_limits`, one account couldn't starve
+   another by running something unbounded in its own namespace.
+2. **Who could an account act as, cluster-wide?** `rbac.py` provisions one
    ServiceAccount per account (`ensure_user_service_account`), never
-   cluster-admin, and only in multi-user mode - see `app.py`'s lifespan
-   step 4 above.
-3. **What can this account's own terminal actually reach?**
+   cluster-admin - but, per the audit, with an unrestricted Pod-create
+   grant in the shared system namespace alongside it (see above).
+3. **What could an account's own terminal reach?**
    `grant_user_namespace_access` RoleBinds the built-in `admin` ClusterRole
    into that one namespace for that one ServiceAccount (creating a local
    wildcard Role is forbidden by Kubernetes RBAC escalation checks against
    the least-privilege appliance identity - the appliance ClusterRole
-   therefore also holds `bind` on `admin`), and `ttyd_manager.py`
-   points that user's terminal at a kubeconfig authenticating as that
+   therefore also holds `bind` on `admin`), and `ttyd_manager.py` pointed
+   that user's terminal at a kubeconfig authenticating as that
    ServiceAccount - instead of the app's own admin kubeconfig, which
-   `check.sh`/`setup.sh` themselves still use, unaffected. Without this
-   third mechanism, mechanism 1 alone would still let one learner's shell
-   run `kubectl get pods -n <another-learners-namespace>` directly, since
-   every terminal would otherwise share the same cluster-admin credential.
-4. **Can one account reach into another's live shell?** Each user's tmux
-   sessions live on their own private tmux server - `ttyd_manager.py` passes
-   `-L clusterdrill-<slot>` (the same per-user slot number that already
-   scopes ports) to every tmux invocation, rather than the shared default
-   socket. Session names alone (`clusterdrill-<user_id>-<tab_id>`) are not
-   sufficient: on one shared server they're still just names, and any
-   candidate's own shell can run `tmux attach -t <name>` against any
-   session on that server regardless of who created it - landing inside
-   another candidate's already-RBAC'd shell (mechanism 3 authenticates the
-   *terminal*, not the human sitting at a given browser tab). A private
-   socket per user makes a session on one socket genuinely invisible and
+   `check.sh`/`setup.sh` themselves still use, unaffected. On its own,
+   mechanism 1 would still let one learner's shell run `kubectl get pods -n
+   <another-learners-namespace>` directly, since every terminal otherwise
+   shares the same cluster-admin-adjacent credential - but see the shared-OS-user
+   caveat above for why this boundary didn't actually hold either.
+4. **Could one account reach into another's live shell?** Each user's tmux
+   sessions lived on their own private tmux server - `ttyd_manager.py`
+   passes `-L clusterdrill-<slot>` (the same per-user slot number that
+   already scopes ports) to every tmux invocation, rather than the shared
+   default socket. Session names alone (`clusterdrill-<user_id>-<tab_id>`)
+   aren't sufficient: on one shared server they're still just names, and
+   any candidate's own shell could run `tmux attach -t <name>` against any
+   session on that server regardless of who created it. A private socket
+   per user makes a session on one socket genuinely invisible and
    unattachable from another - see ADR
    [0004](adr/0004-per-user-tmux-socket.md) for how this was found and
-   verified.
+   verified. Still doesn't address the shared-OS-user caveat above (a
+   candidate could read another's kubeconfig/files directly, without ever
+   needing to attach to their tmux session at all).
 
 ## The question bank as data
 
@@ -342,3 +470,18 @@ tree. Two things worth knowing that aren't in either of those:
   `check.sh` pair is actually represented in some fragment - this is what
   `lib/load-domains.sh --check` validates in CI, not just documentation
   about the expected shape.
+
+### Public topic grouping
+
+Question discovery maps versioned source folders onto stable public topics using `TOPIC_ALIASES` in `web/questions.py`.
+Pods join Pod Design, Deployments join Deployment Strategies, Services and Ingress/Network Policies join Services Networking, and Storage joins State Persistence.
+Container Images and Jobs/CronJobs remain independent topics without version suffixes.
+Question IDs, source paths, metadata, and licensing boundaries remain unchanged; progress continues to be calculated from the same question IDs.
+Legacy topic URLs redirect to the combined topic, and session submissions normalize legacy topic names.
+The practice hub offers one-topic setup and a selected-topic mix within the same column.
+One-topic setup uses a topic dropdown, with visible loading feedback and cancellation of superseded requests.
+Selected-topic setup renders checkboxes and per-topic difficulty counts on the server; the browser sums those counts to update the matching pool and question limit.
+Mixed submissions accept repeated `topics` fields, normalize aliases, and reject unknown topics before replacing an active session.
+The selected-topic form sends `topic_scope=selected` so clearing every checkbox is rejected rather than silently drawing from all topics.
+Legacy mixed submissions without a topic selection continue to draw from the whole bank.
+See [ADR 0007](adr/0007-public-topic-grouping.md).

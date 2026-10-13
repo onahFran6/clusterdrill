@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # This question needs a second namespace (an unrelated "stranger" pod's
-# home). Per the established pattern for multi-namespace questions in this
-# bank (see q108-28-diagnose-dns-wrong-namespace-suffix), STRANGER_NS below
-# is named as a suffix of $QUESTION_ID, carries no clusterdrill-question
-# label (neither does the pod inside it), and is deleted/recreated
-# wholesale on every run for its own idempotency.
+# home). STRANGER_NS below is named as a suffix of $QUESTION_ID and
+# labeled clusterdrill-question=$QUESTION_ID, same as the primary namespace
+# (R06): full_reset/batch_cleanup select namespaces to delete by this
+# label, so STRANGER_NS is swept up and cleaned at session end exactly like
+# the primary one. It's also still deleted/recreated wholesale on every
+# run for its own idempotency on repeated runs of this one question.
 set -euo pipefail
 
 QUESTION_ID="q116-19-neighbours-and-the-ingress-only${CLUSTERDRILL_NAMESPACE_SUFFIX:-}"
@@ -22,6 +23,7 @@ grant_user_namespace_access "$QUESTION_ID" "${CLUSTERDRILL_USER_ID:-}"
 kubectl delete namespace "$STRANGER_NS" --ignore-not-found --wait=true >/dev/null 2>&1
 kubectl create namespace "$STRANGER_NS" \
   --dry-run=client -o yaml | kubectl apply -f -
+kubectl label namespace "$STRANGER_NS" "clusterdrill-question=$QUESTION_ID" --overwrite
 apply_default_resource_limits "$STRANGER_NS"
 grant_user_namespace_access "$STRANGER_NS" "${CLUSTERDRILL_USER_ID:-}"
 

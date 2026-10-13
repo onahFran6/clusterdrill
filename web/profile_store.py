@@ -34,6 +34,7 @@ profile/achievement state.
 from __future__ import annotations
 
 import copy
+import logging
 import re
 import threading
 from dataclasses import dataclass
@@ -41,12 +42,16 @@ from datetime import datetime, timedelta, timezone
 
 from kube_json import (
     SYSTEM_NAMESPACE,
+    StorageReadError,
+    StorageWriteError,
     configmap_payload,
     decode_payload,
-    kubectl_apply_json,
+    kubectl_apply_json_or_raise,
     kubectl_delete,
-    kubectl_get_json,
+    kubectl_get_json_safe,
 )
+
+logger = logging.getLogger("clusterdrill.profile_store")
 
 PROFILE_NAME = "me"
 _PROFILE_LABELS = {"clusterdrill-kind": "profile"}
@@ -156,20 +161,37 @@ class Profile:
 
 
 def _save_profile(spec: dict, user_id: str | None = None) -> Profile:
-    kubectl_apply_json(configmap_payload(_profile_object_name(user_id), spec, labels=_PROFILE_LABELS))
+    """Raises StorageWriteError (not a silent no-op) if the write doesn't
+    actually reach the cluster - a caller here must never hand back a
+    Profile built from data that wasn't durably saved (R09: that's exactly
+    how a passed check/exam result gets shown as recorded and then vanishes
+    on the next read)."""
+    name = _profile_object_name(user_id)
+    kubectl_apply_json_or_raise(
+        configmap_payload(name, spec, labels=_PROFILE_LABELS), what=f"profile {name}",
+    )
     return Profile(spec=spec)
 
 
 def get_profile(user_id: str | None = None) -> Profile:
     """Reads this user's profile, creating it with zeroed defaults on first
     use. user_id=None reads/creates the "me" profile (password gate off,
-    no accounts)."""
+    no accounts). Raises StorageReadError on a failed (not merely absent)
+    read - a transient API error must not be treated as "doesn't exist yet",
+    which previously could reset an existing user's progress to zero on a
+    passing hiccup (R09)."""
     name = _profile_object_name(user_id)
-    obj = kubectl_get_json("configmap", name, "-n", SYSTEM_NAMESPACE)
+    result = kubectl_get_json_safe("configmap", name, "-n", SYSTEM_NAMESPACE)
+    if not result.ok:
+        raise StorageReadError(f"failed to read profile {name}: {result.error}")
+    obj = result.data
     if obj is None:
         with _lock:
             # Re-check inside the lock in case another request just created it.
-            obj = kubectl_get_json("configmap", name, "-n", SYSTEM_NAMESPACE)
+            result = kubectl_get_json_safe("configmap", name, "-n", SYSTEM_NAMESPACE)
+            if not result.ok:
+                raise StorageReadError(f"failed to read profile {name}: {result.error}")
+            obj = result.data
             if obj is None:
                 return _save_profile(copy.deepcopy(_EMPTY_PROFILE_SPEC), user_id)
     spec = copy.deepcopy(_EMPTY_PROFILE_SPEC)
@@ -199,6 +221,14 @@ def apply_achievement(name: str, achievement_type: str, question_id: str | None 
     already earned this" before calling apply_achievement. Scoped to
     user_id (see _scoped) so two different users' identical unlocks don't
     collide on one shared object.
+
+    A failed write is logged, not raised: achievements are strictly
+    additive (see module docstring) and every caller - record_check,
+    apply_boss_defeat, apply_daily_challenge_clear, apply_clean_sweep - calls
+    this after its own grading-relevant state is already settled, so a lost
+    badge must not turn an otherwise-successful request into a 500. Logging
+    (rather than the old silent kubectl_apply_json(obj) discard, R09) at
+    least gives an operator visibility to manually re-trigger a lost unlock.
     """
     labels = dict(_ACHIEVEMENT_LABELS)
     if question_id:
@@ -213,8 +243,12 @@ def apply_achievement(name: str, achievement_type: str, question_id: str | None 
         spec["questionId"] = question_id
     if topic:
         spec["topic"] = topic
-    obj = configmap_payload(_achievement_object_name(_scoped(name, user_id)), spec, labels=labels)
-    kubectl_apply_json(obj)
+    object_name = _achievement_object_name(_scoped(name, user_id))
+    obj = configmap_payload(object_name, spec, labels=labels)
+    try:
+        kubectl_apply_json_or_raise(obj, what=f"achievement {object_name}")
+    except StorageWriteError:
+        logger.exception("achievement %r did not persist for user_id=%r", object_name, user_id)
 
 
 @dataclass
@@ -325,8 +359,16 @@ def has_achievement(name: str, user_id: str | None = None) -> bool:
     against the single named achievement object, not a list/query, since
     every achievement name in this module is already computed
     deterministically from what it represents (e.g. f"clean-sweep-{slug}")."""
-    name = _achievement_object_name(_scoped(name, user_id))
-    return kubectl_get_json("configmap", name, "-n", SYSTEM_NAMESPACE) is not None
+    object_name = _achievement_object_name(_scoped(name, user_id))
+    result = kubectl_get_json_safe("configmap", object_name, "-n", SYSTEM_NAMESPACE)
+    if not result.ok:
+        # A read failure here gates a UI unlock (e.g. boss_unlocked), not
+        # grading truth - log and treat as "not confirmed yet" rather than
+        # raising, since the achievement itself is unaffected and a retry
+        # will see it the moment the API is reachable again.
+        logger.warning("could not confirm achievement %r for user_id=%r: %s", object_name, user_id, result.error)
+        return False
+    return result.data is not None
 
 
 def boss_unlocked(topic: str, user_id: str | None = None) -> bool:

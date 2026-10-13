@@ -33,7 +33,7 @@ metadata:
 type: Opaque
 stringData:
   user: migrator
-  password: s3cr3t
+  password: sample-password-value
 YAML
 
 echo "setup.sh: $QUESTION_ID ready"

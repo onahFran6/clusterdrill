@@ -315,6 +315,10 @@ questions:
     points: 5
     requirements:
       min_nodes: 1
+    # check.sh permanently deletes the BackupSet once it confirms the fix,
+    # to observe real cascade-GC (R13) - fine for practice mode's
+    # immediate Check, not safe to draw into a timed exam.
+    exam_eligible: false
   - id: q110-46-helm-hook-weight-ordering-two-hooks
     domain: "Application Deployment"
     difficulty: hard

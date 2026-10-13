@@ -14,7 +14,10 @@ import auth
 from fastapi import APIRouter, Depends, Form
 from fastapi.responses import RedirectResponse
 from idle import tracker as idle_tracker
+from services import session_lifecycle
 from services.question_view import base_context
+from sessions import exam_result_store
+from sessions import store as session_store
 from starlette.requests import Request
 from templating import templates
 
@@ -54,13 +57,24 @@ def login_submit(
             status_code=429,
         )
 
-    if auth.attempt_login(request, username, password) is not None:
+    user = auth.attempt_login(request, username, password)
+    if user is not None:
         auth.clear_login_attempts(request)
         # A fresh login is, definitionally, a human present right now -
         # starts the idle clock over rather than inheriting whatever it was
         # counting down from before this login (e.g. right after the
         # watchdog itself forced this re-login).
         idle_tracker.touch()
+        with session_store.lock(user.user_id):
+            session = session_store.get(user.user_id)
+            if session and session.mode == "exam":
+                session_lifecycle.expire_exam(user.user_id, session.attempt_id)
+                session = session_store.get(user.user_id)
+            if safe_next == "/topics":
+                if session and session.resume_qid:
+                    safe_next = f"/questions/{session.resume_qid}"
+                elif exam_result_store.get(user.user_id):
+                    safe_next = "/sessions/results"
         return RedirectResponse(url=safe_next, status_code=303)
 
     # No separate record_failed_login() call here - this attempt was

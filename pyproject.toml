@@ -9,14 +9,17 @@ description = "Hands-on Kubernetes practice appliance"
 requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["pyyaml~=6.0"]
+dependencies = ["pyyaml~=6.0.3"]
 
 [project.optional-dependencies]
 # clusterdrill/tests' own suite, plus the Python-side quality tools. web/'s
 # own runtime+test dependencies are pinned separately in
 # web/requirements*.txt (see the comment there for why: the web app isn't
 # installed as part of this pip package, so it can't share this extra).
-dev = ["pytest~=9.1", "ruff~=0.16", "yamllint~=1.38"]
+#
+# Three-component pins (I02/R15, see web/requirements.txt's comment for
+# why a 2-part `~=X.Y` doesn't actually express "patch-only" at all).
+dev = ["pytest~=9.1.1", "ruff~=0.16.6", "yamllint~=1.38.0"]
 
 [project.scripts]
 clusterdrill = "clusterdrill.cli:main"

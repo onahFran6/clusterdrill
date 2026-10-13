@@ -110,6 +110,12 @@ def question_bank_factory(tmp_path):
     that storage_profile) or a per-question list. Combines with `min_nodes`
     into the same `requirements` dict when both are given for the same
     question.
+
+    An optional `exam_eligible` kwarg works the same way (single bool or
+    per-question list), one level up from `requirements` (R13's fragment
+    field, not a cluster requirement). Topics absent from it keep the
+    default of no `exam_eligible` key at all - matches Question's own
+    `exam_eligible: bool = True` default.
     """
     from questions import QuestionBank
 
@@ -117,9 +123,11 @@ def question_bank_factory(tmp_path):
         topic_sizes: dict[str, "int | list[str]"],
         min_nodes: "dict[str, int | list[int | None]] | None" = None,
         storage_profile: "dict[str, str | list[str | None]] | None" = None,
+        exam_eligible: "dict[str, bool | list[bool]] | None" = None,
     ):
         min_nodes = min_nodes or {}
         storage_profile = storage_profile or {}
+        exam_eligible = exam_eligible or {}
         questions_dir = tmp_path / f"questions-{id(topic_sizes)}"
         for topic, spec in topic_sizes.items():
             difficulties = ["easy"] * spec if isinstance(spec, int) else list(spec)
@@ -129,6 +137,9 @@ def question_bank_factory(tmp_path):
             topic_storage_profile = storage_profile.get(topic)
             if topic_storage_profile is None or isinstance(topic_storage_profile, str):
                 topic_storage_profile = [topic_storage_profile] * len(difficulties)
+            topic_exam_eligible = exam_eligible.get(topic)
+            if topic_exam_eligible is None or isinstance(topic_exam_eligible, bool):
+                topic_exam_eligible = [topic_exam_eligible] * len(difficulties)
             topic_dir = questions_dir / topic
             topic_dir.mkdir(parents=True)
             fragment_entries = []
@@ -158,6 +169,9 @@ def question_bank_factory(tmp_path):
                     requirements["storage_profile"] = question_storage_profile
                 if requirements:
                     entry["requirements"] = requirements
+                question_exam_eligible = topic_exam_eligible[i - 1]
+                if question_exam_eligible is not None:
+                    entry["exam_eligible"] = question_exam_eligible
                 fragment_entries.append(entry)
             (topic_dir / "domains.fragment.yaml").write_text(
                 yaml.safe_dump({"questions": fragment_entries})

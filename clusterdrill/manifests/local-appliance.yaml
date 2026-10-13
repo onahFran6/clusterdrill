@@ -103,7 +103,13 @@ rules:
   resources: ["cronjobs", "jobs"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
 - apiGroups: ["networking.k8s.io"]
-  resources: ["ingresses", "networkpolicies"]
+  # ingressclasses (R07): cluster-scoped, same as the appliance's other
+  # cluster-scoped resources here (clusterrole/clusterrolebinding/pv/
+  # storageclass/crd below) - lib/grading.sh's full_reset/batch_cleanup and
+  # q116-05's own setup.sh both create/delete one, so the shipped RBAC must
+  # actually cover it (previously missing entirely: full_reset would abort
+  # partway through on a Forbidden error for this one resource type).
+  resources: ["ingresses", "networkpolicies", "ingressclasses"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
 - apiGroups: ["policy"]
   resources: ["poddisruptionbudgets"]
@@ -185,6 +191,19 @@ metadata:
     app.kubernetes.io/managed-by: clusterdrill-cli
 spec:
   replicas: 1
+  # Recreate, not the apps/v1 default RollingUpdate (R10): at replicas: 1,
+  # RollingUpdate's default maxSurge: 25% rounds up to 1, so a redeploy
+  # briefly runs the old and new pod side by side. The new pod's startup
+  # cluster sweep (app.py's _startup_cluster_sweep) assumes anything it
+  # finds was orphaned by a now-dead process - with RollingUpdate that
+  # assumption is false for the surge window, and the sweep can delete a
+  # namespace a still-live old pod's active session is using. Recreate
+  # fully terminates the old pod before the new one starts, so every
+  # sweep genuinely only ever sees state left by a dead process. Trade-off:
+  # a brief full outage on every upgrade/restart, acceptable for a
+  # single-operator local appliance (not a highly-available service).
+  strategy:
+    type: Recreate
   # Only name+instance in the selector - it is immutable after creation, so
   # nothing that legitimately changes release to release (version) may be
   # in it. See docs/adr/0002-kubernetes-metadata-conventions.md.
@@ -227,16 +246,23 @@ spec:
           capabilities:
             drop: ["ALL"]
         env:
+        - name: CLUSTERDRILL_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: CLUSTERDRILL_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CLUSTERDRILL_CONTAINER
+          value: web
+        - name: CLUSTERDRILL_PRACTICE_CONTEXT
+          value: "${CLUSTERDRILL_PRACTICE_CONTEXT}"
         - name: CLUSTERDRILL_PASSWORD
           valueFrom:
             secretKeyRef:
               name: clusterdrill-web-auth
               key: password
-        # Cluster-scoped RBAC exercises cannot safely run in a shared
-        # cluster. This local appliance permits one trusted operator. A
-        # hosted multi-user service requires an isolated cluster per user.
-        - name: CLUSTERDRILL_SINGLE_USER
-          value: "true"
         # requests give the appliance a guaranteed CPU/memory floor so a
         # busy single-node dev cluster (many questions' setup.sh/check.sh
         # running concurrently) can't starve it long enough to miss a
@@ -254,9 +280,18 @@ spec:
         # to answer without the process actually being stuck; a probe
         # that times out that fast on a loaded dev cluster reads as a
         # false "Unhealthy" and triggers an unnecessary restart.
+        #
+        # /readyz (not /healthz) is deliberate (R10): it 503s until the
+        # startup cluster sweep finishes, keeping this pod out of Service
+        # rotation until any state left by the pod it replaced has
+        # actually been swept - not just scheduled. livenessProbe below
+        # must stay on /healthz, which is always instant: gating liveness
+        # on the sweep too would crash-loop the container while cleanup
+        # is still running (the whole reason that sweep is fire-and-forget
+        # in the first place - see app.py's lifespan()).
         readinessProbe:
           httpGet:
-            path: /healthz
+            path: /readyz
             port: http
           initialDelaySeconds: 5
           timeoutSeconds: 5

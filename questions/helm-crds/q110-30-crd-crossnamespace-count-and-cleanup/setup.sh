@@ -7,10 +7,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$SCRIPT_DIR/../../../lib/grading.sh"
 
-# The second namespace has no framework-level cleanup path (full_reset only
-# knows the primary $QUESTION_ID namespace by exact name), so setup.sh is
-# responsible for its own idempotency: always start by removing any
-# leftover copy from a previous run of this question before recreating it.
+# SECOND_NS is labeled clusterdrill-question=$QUESTION_ID below, same as
+# the primary namespace (R06): full_reset/batch_cleanup select namespaces
+# to delete by this label, not by $QUESTION_ID's exact name, so this
+# secondary namespace is swept up and cleaned at session end exactly like
+# the primary one. setup.sh is still responsible for its own idempotency
+# on repeated runs of this one question: always start by removing any
+# leftover copy from a previous run before recreating it.
 kubectl delete namespace "$SECOND_NS" --ignore-not-found --wait=true >/dev/null 2>&1
 
 kubectl create namespace "$QUESTION_ID" \
@@ -21,6 +24,7 @@ grant_user_namespace_access "$QUESTION_ID" "${CLUSTERDRILL_USER_ID:-}"
 
 kubectl create namespace "$SECOND_NS" \
   --dry-run=client -o yaml | kubectl apply -f -
+kubectl label namespace "$SECOND_NS" "clusterdrill-question=$QUESTION_ID" --overwrite
 apply_default_resource_limits "$SECOND_NS"
 grant_user_namespace_access "$SECOND_NS" "${CLUSTERDRILL_USER_ID:-}"
 

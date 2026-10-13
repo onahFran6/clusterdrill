@@ -192,9 +192,22 @@ print_score() {
 }
 
 # full_reset <question_id>
-# The only reset path - no soft-reset helper exists on purpose. Deletes the question's namespace AND anything
-# cluster-scoped labeled for it, and waits for both to finish before
-# returning, so a subsequent setup.sh never races a Terminating namespace.
+# The only reset path - no soft-reset helper exists on purpose. Deletes
+# every namespace labeled for this question (the primary namespace, AND
+# any secondary namespace a multi-namespace question's setup.sh also
+# labeled clusterdrill-question=<question_id> - R06: selecting by label
+# rather than by the primary namespace's exact name is what makes this
+# sweep up e.g. q108-28's own -frontend/-backend namespaces too, instead of
+# leaking them forever) plus anything cluster-scoped labeled for it, and
+# waits for both to finish before returning, so a subsequent setup.sh never
+# races a Terminating namespace.
+#
+# Selecting by label rather than by name is also the ownership precondition
+# itself, not a separate check bolted on afterward: a namespace that
+# happens to share this question's name but that this app never labeled
+# (because something else created it) can never match the selector, so it
+# can never be deleted here - "did we create this" and "is it safe to
+# delete" collapse into the same label-selector match.
 full_reset() {
   local question_id="$1"
   if [[ -z "$question_id" ]]; then
@@ -207,13 +220,14 @@ full_reset() {
   # derived question_id) contain camelCase (e.g. q107-21-preStop-...) - their
   # own setup.sh already lowercases QUESTION_ID before using it as a
   # namespace/label value, so this must match or the delete below silently
-  # no-ops (--ignore-not-found masks it) and leaks the real namespace
-  # forever. Lowercasing here, not renaming every mixed-case folder, keeps
-  # this the one place that has to know about the mismatch.
+  # no-ops (-l matches nothing) and leaks the real namespace forever.
+  # Lowercasing here, not renaming every mixed-case folder, keeps this the
+  # one place that has to know about the mismatch.
   local question_id_lc="${question_id,,}"
 
-  if ! kubectl delete namespace "$question_id_lc" --ignore-not-found --wait=true >/dev/null 2>&1; then
-    echo "full_reset: failed to delete namespace $question_id_lc" >&2
+  if ! kubectl delete namespace -l "${CLUSTERDRILL_LABEL_KEY}=${question_id_lc}" \
+    --ignore-not-found --wait=true >/dev/null 2>&1; then
+    echo "full_reset: failed to delete namespace(s) for $question_id_lc" >&2
     return 1
   fi
 
@@ -230,27 +244,106 @@ full_reset() {
 # batch_cleanup <question_id> [<question_id> ...]
 # Bulk teardown for a whole session/batch that just ended (its questions
 # aren't necessarily coming back) - one batched kubectl call per resource
-# type instead of looping full_reset per question. Unlike full_reset, does
-# NOT wait for termination (--wait=false): the caller (a session ending)
-# doesn't need these gone before it returns, just heading toward gone, so
-# tearing down a full 15-question session doesn't block on up to 15
-# sequential namespace terminations. Any question re-provisions on its own
-# next view regardless (setup.sh is idempotent, auto-run on first view).
+# type instead of looping full_reset per question. Selects namespaces by
+# label (clusterdrill-question in (<ids>)), same R06 reasoning as
+# full_reset above: this sweeps up every secondary namespace a
+# multi-namespace question labeled alongside its primary one, and can never
+# touch a same-named namespace this app didn't itself label. Requests
+# deletion with --wait=false (a stuck finalizer on one namespace must not
+# serialize behind every other namespace in the batch), then polls by the
+# same label selector for up to BATCH_CLEANUP_POLL_DEADLINE_SECONDS so a
+# caller that reuses one of these question ids right away doesn't race a
+# still-Terminating namespace (kubectl apply of a namespace create fails
+# outright while the old one is still going away - that race is exactly
+# what used to make "cleaned up" unreliable). Propagates a real
+# failure/timeout as a non-zero return instead of always claiming success -
+# the caller/startup sweep is this project's retry mechanism for whatever
+# didn't finish in time.
+BATCH_CLEANUP_POLL_DEADLINE_SECONDS=30
 batch_cleanup() {
   if [[ "$#" -eq 0 ]]; then
     echo "batch_cleanup: at least one question id is required" >&2
     return 1
   fi
 
-  kubectl delete namespace "$@" --ignore-not-found --wait=false >/dev/null 2>&1
+  local failed=0
+  local joined
+  joined="$(IFS=,; echo "$*")"
+
+  if ! kubectl delete namespace -l "${CLUSTERDRILL_LABEL_KEY} in (${joined})" \
+    --ignore-not-found --wait=false >/dev/null 2>&1; then
+    echo "batch_cleanup: failed to request namespace deletion for: $*" >&2
+    failed=1
+  fi
+
+  if ! kubectl delete clusterrole,clusterrolebinding,pv,storageclass,crd,ingressclass \
+    -l "${CLUSTERDRILL_LABEL_KEY} in (${joined})" \
+    --ignore-not-found --wait=false >/dev/null 2>&1; then
+    echo "batch_cleanup: failed to delete cluster-scoped resources for: $*" >&2
+    failed=1
+  fi
+
+  local deadline=$((SECONDS + BATCH_CLEANUP_POLL_DEADLINE_SECONDS))
+  local still_present=""
+  while [[ $SECONDS -lt $deadline ]]; do
+    still_present="$(kubectl get namespace -l "${CLUSTERDRILL_LABEL_KEY} in (${joined})" -o name 2>/dev/null)"
+    [[ -z "$still_present" ]] && break
+    sleep 2
+  done
+
+  if [[ -n "$still_present" ]]; then
+    echo "batch_cleanup: still terminating after ${BATCH_CLEANUP_POLL_DEADLINE_SECONDS}s: $(echo "$still_present" | tr '\n' ' ')" >&2
+    failed=1
+  fi
+
+  if [[ "$failed" -eq 1 ]]; then
+    echo "batch_cleanup: $# question(s) requested, cleanup incomplete" >&2
+    return 1
+  fi
+
+  echo "batch_cleanup: $# question(s) cleaned"
+}
+
+# freeze_exam_namespaces <question_id> [<question_id> ...]
+# Revokes the candidate's own RBAC grant (grant_user_namespace_access's
+# RoleBinding) in every namespace - primary and any secondary namespace a
+# multi-namespace question labeled alongside it, same label-selector
+# enumeration R06 already uses - belonging to these questions, without
+# touching the namespaces or anything inside them. Called at the start of
+# exam finalization (R11), before any check.sh runs. Defense-in-depth for
+# grant_user_namespace_access's own retained-but-unreachable mechanism
+# (see ADR 0008): in the live, single-trusted-operator app that
+# RoleBinding is never actually granted (single_user_mode() means
+# ttyd_manager never restricts the terminal's kubeconfig at all), so this
+# is currently a no-op there - the call that actually matters for the live
+# terminal is session_lifecycle.py's ttyd_manager.kill_user_tmux_sessions,
+# right alongside this one. See ADR 0010.
+freeze_exam_namespaces() {
+  if [[ "$#" -eq 0 ]]; then
+    echo "freeze_exam_namespaces: at least one question id is required" >&2
+    return 1
+  fi
 
   local joined
   joined="$(IFS=,; echo "$*")"
-  kubectl delete clusterrole,clusterrolebinding,pv,storageclass,crd,ingressclass \
-    -l "${CLUSTERDRILL_LABEL_KEY} in (${joined})" \
-    --ignore-not-found --wait=false >/dev/null 2>&1
+  local namespaces
+  namespaces="$(kubectl get namespace -l "${CLUSTERDRILL_LABEL_KEY} in (${joined})" -o name 2>/dev/null)"
+  [[ -z "$namespaces" ]] && return 0
 
-  echo "batch_cleanup: $# question(s) cleaned"
+  local failed=0
+  local ns_line ns
+  while IFS= read -r ns_line; do
+    [[ -z "$ns_line" ]] && continue
+    ns="${ns_line#namespace/}"
+    if ! kubectl delete rolebinding clusterdrill-system-access-binding \
+      -n "$ns" --ignore-not-found >/dev/null 2>&1; then
+      echo "freeze_exam_namespaces: failed to revoke access in $ns" >&2
+      failed=1
+    fi
+  done <<< "$namespaces"
+
+  [[ "$failed" -eq 1 ]] && return 1
+  echo "freeze_exam_namespaces: $# question(s) frozen"
 }
 
 # grant_user_namespace_access <namespace> <user_id>

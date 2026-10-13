@@ -29,10 +29,10 @@ values-driven:
   what this chart exists to prevent.
 - **Pod security context.** Fixed non-root UID/GID 10001, a read-only
   root filesystem, and `RuntimeDefault` seccomp - not configurable.
-- **Networking shape.** Exactly one `NodePort` Service on port 8000 for
-  the web app. No Ingress, no `LoadBalancer`, no second Service for the
-  embedded terminal (ttyd) - it is only ever reachable proxied through
-  the web app's own authenticated routes.
+- **Networking shape.** Exactly one Service on port 8000 for the web app
+  (type is configurable - see below). No Ingress, no `LoadBalancer`, no
+  second Service for the embedded terminal (ttyd) - it is only ever
+  reachable proxied through the web app's own authenticated routes.
 - **Password handling.** The chart never generates, accepts, or renders
   a password value - not as a values.yaml default, not via `--set`, not
   anywhere. `auth.existingSecretName` only ever *references* a Secret
@@ -55,6 +55,12 @@ values-driven:
   by `values.schema.json`'s pattern validation.
 - `auth.existingSecretName` - the name of the pre-existing password
   Secret described above.
+- `service.type` - `ClusterIP` by default: reach it with `kubectl
+  port-forward` or your own SSH tunnel, matching the raw manifest path and
+  the CLI's own default posture. Set to `NodePort` only on a network you
+  already trust - this chart does not configure TLS termination or Secure
+  cookies for you either way; see the practice-bank repository's own
+  README "Security limits" section first.
 
 ## Install
 

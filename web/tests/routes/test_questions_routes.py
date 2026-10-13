@@ -13,6 +13,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import profile_store
+import pytest
 import routers.questions_router as questions_router
 import services.question_view as question_view
 from grading_client import CheckResult, Criterion, ResetResult
@@ -286,6 +287,23 @@ async def test_exam_session_badge_shows_all_topics_when_not_narrowed(client, que
 
     res = await client.get(f"/questions/{all_qids[0]}")
     assert "all topics" in res.text
+    assert 'id="next-question"' in res.text
+    assert ">Next" in res.text
+
+
+async def test_practice_advance_is_skip_until_the_question_passes(client, question_bank_factory, wire_fake_bank):
+    bank = wire_fake_bank(question_bank_factory({"topic-a": 2}))
+    qids = [q.id for q in bank.questions]
+    session = ActiveSession(mode="fixed", topic="topic-a", question_ids=qids)
+    session_store.set_active(session)
+
+    before = await client.get(f"/questions/{qids[0]}")
+    assert 'id="next-question" class="btn btn-secondary"' in before.text
+
+    session.passed_qids.add(qids[0])
+    after = await client.get(f"/questions/{qids[0]}")
+    assert 'id="next-question" class="btn btn-primary"' in after.text
+    assert ">Next" in after.text
 
 
 async def test_reset_without_setup_sh_is_500(client, fake_bank):
@@ -312,7 +330,10 @@ async def test_exam_session_question_page_has_no_check_button_or_checklist(clien
 
     assert 'id="check-btn"' not in res.text
     assert 'id="criteria-list"' not in res.text
-    assert "graded at once when you submit" in res.text
+    assert "Grading checklist" not in res.text
+    assert 'class="panel checklist-panel"' not in res.text
+    assert 'data-resize-index="1"' not in res.text
+    assert "graded at once when you submit" not in res.text
 
 
 async def test_exam_session_question_page_hides_the_solution_tab(client, fake_bank):
@@ -324,11 +345,7 @@ async def test_exam_session_question_page_hides_the_solution_tab(client, fake_ba
 
 
 async def test_exam_session_question_page_hides_the_hint_and_diagram_tabs(client, fake_bank):
-    # A real exam gives no in-question help either - same posture as the
-    # solution tab above, just less sensitive content, so it's enforced at
-    # the nav level rather than also redacting hint_html/diagram content
-    # server-side (unlike the solution tab, which never even computes
-    # answer_html in exam mode - see question_view.py).
+    # Both navigation and response content are restricted during an exam.
     session_store.set_active(ActiveSession(mode="exam", topic=None, question_ids=["qT01-question"]))
 
     res = await client.get("/questions/qT01-question")
@@ -399,3 +416,82 @@ async def test_non_exam_session_question_page_still_has_check_button_and_solutio
     assert 'data-tab="solution"' in res.text
     assert 'data-tab="hint"' in res.text
     assert 'data-tab="diagram"' in res.text
+
+
+@pytest.mark.parametrize("qid", ["qT01-question", "qT02-question"])
+async def test_exam_rejects_interim_check_for_selected_and_other_questions(client, fake_bank, monkeypatch, qid):
+    session = ActiveSession(mode="exam", topic=None, question_ids=["qT01-question"])
+    session_store.set_active(session)
+    grade = MagicMock()
+    record = MagicMock()
+    monkeypatch.setattr(questions_router, "run_check", grade)
+    monkeypatch.setattr(profile_store, "record_check", record)
+
+    response = await client.post(f"/questions/{qid}/check", json={})
+
+    assert response.status_code == 403
+    grade.assert_not_called()
+    record.assert_not_called()
+    assert session.passed_qids == set()
+    assert session.failed_qids == set()
+
+
+@pytest.mark.parametrize("tab", ["task", "hint", "solution", "diagram"])
+@pytest.mark.parametrize("qid", ["qT01-question", "qT02-question"])
+async def test_exam_response_omits_reference_content_on_every_question(client, fake_bank, qid, tab):
+    question = fake_bank.get(qid)
+    question.question_md.write_text("# Task\n\nDo the task.\n\n## Hint\n\nSECRET_HINT_MARKER\n")
+    question.answer_md.write_text("SECRET_ANSWER_MARKER")
+    question.diagram_mmd.write_text("graph TD; SECRET_DIAGRAM_MARKER-->B;")
+    question.diagram_json.write_text('{"architecture":{"title":"SECRET_JSON_MARKER"}}')
+    session_store.set_active(ActiveSession(mode="exam", topic=None, question_ids=["qT01-question"]))
+
+    response = await client.get(f"/questions/{qid}?tab={tab}")
+
+    assert response.status_code == 200
+    assert 'data-tab="task"' in response.text
+    for marker in ["SECRET_HINT_MARKER", "SECRET_ANSWER_MARKER", "SECRET_DIAGRAM_MARKER", "SECRET_JSON_MARKER"]:
+        assert marker not in response.text
+    for panel in ["hint", "solution", "diagram"]:
+        assert f'data-tab-panel="{panel}"' not in response.text
+    assert 'id="diagram-arch-data"' not in response.text
+    assert 'id="diagram-seq-data"' not in response.text
+
+
+async def test_exam_setup_retry_survives_navigation(client, fake_bank, monkeypatch):
+    question = fake_bank.get("qT01-question")
+    question.setup_sh.write_text("#!/usr/bin/env bash\necho ok\n")
+    setup = MagicMock(return_value=ResetResult(ok=False, output="", error="cluster unreachable"))
+    reset = MagicMock(return_value=ResetResult(ok=True, output="ready", error=None))
+    monkeypatch.setattr(question_view, "run_setup", setup)
+    monkeypatch.setattr(questions_router, "run_reset", reset)
+    monkeypatch.setattr(question_view, "_auto_provisioned_qids", set())
+    session_store.set_active(ActiveSession(mode="exam", topic=None, question_ids=[question.id]))
+
+    first = await client.get(f"/questions/{question.id}")
+    assert 'id="provision-status"' in first.text
+    assert "Retry setup" in first.text
+    assert "Check may fail" not in first.text
+    assert "Grading checklist" not in first.text
+    retry = await client.post(f"/questions/{question.id}/reset")
+    assert retry.status_code == 200
+    second = await client.get(f"/questions/{question.id}")
+    assert 'id="reset-btn"' not in second.text
+    setup.assert_called_once()
+    reset.assert_called_once()
+
+
+async def test_another_users_exam_does_not_restrict_practice(client, fake_bank, monkeypatch):
+    session_store.set_active(
+        ActiveSession(mode="exam", topic=None, question_ids=["qT01-question"]), "other-user",
+    )
+    _mock_check(monkeypatch, passed=1, total=1)
+    try:
+        page = await client.get("/questions/qT01-question?tab=hint")
+        assert 'data-tab-panel="hint"' in page.text
+        assert 'id="check-btn"' in page.text
+        response = await client.post("/questions/qT01-question/check", json={})
+        assert response.status_code == 200
+        assert response.json()["passed"] == 1
+    finally:
+        session_store.clear("other-user")

@@ -69,7 +69,7 @@ async def test_perform_idle_kill_offloads_to_a_thread_not_the_event_loop(monkeyp
     assert calls["thread_calls"] == 1
 
 
-async def test_perform_idle_kill_clears_session_and_marks_killed(monkeypatch):
+async def test_perform_idle_kill_preserves_attempt_and_marks_killed(monkeypatch):
     monkeypatch.setattr(app_module.ttyd_manager, "kill_all_tmux_sessions", MagicMock())
     session_store.set_active(object(), user_id="alice")  # simulates some user's active session
     idle_tracker.touch()
@@ -80,5 +80,5 @@ async def test_perform_idle_kill_clears_session_and_marks_killed(monkeypatch):
     # still global; a per-user terminal/idle clock is a known follow-on
     # refinement, not implemented yet (see sessions.py's
     # SessionStore.clear_all docstring).
-    assert session_store.get("alice") is None
+    assert session_store.get("alice") is not None
     assert idle_tracker.killed_at is not None

@@ -1,101 +1,73 @@
 {% extends "_shell.html" %}
 {% import "_macros.html" as m %}
-{% block title %}Topics - ClusterDrill{% endblock %}
+{% block title %}Practice - ClusterDrill{% endblock %}
 {% block content %}
-  {{ m.kget_hero('kubectl get topiclabs -o wide') }}
-  <h1 class="page-title">Topics</h1>
-  <p class="hub-intro">
-    A <strong>session</strong> is {{ session_size }} questions drawn from a topic's
-    <strong>pool</strong>, timed the moment it starts - <strong>{{ topic_timer_minutes }} minutes</strong>
-    for a single topic, <strong>{{ mixed_timer_minutes }} minutes</strong> for a full Mixed run.
-    Each row's <strong>Fixed</strong> button starts the deterministic default straight away;
-    open a topic to also choose <strong>Randomized</strong>, <strong>Mixed</strong>, a difficulty, or a timer length.
-  </p>
+  <div class="practice-layout">
+    <header class="practice-header">
+      <div>
+        <h1 class="page-title">Practice</h1>
+        <p class="hub-intro">{{ total_pool }} questions across {{ topics | length }} topics. A session is timed. Browsing is not.</p>
+      </div>
+      <a class="btn btn-secondary" href="/progress">Progress</a>
+    </header>
 
-  {% if active_session %}
-    {% call m.alert('info') %}
-      <span class="live-dot" aria-hidden="true"></span>
-      Session running: <strong>{{ active_session.mode }}</strong>
-      {% if active_session.topic %}on <strong>{{ active_session.topic }}</strong>{% else %}across all topics{% endif %}
-      ({{ active_session.question_ids|length }} questions).
-      <a href="/questions/{{ active_session.question_ids[0] }}">Resume &rarr;</a>
-    {% endcall %}
-  {% endif %}
-
-  <div class="kget-table" role="table" aria-label="Topic labs">
-    {{ m.kget_table_head([
-      ('name', 'Name'), ('pool', 'Pool'), ('progress', 'Progress'),
-      ('status', 'Status'), ('actions', 'Start'),
-    ]) }}
-    {% for t in topics %}
-      {% call m.kget_row() %}
-        {% call m.kget_col('name') %}
-          <a href="/topics/{{ t.name }}">{{ t.name }}</a>
-          {% if t.name == "community" %}
-            {{ m.pill('GPL-3.0', 'community', 'Ported from GPL-3.0 sources - see questions/community/README.md') }}
-          {% endif %}
-        {% endcall %}
-        {% call m.kget_col('pool') %}{{ t.pool_size }}{% endcall %}
-        {% call m.kget_col('progress') %}
-          <span class="kget-bar" style="--pct: {{ t.progress_pct }}"><span class="kget-bar-fill"></span></span>
-          <span class="kget-pct">{{ t.progress_pct }}%</span>
-        {% endcall %}
-        {% call m.kget_col('status') %}
-          {% if t.progress_pct == 100 %}
-            <span class="status-dot status-dot-pass" aria-hidden="true"></span> Completed
-          {% elif t.progress_pct > 0 %}
-            <span class="status-dot status-dot-warn" aria-hidden="true"></span> In progress
-          {% else %}
-            <span class="status-dot status-dot-muted" aria-hidden="true"></span> Not started
-          {% endif %}
-        {% endcall %}
-        {% call m.kget_col('actions') %}
-          <form class="kget-actions-form" method="post" action="/sessions/start">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="topic" value="{{ t.name }}">
-            <button type="submit" name="mode" value="fixed" class="btn btn-mode">Fixed &rarr;</button>
-          </form>
-          <a class="kget-view-link" href="/topics/{{ t.name }}">configure</a>
-        {% endcall %}
+    {% if active_session %}
+      {% call m.alert('info') %}
+        <span class="live-dot" aria-hidden="true"></span>
+        Session running: <strong>{{ active_session.mode }}</strong>
+        {% if active_session.topic %}on <strong>{{ active_session.topic }}</strong>{% else %}across all topics{% endif %}
+        ({{ active_session.question_ids|length }} questions).
+        <a href="/questions/{{ active_session.resume_qid }}">Resume session &rarr;</a>
       {% endcall %}
-    {% endfor %}
-  </div>
+    {% endif %}
 
-  <div class="mixed-cta">
-    <h3>Cross-topic mixed session</h3>
-    <p class="hub-intro">
-      Draws {{ session_size }} questions at random from every topic's pool combined -
-      a mock-exam-style mix, not scoped to one topic. Runs on the
-      {{ mixed_timer_minutes }}-minute exam-simulation clock.
-    </p>
-    <form method="post" action="/sessions/start">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <button type="submit" name="mode" value="mixed" class="btn btn-primary">
-        Start a Mixed session &middot; {{ session_size }} questions &middot; {{ mixed_timer_minutes }} min
-      </button>
-    </form>
-  </div>
+    <section class="practice-paths" aria-label="More ways to practice">
+      <div class="daily-feature">
+        <div class="path-copy">
+          <h2>Daily challenge {% if daily_cleared_today %}{{ m.pill('cleared today', 'pass') }}{% endif %}</h2>
+          <p>{{ daily_session_size }} questions &middot; {{ daily_timer_minutes }} min</p>
+        </div>
+        <form method="post" action="/sessions/start-daily">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit" class="btn btn-primary" {% if not topics %}disabled{% endif %}>Start daily</button>
+        </form>
+      </div>
+      <div class="mixed-feature">
+        <div class="path-copy">
+          <h2>Mixed</h2>
+          <p>{{ session_size }} questions &middot; {{ mixed_timer_minutes }} min</p>
+        </div>
+        <form method="post" action="/sessions/start">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit" name="mode" value="mixed" class="btn btn-secondary" {% if total_pool <= session_size %}disabled{% endif %}>Start mixed</button>
+        </form>
+      </div>
+    </section>
 
-  <!-- Daily/session mixed challenge - a small, separate reward
-       track from the topic labs and the Mixed/Mock Exam run above. Always
-       available (no unlock gate, unlike the boss fights),
-       freshly re-drawn every time it's started. -->
-  <div class="mixed-cta daily-challenge-cta">
-    <h3>
-      Daily challenge
-      {% if daily_cleared_today %}
-        {{ m.pill('cleared today', 'pass') }}
-      {% endif %}
-    </h3>
-    <p class="hub-intro">
-      A quick {{ daily_session_size }}-question cross-topic draw, freshly re-rolled every time you start it - its
-      own small reward track, separate from the topic labs. Runs on a {{ daily_timer_minutes }}-minute clock.
-    </p>
-    <form method="post" action="/sessions/start-daily">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <button type="submit" class="btn btn-mode">
-        Start today's challenge &middot; {{ daily_session_size }} questions &middot; {{ daily_timer_minutes }} min
-      </button>
-    </form>
+    <section class="topic-workbench" aria-labelledby="topic-library-title">
+      <h2 id="topic-library-title">Set up practice</h2>
+      <div class="practice-scope" role="group" aria-label="Practice topics" hidden>
+        <button type="button" class="btn btn-secondary" data-practice-scope="single" aria-pressed="true" aria-controls="single-topic-setup">One topic</button>
+        <button type="button" class="btn btn-secondary" data-practice-scope="selected" aria-pressed="false" aria-controls="selected-topics-setup">Choose topics</button>
+      </div>
+      <div id="single-topic-setup">
+        <label class="practice-setup-label" for="topic-select">Topic</label>
+        <select id="topic-select" aria-controls="preview-content" {% if not topics %}disabled{% endif %}>
+          {% for t in topics %}
+            <option value="/topics/{{ t.name }}" data-summary="{{ t.pool_size }} questions · {{ t.progress_pct }}% completed">{{ t.name | replace('-', ' ') | title }}{% if t.name == 'community' %} (GPL-3.0){% endif %}</option>
+          {% else %}
+            <option>No topics available yet.</option>
+          {% endfor %}
+        </select>
+        <p id="topic-summary" class="hub-intro"></p>
+        <noscript><ul>{% for t in topics %}<li><a href="/topics/{{ t.name }}">{{ t.name | replace('-', ' ') | title }}</a></li>{% endfor %}</ul></noscript>
+        <div class="session-preview" id="session-preview" aria-label="Session setup" hidden>
+          <p class="preview-status" id="preview-status" role="status" aria-live="polite"></p>
+          <div id="preview-content"></div>
+        </div>
+      </div>
+      {% include "_mixed_practice.html" %}
+    </section>
   </div>
 {% endblock %}
+{% block scripts %}<script src="/static/practice.js?v=20261012b" defer></script>{% endblock %}
