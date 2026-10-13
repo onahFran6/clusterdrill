@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.10](https://github.com/onahFran6/clusterdrill/compare/v0.1.9...v0.1.10) (2026-10-13)
+
+
+### Features
+
+* **questions:** add jobs-cronjobs-v2 question set (q118-01..20) ([6de94b2](https://github.com/onahFran6/clusterdrill/commit/6de94b2b03f41b6b2811882c5f2d40cf9bfeb11e))
+* **questions:** add jobs-cronjobs-v2 question set (q118-01..20) ([4792e60](https://github.com/onahFran6/clusterdrill/commit/4792e600e73a8f0ab54230f1f302a808fdb60e7b))
+
+
+### Bug Fixes
+
+* **docker:** set pipefail and avoid cd in a RUN subshell ([ce710cc](https://github.com/onahFran6/clusterdrill/commit/ce710cce89aa23ad15c5772df9fc8a3a736c03c0))
+* resolve security audit findings ([29f9ff0](https://github.com/onahFran6/clusterdrill/commit/29f9ff08ab5fc636c3e2a00ad9fa42d1bc4d94f4))
+* resolve security audit findings ([af168fd](https://github.com/onahFran6/clusterdrill/commit/af168fd7af276c19aa206bb0d07e780aae011b74))
+* security audit remediation, jobs-cronjobs-v2 questions, and clipboard fallback fix ([4a40d03](https://github.com/onahFran6/clusterdrill/commit/4a40d037a6499ee160a1b2864e61c16d43090efa))
+* **terminal:** fall back to execCommand when clipboard API is unavailable ([0530746](https://github.com/onahFran6/clusterdrill/commit/053074638456d3dd0332e4c96bdf199e1828833e))
+
 ## [0.1.9](https://github.com/onahFran6/clusterdrill/compare/v0.1.8...v0.1.9) (2026-10-06)
 
 
