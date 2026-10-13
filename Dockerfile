@@ -4,6 +4,14 @@
 # tag being silently repointed at a different image later (I02/R15).
 FROM python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
 
+# Debian's default /bin/sh (dash) doesn't support -o pipefail, so a piped
+# RUN command's exit code is only ever the last command's - a failed `curl`
+# upstream of `sha256sum -c` below would silently report success. bash
+# ships in this base image already; pipefail here makes every checksum
+# verification below actually fail closed on a broken pipe, not just a
+# failed check (hadolint DL4006).
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 ARG TARGETARCH
 ARG KUBECTL_VERSION=v1.33.13
 ARG TTYD_VERSION=1.7.7
@@ -45,7 +53,7 @@ RUN apt-get update \
       "https://get.helm.sh/${helm_tarball}" \
     && curl --fail --location --output "/tmp/${helm_tarball}.sha256sum" \
       "https://get.helm.sh/${helm_tarball}.sha256sum" \
-    && (cd /tmp && sha256sum -c "${helm_tarball}.sha256sum") \
+    && awk '{print $1 "  /tmp/'"${helm_tarball}"'"}' "/tmp/${helm_tarball}.sha256sum" | sha256sum -c - \
     && tar -xzf "/tmp/${helm_tarball}" -C /tmp \
     && mv "/tmp/linux-${TARGETARCH}/helm" /usr/local/bin/helm \
     && chmod 0755 /usr/local/bin/helm \
