@@ -225,6 +225,16 @@ all:
 
 ```sh
 kubectl create namespace clusterdrill-system
+
+helm install clusterdrill oci://registry-1.docker.io/w00dson/clusterdrill-chart \
+  --version <version> \
+  --namespace clusterdrill-system
+```
+
+No password gate by default, same posture as `local install` above. To
+opt into one, create a Secret first and point the chart at it:
+
+```sh
 kubectl -n clusterdrill-system create secret generic clusterdrill-web-auth \
   --from-literal=password="$(openssl rand -base64 24 | tr -d '=+/')"
 

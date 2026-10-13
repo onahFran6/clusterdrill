@@ -35,11 +35,15 @@ values-driven:
   reachable proxied through the web app's own authenticated routes.
 - **Password handling.** The chart never generates, accepts, or renders
   a password value - not as a values.yaml default, not via `--set`, not
-  anywhere. `auth.existingSecretName` only ever *references* a Secret
-  (with a `password` key) that must already exist in the release
-  namespace before you run `helm install`/`helm upgrade`. Create it
-  yourself, or let `clusterdrill local install --installer=helm` create
-  it for you (see the practice-bank repository's own README).
+  anywhere. `auth.existingSecretName` is empty by default, which means
+  no password gate at all (`CLUSTERDRILL_PASSWORD` isn't wired into the
+  Deployment), matching the raw-manifest/CLI install path's own default
+  posture. Set it to *reference* a Secret (with a `password` key) that
+  must already exist in the release namespace before you run `helm
+  install`/`helm upgrade` if you want to opt into one. Create that
+  Secret yourself, or let `clusterdrill local install --installer=helm
+  --password <value>` create it for you (see the practice-bank
+  repository's own README).
 - **The namespace.** Unlike the raw manifest, this chart does not define
   its own `Namespace` resource - create it yourself (or pass
   `--create-namespace` to `helm install`) before installing. This isn't
@@ -53,8 +57,8 @@ values-driven:
 - `image.repository` / `image.digest` - the published image, by
   immutable digest only. A mutable tag (including `latest`) is rejected
   by `values.schema.json`'s pattern validation.
-- `auth.existingSecretName` - the name of the pre-existing password
-  Secret described above.
+- `auth.existingSecretName` - the name of a pre-existing password
+  Secret, described above. Empty (the default) means no password gate.
 - `service.type` - `ClusterIP` by default: reach it with `kubectl
   port-forward` or your own SSH tunnel, matching the raw manifest path and
   the CLI's own default posture. Set to `NodePort` only on a network you
@@ -70,13 +74,22 @@ this chart is published as an OCI artifact with that release's image
 already baked in as the default - no `--set image.*` flags needed:
 
 ```sh
-# 1. Create the namespace and password Secret first (or let the CLI do
-#    both steps for you - see below).
+# 1. Create the namespace (or let the CLI do this for you - see below).
 kubectl create namespace clusterdrill-system
+
+# 2. Install the published chart. No password gate by default.
+helm install clusterdrill oci://registry-1.docker.io/w00dson/clusterdrill-chart \
+  --version <version> \
+  --namespace clusterdrill-system
+```
+
+To opt into a password gate instead, create the Secret first and point
+the chart at it:
+
+```sh
 kubectl -n clusterdrill-system create secret generic clusterdrill-web-auth \
   --from-literal=password="$(openssl rand -base64 24 | tr -d '=+/')"
 
-# 2. Install the published chart.
 helm install clusterdrill oci://registry-1.docker.io/w00dson/clusterdrill-chart \
   --version <version> \
   --namespace clusterdrill-system \
@@ -87,7 +100,8 @@ Or, more simply, from the CLI once it preflights Helm and your dedicated
 profile:
 
 ```sh
-clusterdrill local install --installer=helm
+clusterdrill local install --installer=helm                      # no password gate
+clusterdrill local install --installer=helm --password <value>   # password gate on
 ```
 
 ### Developing this chart itself

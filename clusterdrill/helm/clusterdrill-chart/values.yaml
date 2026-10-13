@@ -20,6 +20,12 @@ image:
 # never generates, accepts, or renders a password value itself - not as
 # a values.yaml default, not via --set, not anywhere - only ever a
 # reference to a Secret that already exists.
+#
+# Empty (the default) means no password gate at all: CLUSTERDRILL_PASSWORD
+# is not wired into the Deployment, matching the raw-manifest/CLI install
+# path's own default posture ("reachable from your own machine with no
+# login screen" - see clusterdrill/cli.py's _resolve_install_password).
+# Set this to opt into a password, same as `local install --password`.
 auth:
   existingSecretName: ""
 
