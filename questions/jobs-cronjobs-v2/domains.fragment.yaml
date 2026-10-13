@@ -8,6 +8,11 @@ questions:
   points: 5
   requirements:
     min_nodes: 1
+  # The Job's own ttlSecondsAfterFinished: 60 means Kubernetes may already
+  # have garbage-collected it by the time exam finalization (seconds to
+  # hours after setup, unlike practice mode's immediate Check) grades it -
+  # scoring a correct solve as a failure purely from timing (R13).
+  exam_eligible: false
 - id: q118-02-completions-and-parallelism
   domain: Application Design and Build
   difficulty: medium

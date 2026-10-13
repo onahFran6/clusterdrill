@@ -35,7 +35,13 @@ rules:
   resources: ["cronjobs", "jobs"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
 - apiGroups: ["networking.k8s.io"]
-  resources: ["ingresses", "networkpolicies"]
+  # ingressclasses (R07): cluster-scoped, same as the appliance's other
+  # cluster-scoped resources here (clusterrole/clusterrolebinding/pv/
+  # storageclass/crd below) - lib/grading.sh's full_reset/batch_cleanup and
+  # q116-05's own setup.sh both create/delete one, so the shipped RBAC must
+  # actually cover it (previously missing entirely: full_reset would abort
+  # partway through on a Forbidden error for this one resource type).
+  resources: ["ingresses", "networkpolicies", "ingressclasses"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
 - apiGroups: ["policy"]
   resources: ["poddisruptionbudgets"]

@@ -12,6 +12,7 @@
     {% call m.alert('success') %}{{ success }}{% endcall %}
   {% endif %}
 
+  <div class="admin-table-wrap" role="region" aria-label="User accounts" tabindex="0">
   <table class="admin-users-table">
     <thead>
       <tr>
@@ -48,6 +49,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
 
   <h3>Add a user</h3>
   <form method="post" action="/admin/users" class="admin-add-form">

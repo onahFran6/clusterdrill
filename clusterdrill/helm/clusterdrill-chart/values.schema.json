@@ -33,6 +33,17 @@
           "description": "Name of a Secret, already present in the release namespace, with a 'password' key. Create it yourself or have the CLI create it before running helm - this chart never generates or accepts a password value."
         }
       }
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["ClusterIP", "NodePort"],
+          "description": "ClusterIP by default - reach it via kubectl port-forward or an SSH tunnel. NodePort only for a network you already trust: this chart does not configure TLS/Secure cookies for you (see README's Security limits)."
+        }
+      }
     }
   }
 }

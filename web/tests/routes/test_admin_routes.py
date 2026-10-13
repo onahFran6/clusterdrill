@@ -1,12 +1,21 @@
 """Route-level tests for routers/admin_router.py.
 
-Most CRUD tests run with the password gate off (no CLUSTERDRILL_PASSWORD),
-same as the rest of tests/routes/ - auth.require_admin and
-auth.csrf_protect_form both no-op in that mode (see their own docstrings),
-so these tests exercise admin_router's own logic (username/password
-validation, self-delete/last-admin guardrails) without extra plumbing.
-A separate section covers the require_admin authorization boundary itself
-with the gate on.
+Proposal A (C01/C02): users.single_user_mode() is now always True, so
+GET /admin always 404s and POST /admin/users always 403s, unconditionally -
+the multi-account admin UI is a removed capability, not a disabled
+default. These tests cover the two POST routes that remain genuinely
+reachable (reset-password, delete), the guardrails on delete (self-delete,
+last-admin), and that create/the page itself are now permanently dead.
+Any "second account" these tests need (to test delete's cascade teardown,
+or the last-admin guardrail with an actual other admin present) is seeded
+directly into the fake cluster via _seed_user, not through
+users.create_user() - that function enforces the same one-account policy
+now, so it can no longer produce one.
+
+Most tests run with the password gate off (no CLUSTERDRILL_PASSWORD), same
+as the rest of tests/routes/ - auth.require_admin and
+auth.csrf_protect_form both no-op in that mode. A separate section covers
+the require_admin authorization boundary itself with the gate on.
 
 users.py's kubectl calls are faked the same way tests/test_users.py does -
 an in-memory dict standing in for `kubectl get/apply/delete secret`.
@@ -26,7 +35,7 @@ import profile_store
 import pytest
 import routers.admin_router as admin_router
 import users
-from kube_json import decode_payload
+from kube_json import KubectlGetResult, StorageWriteError, decode_payload
 
 
 class FakeCluster:
@@ -45,9 +54,16 @@ class FakeCluster:
             items = [v for v in items if v.get("metadata", {}).get("labels", {}).get(key) == val]
         return {"items": items}
 
+    def get_json_safe(self, *args: str) -> KubectlGetResult:
+        return KubectlGetResult(data=self.get_json(*args))
+
     def apply_json(self, obj: dict) -> bool:
         self.objects[obj["metadata"]["name"]] = obj
         return True
+
+    def apply_json_or_raise(self, obj: dict, *, what: str) -> None:
+        if not self.apply_json(obj):
+            raise StorageWriteError(f"failed to persist {what}")
 
     def delete(self, *args: str) -> bool:
         if len(args) >= 2 and not str(args[1]).startswith("-"):
@@ -65,6 +81,24 @@ class FakeCluster:
         return True
 
 
+def _seed_user(fake: FakeCluster, user_id: str, username: str, *, is_admin: bool = False) -> None:
+    """Directly injects an account Secret into the fake cluster, bypassing
+    users.create_user() - which, now that single_user_mode() is always
+    True, will only ever let the one bootstrap "admin" account through.
+    Everything these tests need beyond that (a second admin for the
+    last-admin guardrail, an "alice" to delete and verify cascade teardown
+    against) models an account that's already there, not one created
+    through the (removed) multi-account creation capability."""
+    from kube_json import secret_payload
+
+    spec = {
+        "userId": user_id, "username": username,
+        "passwordHash": users._new_password_record("irrelevant-authenticate-is-mocked"),
+        "isAdmin": is_admin, "createdAt": "2026-01-01T00:00:00Z",
+    }
+    fake.apply_json(secret_payload(users._user_object_name(user_id), spec, labels=users._USER_LABELS))
+
+
 @pytest.fixture
 def cluster(monkeypatch):
     """Backs users.py's account storage with an in-memory fake, and makes
@@ -75,9 +109,10 @@ def cluster(monkeypatch):
     fake = FakeCluster()
     monkeypatch.setattr(users, "kubectl_get_json", fake.get_json)
     monkeypatch.setattr(users, "kubectl_apply_json", fake.apply_json)
+    monkeypatch.setattr(users, "kubectl_apply_json_or_raise", fake.apply_json_or_raise)
     monkeypatch.setattr(users, "kubectl_delete", fake.delete)
-    monkeypatch.setattr(profile_store, "kubectl_get_json", fake.get_json)
-    monkeypatch.setattr(profile_store, "kubectl_apply_json", fake.apply_json)
+    monkeypatch.setattr(profile_store, "kubectl_get_json_safe", fake.get_json_safe)
+    monkeypatch.setattr(profile_store, "kubectl_apply_json_or_raise", fake.apply_json_or_raise)
     monkeypatch.setattr(profile_store, "kubectl_delete", fake.delete)
     monkeypatch.setattr(admin_router, "run_batch_cleanup", lambda *a, **k: None)
 
@@ -89,7 +124,7 @@ def cluster(monkeypatch):
     # Matches conftest.py's fake_user_store TEST_USER (user_id "tester",
     # is_admin=True) so logging in as "tester" resolves to a real admin
     # record here, not a 404 from require_admin's live get_user() lookup.
-    users.create_user("tester", "irrelevant-authenticate-is-mocked", is_admin=True)
+    _seed_user(fake, "tester", "tester", is_admin=True)
     return fake
 
 
@@ -97,99 +132,43 @@ def _csrf_form(csrf_token="anything-when-gate-off", **fields):
     return {"csrf_token": csrf_token, **fields}
 
 
-# --- gate off: reachable without login, matching local-dev convention ------
+# --- GET /admin and POST /admin/users: permanently dead now (Proposal A) ---
+# users.single_user_mode() is always True, so these never do anything else,
+# regardless of login/gate state or input - both routes check it before
+# anything else.
 
-async def test_admin_page_reachable_when_gate_off(client, cluster):
-    res = await client.get("/admin")
-    assert res.status_code == 200
-    assert "tester" in res.text
-
-
-async def test_delete_user_form_requires_themed_confirmation(client, cluster):
-    # issue #117 - Delete must not be a bare single-click submit. The
-    # actual confirm-or-cancel behavior is a browser-side dialog
-    # interaction static/app.js drives (not exercisable through this
-    # server-only test client), so this checks the contract the JS relies
-    # on: a data-confirm attribute naming the account, and the one shared
-    # #confirm-dialog it opens - not literally the old-style unconfirmed
-    # delete form, and not a second, different dialog mechanism.
-    users.create_user("alice", "hunter22222")
-    res = await client.get("/admin")
-    assert 'data-confirm="Delete alice? This can\'t be undone."' in res.text
-    assert res.text.count('id="confirm-dialog"') == 1
-
-
-async def test_admin_page_is_hidden_in_single_user_mode(client, cluster, monkeypatch):
-    monkeypatch.setenv("CLUSTERDRILL_SINGLE_USER", "true")
+async def test_admin_page_always_404s(client, cluster):
     res = await client.get("/admin")
     assert res.status_code == 404
 
 
-async def test_create_user_appears_in_list(client, cluster):
+async def test_create_user_always_403s_regardless_of_input(client, cluster):
     res = await client.post(
         "/admin/users", data=_csrf_form(username="alice", password="hunter22222"), follow_redirects=False,
     )
-    assert res.status_code == 303
-    assert users.get_user_by_username("alice") is not None
+    assert res.status_code == 403
+    assert users.get_user_by_username("alice") is None
 
 
-# --- Success-message round trip (issue #116 - previously silent success) ---
-
-async def test_create_user_redirects_with_success_code(client, cluster):
-    res = await client.post(
-        "/admin/users", data=_csrf_form(username="alice", password="hunter22222"), follow_redirects=False,
-    )
-    assert res.headers["location"] == "/admin?success=added"
-
-
-async def test_admin_page_renders_success_message_for_known_code(client, cluster):
-    res = await client.get("/admin?success=added")
-    assert "User added." in res.text
-
-
-async def test_admin_page_ignores_unknown_success_code(client, cluster):
-    # Never trust an arbitrary query-string value as display text - only
-    # the fixed codes in admin_router._SUCCESS_MESSAGES render anything.
-    res = await client.get("/admin?success=<script>alert(1)</script>")
-    assert "<script>" not in res.text
-
-
-async def test_create_user_is_admin_checkbox(client, cluster):
-    await client.post(
-        "/admin/users",
-        data=_csrf_form(username="alice", password="hunter22222", is_admin="true"),
-        follow_redirects=False,
-    )
-    alice = users.get_user_by_username("alice")
-    assert alice.is_admin is True
-
-
-async def test_create_user_duplicate_username_409(client, cluster):
-    users.create_user("alice", "hunter22222")
-    res = await client.post("/admin/users", data=_csrf_form(username="alice", password="hunter22222"))
-    assert res.status_code == 409
-
-
-async def test_create_user_short_password_400(client, cluster):
-    res = await client.post("/admin/users", data=_csrf_form(username="alice", password="short"))
-    assert res.status_code == 400
-
+# --- reset-password / delete: still genuinely reachable (no top-of-route
+# single_user_mode() gate), just no longer discoverable via any UI link
+# since the page itself 404s. Still real, live-reachable code. ---------------
 
 async def test_reset_password_changes_login(client, cluster):
-    # Checks the stored hash directly rather than via users.authenticate() -
-    # conftest.py's autouse fake_user_store fixture stubs authenticate()
-    # wholesale for its own fixed "tester" account, so it can't tell alice's
-    # old password apart from her new one here.
-    alice_id = users.create_user("alice", "old-password-1").user_id
+    # Resets the one existing ("tester") account's own password - the only
+    # account reset-password can ever target now. Checks the stored hash
+    # directly rather than via users.authenticate() - conftest.py's
+    # autouse fake_user_store fixture stubs authenticate() wholesale for
+    # its own fixed "tester" account, so it can't tell the old password
+    # apart from the new one here.
     res = await client.post(
-        f"/admin/users/{alice_id}/reset-password",
+        "/admin/users/tester/reset-password",
         data=_csrf_form(password="new-password-2"),
         follow_redirects=False,
     )
     assert res.status_code == 303
-    stored = decode_payload(cluster.objects[users._user_object_name(alice_id)])
+    stored = decode_payload(cluster.objects[users._user_object_name("tester")])
     stored_hash = stored["passwordHash"]
-    assert users._verify_password("old-password-1", stored_hash) is False
     assert users._verify_password("new-password-2", stored_hash) is True
 
 
@@ -199,26 +178,10 @@ async def test_reset_password_missing_user_404(client, cluster):
 
 
 async def test_reset_password_redirects_with_success_code(client, cluster):
-    alice_id = users.create_user("alice", "old-password-1").user_id
     res = await client.post(
-        f"/admin/users/{alice_id}/reset-password", data=_csrf_form(password="new-password-2"), follow_redirects=False,
+        "/admin/users/tester/reset-password", data=_csrf_form(password="new-password-2"), follow_redirects=False,
     )
     assert res.headers["location"] == "/admin?success=reset"
-
-
-async def test_delete_user_removes_account(client, cluster):
-    users.create_user("alice", "hunter22222")
-    alice_id = users.get_user_by_username("alice").user_id
-    res = await client.post(f"/admin/users/{alice_id}/delete", data=_csrf_form(), follow_redirects=False)
-    assert res.status_code == 303
-    assert users.get_user_by_username("alice") is None
-
-
-async def test_delete_user_redirects_with_success_code(client, cluster):
-    users.create_user("bob", "hunter22222")
-    bob_id = users.get_user_by_username("bob").user_id
-    res = await client.post(f"/admin/users/{bob_id}/delete", data=_csrf_form(), follow_redirects=False)
-    assert res.headers["location"] == "/admin?success=deleted"
 
 
 async def test_delete_user_cannot_delete_self(client, cluster, monkeypatch):
@@ -242,9 +205,14 @@ async def test_delete_user_cannot_delete_last_admin(client, cluster, monkeypatch
 
 
 async def test_delete_user_allowed_when_another_admin_remains(client, cluster, monkeypatch):
+    # The one way a second account can exist at all now: seeded directly,
+    # not created through the (removed) admin UI - modeling an account
+    # left over from before this policy, or an operator editing the
+    # Secret by hand. The last-admin guardrail logic itself doesn't care
+    # how "otheradmin" came to exist.
     import auth
 
-    users.create_user("otheradmin", "hunter22222", is_admin=True)
+    _seed_user(cluster, "otheradmin", "otheradmin", is_admin=True)
     monkeypatch.setattr(auth, "current_user_id", lambda session: "otheradmin")
     res = await client.post("/admin/users/tester/delete", data=_csrf_form(), follow_redirects=False)
     assert res.status_code == 303
@@ -257,7 +225,9 @@ async def test_delete_user_allowed_when_another_admin_remains(client, cluster, m
 # the namespace/session/profile cascade that PLAN.md §4.12 requires but
 # admin_router previously never implemented: a deleted account left its
 # entire practice-session footprint (namespaces, active session, profile/
-# achievement state) running with no owner.
+# achievement state) running with no owner. "alice"/"bob" here are seeded
+# directly (not via users.create_user(), a removed capability under
+# Proposal A) - modeling accounts that already existed, independent of how.
 
 async def test_delete_user_schedules_namespace_cleanup_for_every_bank_question(client, cluster, monkeypatch):
     from unittest.mock import MagicMock
@@ -268,49 +238,50 @@ async def test_delete_user_schedules_namespace_cleanup_for_every_bank_question(c
 
     mock_cleanup = MagicMock(return_value=ResetResult(ok=True, output=""))
     monkeypatch.setattr(admin_router, "run_batch_cleanup", mock_cleanup)
-    alice_id = users.create_user("alice", "hunter22222").user_id
+    _seed_user(cluster, "alice", "alice")
 
-    res = await client.post(f"/admin/users/{alice_id}/delete", data=_csrf_form(), follow_redirects=False)
+    res = await client.post("/admin/users/alice/delete", data=_csrf_form(), follow_redirects=False)
 
     assert res.status_code == 303
     mock_cleanup.assert_called_once()
     call_args = mock_cleanup.call_args.args
     assert call_args[0] == [q.id for q in bank.questions]
-    assert call_args[2] == alice_id
+    assert call_args[2] == "alice"
 
 
 async def test_delete_user_clears_active_session(client, cluster, monkeypatch):
     from sessions import ActiveSession
     from sessions import store as session_store
 
-    alice_id = users.create_user("alice", "hunter22222").user_id
-    session_store.set_active(ActiveSession(question_ids=["q1"], mode="fixed", topic="topic-a"), alice_id)
-    assert session_store.get(alice_id) is not None
+    _seed_user(cluster, "alice", "alice")
+    session_store.set_active(ActiveSession(question_ids=["q1"], mode="fixed", topic="topic-a"), "alice")
+    assert session_store.get("alice") is not None
 
-    res = await client.post(f"/admin/users/{alice_id}/delete", data=_csrf_form(), follow_redirects=False)
+    res = await client.post("/admin/users/alice/delete", data=_csrf_form(), follow_redirects=False)
 
     assert res.status_code == 303
-    assert session_store.get(alice_id) is None
+    assert session_store.get("alice") is None
 
 
 async def test_delete_user_clears_auto_provision_cache_for_that_user_only(client, cluster):
     from services import question_view
 
-    alice_id = users.create_user("alice", "hunter22222").user_id
-    bob_id = users.create_user("bob", "hunter22222").user_id
-    question_view._auto_provisioned_qids.add(("q101-01-example", alice_id))
-    question_view._auto_provisioned_qids.add(("q101-01-example", bob_id))
+    _seed_user(cluster, "alice", "alice")
+    _seed_user(cluster, "bob", "bob")
+    question_view._auto_provisioned_qids.add(("q101-01-example", "alice"))
+    question_view._auto_provisioned_qids.add(("q101-01-example", "bob"))
 
-    res = await client.post(f"/admin/users/{alice_id}/delete", data=_csrf_form(), follow_redirects=False)
+    res = await client.post("/admin/users/alice/delete", data=_csrf_form(), follow_redirects=False)
 
     assert res.status_code == 303
-    assert ("q101-01-example", alice_id) not in question_view._auto_provisioned_qids
-    assert ("q101-01-example", bob_id) in question_view._auto_provisioned_qids
+    assert ("q101-01-example", "alice") not in question_view._auto_provisioned_qids
+    assert ("q101-01-example", "bob") in question_view._auto_provisioned_qids
     question_view._auto_provisioned_qids.clear()
 
 
 async def test_delete_user_removes_profile_and_achievement_state(client, cluster):
-    alice_id = users.create_user("alice", "hunter22222").user_id
+    _seed_user(cluster, "alice", "alice")
+    alice_id = "alice"
     # conftest.py's autouse fake_profile fixture stubs profile_store.
     # get_profile() outright (a fixed empty Profile, never touching
     # kubectl) for every route test - seed the profile ConfigMap directly
@@ -341,11 +312,13 @@ async def test_admin_page_403_without_login_when_gate_on(client, cluster, monkey
     assert res.headers["location"].startswith("/login")
 
 
-async def test_admin_page_200_for_logged_in_admin_when_gate_on(client, cluster, monkeypatch):
+async def test_admin_page_404s_for_a_logged_in_admin_too_when_gate_on(client, cluster, monkeypatch):
+    # Confirms the 404 is single_user_mode(), not the auth boundary itself -
+    # a correctly-authenticated admin still gets 404, same as gate-off.
     monkeypatch.setenv("CLUSTERDRILL_PASSWORD", "some-password")
     login_res = await client.post(
         "/login", data={"username": "tester", "password": "test-password-not-real", "next": "/admin"},
     )
     assert login_res.status_code == 303
     res = await client.get("/admin")
-    assert res.status_code == 200
+    assert res.status_code == 404

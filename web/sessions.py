@@ -21,7 +21,9 @@ from __future__ import annotations
 
 import random
 import time
+import uuid
 from dataclasses import dataclass, field
+from threading import RLock
 from typing import Literal, Optional
 
 from questions import Question, QuestionBank
@@ -38,14 +40,7 @@ from questions import Question, QuestionBank
 # Fixed mode - see start_fixed's short-pool behavior below.
 SESSION_SIZE = 15
 
-# Fixed/Randomized/Mixed's session-setup panel offers exactly one override
-# of SESSION_SIZE: "All in pool" (topic_detail.html's session_size
-# <select>) - a candidate who explicitly wants to drill an entire
-# (optionally difficulty-filtered) pool in one sitting, not just its
-# first/a shuffled SESSION_SIZE slice. Not a free-text count (same
-# "bounded preset, not arbitrary input" rule as TIMER_CHOICES_MINUTES/
-# EXAM_QUESTION_COUNT_CHOICES) - there are exactly two choices, default or
-# everything.
+# Numeric counts are capped to the matching pool; legacy "all" requests remain supported.
 QUESTION_COUNT_ALL = "all"
 
 # Revision, 2026-08-23: the timer used to be a
@@ -112,24 +107,15 @@ DAILY_SESSION_SIZE = 5
 DAILY_TIMER_SECONDS = 20 * 60
 DAILY_TIMER_MINUTES = DAILY_TIMER_SECONDS // 60
 
-# True exam-condition mock exam. Unlike every other
-# mode above, question count is a candidate choice, not a fixed constant -
-# a preset list rather than free text for the same reason TIMER_CHOICES_
-# MINUTES is a preset list (_resolve_exam_question_count stays in lock-step
-# with the setup form's <select>, and a forged/out-of-range value can't do
-# anything worse than "fall back to the default"). 15 is the default,
-# matching SESSION_SIZE's own "typically 15-20" reasoning above.
+# Suggested counts, not a restriction on custom input.
 EXAM_QUESTION_COUNT_CHOICES = [5, 10, 15, 20]
 EXAM_DEFAULT_QUESTION_COUNT = 15
 
 SessionMode = Literal["fixed", "randomized", "mixed", "boss", "daily", "exam"]
 Difficulty = Literal["easy", "medium", "hard"]
 
-# Practice-setup timer choices: a candidate
-# picks one of these instead of always getting the mode's silent default.
-# Bounded to a fixed preset list, not a free-text minute count - keeps the
-# deadline math (_timer_fields) and the UI's <select> in lock-step, and
-# rules out a mistyped "6000" minute session with no extra validation code.
+# Optional shortcuts and defaults; any whole minute within the limit is valid.
+MAX_TIMER_MINUTES = 240
 TIMER_CHOICES_MINUTES = [15, 30, 45, 60, 90, 120]
 
 
@@ -146,26 +132,21 @@ def default_timer_seconds(mode: SessionMode) -> int:
 
 
 def _resolve_timer_seconds(mode: SessionMode, timer_minutes: Optional[int]) -> int:
-    """timer_minutes is the candidate's explicit choice from the session-
-    setup panel (TIMER_CHOICES_MINUTES) - None falls back to the mode's own
-    silent default exactly as before this existed. Anything outside the
-    known preset list is ignored rather than trusted verbatim (a stray/
-    forged form value becomes "use the default", not an arbitrary clock),
-    so this is the one place that needs to validate it."""
-    if timer_minutes is not None and timer_minutes in TIMER_CHOICES_MINUTES:
+    """Accept custom whole minutes; omitted or invalid internal values use the default."""
+    if timer_minutes is not None and 1 <= timer_minutes <= MAX_TIMER_MINUTES:
         return timer_minutes * 60
     return default_timer_seconds(mode)
 
 
 def _cap_session_size(ids: list, question_count: Optional[str]) -> list:
-    """Shared by start_fixed/start_randomized/start_mixed: SESSION_SIZE
-    unless the candidate explicitly asked for QUESTION_COUNT_ALL, same
-    "unknown/stray value -> silent default" rule as
-    _resolve_timer_seconds/_resolve_exam_question_count above - anything
-    other than the exact "all" sentinel is treated as "no override"."""
+    """Respect a custom count, bounded by the actual difficulty-filtered pool."""
     if question_count == QUESTION_COUNT_ALL:
         return ids
-    return ids[:SESSION_SIZE]
+    try:
+        count = int(question_count) if question_count else SESSION_SIZE
+    except (TypeError, ValueError):
+        count = SESSION_SIZE
+    return ids[:count if count > 0 else SESSION_SIZE]
 
 
 def _filter_by_difficulty(pool: list[Question], difficulty) -> list[Question]:
@@ -196,22 +177,15 @@ def _exam_pool(bank: QuestionBank, topics: Optional[list[str]]) -> list[Question
 
 
 def _resolve_exam_question_count(question_count: Optional[int]) -> int:
-    """Same "unknown preset -> silent default" rule as
-    _resolve_timer_seconds - a forged/out-of-range count can't do anything
-    worse than falling back to EXAM_DEFAULT_QUESTION_COUNT."""
-    if question_count is not None and question_count in EXAM_QUESTION_COUNT_CHOICES:
+    """Accept positive counts; the caller caps the draw to the matching pool."""
+    if question_count is not None and question_count > 0:
         return question_count
     return EXAM_DEFAULT_QUESTION_COUNT
 
 
 def default_exam_timer_minutes(question_count: int) -> int:
-    """PLAN.md §4.13: "defaults to whichever preset is closest to ~8
-    minutes/question" - matching the real exam's own ~2 hours/15-20-tasks
-    ratio. Picked from TIMER_CHOICES_MINUTES (the same preset list every
-    other mode's timer select uses) rather than computed freely, so the
-    default is always something the setup form's own <select> can actually
-    represent."""
-    target = question_count * 8
+    """Preserve the suggested exam duration nearest seven minutes per question."""
+    target = question_count * 7
     return min(TIMER_CHOICES_MINUTES, key=lambda choice: abs(choice - target))
 
 
@@ -259,6 +233,18 @@ class ActiveSession:
     # Check (see BOSS_DAMAGE_* above), clamped at 0 - never negative, and
     # never regenerates mid-fight.
     hp: int = BOSS_MAX_HP
+    attempt_id: str = field(default_factory=lambda: uuid.uuid4().hex)
+    current_qid: Optional[str] = None
+    # Finalization checkpoints prevent repeated grading after a persistence
+    # failure. Like the attempt itself, these survive inactivity, not restart.
+    finalization_started_at: Optional[float] = None
+    graded_questions: dict[str, dict] = field(default_factory=dict)
+    final_result: Optional[ExamResult] = None
+    result_recorded: bool = False
+
+    @property
+    def resume_qid(self) -> Optional[str]:
+        return self.current_qid or (self.question_ids[0] if self.question_ids else None)
 
     def index_of(self, qid: str) -> Optional[int]:
         try:
@@ -367,15 +353,16 @@ def start_randomized(
 
 def start_mixed(
     bank: QuestionBank, difficulty: Optional[str] = None, timer_minutes: Optional[int] = None,
-    question_count: Optional[str] = None,
+    question_count: Optional[str] = None, topics: Optional[list[str]] = None,
 ) -> ActiveSession:
-    """A shuffled N-question draw across every topic's pool combined (after
+    """A shuffled N-question draw across the selected topics' combined pool (after
     an optional difficulty filter) - a mock-exam-style mix. topic=None on
     the resulting session since it isn't
     scoped to one topic. question_count=QUESTION_COUNT_ALL lifts the
     SESSION_SIZE cap entirely - see _cap_session_size.
+    Omitted topics preserve the all-topic draw.
     """
-    ids = [q.id for q in _filter_by_difficulty(bank.questions, difficulty)]
+    ids = [q.id for q in _filter_by_difficulty(_exam_pool(bank, topics), difficulty)]
     random.shuffle(ids)
     chosen = _cap_session_size(ids, question_count)
     return ActiveSession(
@@ -396,8 +383,7 @@ def start_exam(
     """The true exam-condition mock exam - a
     shuffled draw across the candidate's chosen topics (default: every
     topic, same combined pool as start_mixed) and difficulty mix (default:
-    all three), sized to one of EXAM_QUESTION_COUNT_CHOICES rather than the
-    fixed SESSION_SIZE every other mode uses. topic=None on the resulting
+    all three), sized to the requested positive question count. topic=None on the resulting
     session, same as start_mixed/start_daily, since it isn't scoped to one
     topic even when the candidate narrowed to a handful.
 
@@ -411,14 +397,21 @@ def start_exam(
     feedback/free-navigation/submit-to-grade behavior is everything
     *outside* this function (question.html, questions_router.py,
     routers/sessions_router.py's submit_exam()), not here.
+
+    Excludes exam_eligible=False questions (R13) - _exam_pool itself stays
+    shared with start_mixed's practice-mode draw, where both currently-
+    flagged questions are unaffected, so the filter belongs here, not
+    there.
     """
     pool = _filter_by_difficulty(_exam_pool(bank, topics), difficulties)
+    pool = [q for q in pool if q.exam_eligible]
     ids = [q.id for q in pool]
     random.shuffle(ids)
     count = _resolve_exam_question_count(question_count)
     chosen = ids[:count]
     resolved_timer_minutes = (
-        timer_minutes if timer_minutes in TIMER_CHOICES_MINUTES else default_exam_timer_minutes(count)
+        timer_minutes if timer_minutes is not None and 1 <= timer_minutes <= MAX_TIMER_MINUTES
+        else default_exam_timer_minutes(count)
     )
     duration = resolved_timer_minutes * 60
     return ActiveSession(
@@ -496,27 +489,52 @@ class SessionStore:
 
     def __init__(self) -> None:
         self._active: dict[Optional[str], ActiveSession] = {}
+        self._guard = RLock()
+        self._user_locks: dict[Optional[str], RLock] = {}
+
+    def lock(self, user_id: Optional[str] = None):
+        """Serialize lifecycle and question operations for one account."""
+        with self._guard:
+            return self._user_locks.setdefault(user_id, RLock())
+
+    def items(self) -> list[tuple[Optional[str], ActiveSession]]:
+        with self._guard:
+            return list(self._active.items())
 
     def get(self, user_id: Optional[str] = None) -> Optional[ActiveSession]:
         return self._active.get(user_id)
 
     def set_active(self, session: ActiveSession, user_id: Optional[str] = None) -> None:
-        self._active[user_id] = session
+        with self._guard:
+            self._active[user_id] = session
 
     def clear(self, user_id: Optional[str] = None) -> None:
-        self._active.pop(user_id, None)
+        with self._guard:
+            self._active.pop(user_id, None)
 
     def clear_all(self) -> None:
-        """Every user's active session at once - used by the idle watchdog
-        (app.py), which still degrades access for everyone together;
-        a per-user terminal/idle clock is a known follow-on refinement,
-        not implemented yet."""
-        self._active.clear()
+        """Administrative/test teardown; browser inactivity never calls this."""
+        with self._guard:
+            self._active.clear()
 
 
 # Module-level singleton - this *is* the "simple module-level object" the
 # ticket calls for. app.py imports this instance directly.
 store = SessionStore()
+
+
+def is_exam_finalizing(user_id: Optional[str]) -> bool:
+    """Whether this user's active exam attempt is between finalize_exam
+    starting and completing (R11) - services/session_lifecycle.py sets
+    finalization_started_at the instant finalize_exam begins, and clears
+    the session entirely only once grading has fully finished. Used by
+    terminal_router.py to close an open terminal WebSocket the moment
+    finalization starts - a UX signal following the actual enforcement,
+    which already happened synchronously in finalize_exam itself
+    (ttyd_manager.kill_user_tmux_sessions, the call that actually matters
+    in the live single-trusted-operator app - see ADR 0010)."""
+    session = store.get(user_id)
+    return session is not None and session.mode == "exam" and session.finalization_started_at is not None
 
 
 @dataclass
@@ -533,7 +551,9 @@ class ExamResult:
     total: int
     duration_sec: int
     domain_breakdown: dict[str, int]
-    questions: list[dict]  # [{"id": qid, "domain": ..., "passed": bool}, ...]
+    attempt_id: str = ""
+    reason: str = "manual"
+    questions: list[dict] = field(default_factory=list)  # [{"id": qid, "domain": ..., "passed": bool}, ...]
 
 
 class ExamResultStore:

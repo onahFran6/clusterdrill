@@ -58,10 +58,12 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import time
 from contextlib import asynccontextmanager
 
 import auth
 import rbac
+import readiness
 import topology
 import users
 from fastapi import FastAPI, HTTPException
@@ -80,6 +82,7 @@ from routers import (
     terminal_router,
 )
 from security_headers import SecurityHeadersMiddleware
+from services import session_lifecycle
 from sessions import store as session_store
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
@@ -92,6 +95,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("clusterdrill.app")
 
 IDLE_WATCHDOG_INTERVAL_SECONDS = 15
+EXAM_WATCHDOG_INTERVAL_SECONDS = 1
 
 
 async def _perform_idle_kill() -> None:
@@ -113,7 +117,6 @@ async def _perform_idle_kill() -> None:
         "sessions and revoking the login cookie",
         idle_tracker.idle_seconds,
     )
-    session_store.clear_all()
     auth.revoke_all_sessions()
     idle_tracker.mark_killed()
     await asyncio.to_thread(ttyd_manager.kill_all_tmux_sessions)
@@ -133,6 +136,21 @@ async def _idle_watchdog() -> None:
             continue
         if idle_tracker.should_kill:
             await _perform_idle_kill()
+
+
+async def _finalize_due_exams() -> None:
+    now = time.time()
+    due = [(user_id, session.attempt_id) for user_id, session in session_store.items()
+           if session.mode == "exam" and session.deadline is not None and now >= session.deadline]
+    await asyncio.gather(*(asyncio.to_thread(session_lifecycle.expire_exam, user_id, attempt_id)
+                           for user_id, attempt_id in due))
+
+
+async def _exam_watchdog() -> None:
+    # Independent of browser activity, authentication, and terminal visibility.
+    while True:
+        await asyncio.sleep(EXAM_WATCHDOG_INTERVAL_SECONDS)
+        await _finalize_due_exams()
 
 
 @asynccontextmanager
@@ -175,6 +193,7 @@ async def lifespan(app: FastAPI):
     # orphaned ttyd left running after the dev server stops).
     ttyd_manager.start()
     watchdog_task = asyncio.create_task(_idle_watchdog())
+    exam_task = asyncio.create_task(_exam_watchdog())
     # Fire-and-forget, not awaited: batch_cleanup's up-to-30s-per-call
     # subprocess timeout, run once per known account, can comfortably
     # exceed local-appliance.yaml's liveness probe deadline (15s initial +
@@ -189,6 +208,8 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         watchdog_task.cancel()
+        exam_task.cancel()
+        await asyncio.gather(watchdog_task, exam_task, return_exceptions=True)
         ttyd_manager.stop()
 
 
@@ -217,6 +238,14 @@ async def _startup_cluster_sweep(existing_users: list[users.User]) -> None:
     (setup.sh is idempotent, per-question Reset already rebuilds from
     nothing) - any lab genuinely mid-flight across a restart gets reset,
     not resumed.
+
+    Marks readiness.mark_sweep_complete() once done, success or failure
+    (R10): the per-account try/except above already makes this function
+    always run to completion regardless of individual sweep failures, so
+    this always eventually fires - that's what lets /readyz (the
+    readinessProbe target, paired with the Deployment's Recreate strategy)
+    hold a freshly started pod out of Service rotation only for as long as
+    the sweep is genuinely still running, never forever.
     """
     bank.refresh()
     question_ids = [q.id for q in bank.questions]
@@ -226,6 +255,7 @@ async def _startup_cluster_sweep(existing_users: list[users.User]) -> None:
             await asyncio.to_thread(run_batch_cleanup, question_ids, LIB_DIR, sweep_user_id)
         except Exception:
             logger.exception("startup cluster sweep failed for user_id=%r", sweep_user_id)
+    readiness.mark_sweep_complete()
 
 
 app = FastAPI(title="ClusterDrill", lifespan=lifespan)
@@ -262,6 +292,16 @@ app.mount("/static", StaticFiles(directory=str(WEB_DIR / "static")), name="stati
 # on the internet.
 SESSION_MAX_AGE_SECONDS = int(os.environ.get("CLUSTERDRILL_SESSION_MAX_AGE_SECONDS", 8 * 60 * 60))
 
+# R03: defaults to False, matching local dev/an SSH tunnel/a loopback-only
+# proxy hop (e.g. Cloudflare Tunnel terminating TLS at its own edge, where
+# the cloudflared-to-this-app hop is loopback-only, not public) - requiring
+# HTTPS on the cookie there would just break access for no additional
+# protection, since nothing public ever sees that hop either way. Explicit
+# opt-in once something actually serves this app over real HTTPS (a
+# NodePort/Ingress install with a TLS-terminating proxy in front) - see
+# README's Security limits section.
+SECURE_COOKIES = os.environ.get("CLUSTERDRILL_SECURE_COOKIES", "").lower() in {"1", "true", "yes"}
+
 app.add_middleware(auth.PasswordGateMiddleware)
 app.add_middleware(
     SessionMiddleware,
@@ -269,10 +309,7 @@ app.add_middleware(
     session_cookie="clusterdrill_session",
     same_site="lax",
     max_age=SESSION_MAX_AGE_SECONDS,
-    https_only=False,  # Cloudflare Tunnel terminates TLS at the edge;
-                       # the hop from cloudflared to this app is loopback-only, not
-                       # public, so requiring HTTPS on this cookie would just break
-                       # local dev/SSH-tunnel access for no additional protection.
+    https_only=SECURE_COOKIES,
 )
 app.add_middleware(SecurityHeadersMiddleware)
 

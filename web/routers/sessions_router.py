@@ -7,19 +7,13 @@ navigation/progress purposes, per sessions.py's own module docstring.
 """
 from __future__ import annotations
 
-import shutil
-import time
-
 import auth
 import profile_store
-from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException
+from fastapi import APIRouter, Depends, Form, HTTPException
 from fastapi.responses import RedirectResponse
-from grading_client import run_batch_cleanup, run_check
-from services import question_view
+from services import session_lifecycle
 from sessions import (
-    ActiveSession,
-    ExamResult,
-    exam_result_store,
+    MAX_TIMER_MINUTES,
     mode_availability,
     start_boss,
     start_daily,
@@ -28,12 +22,9 @@ from sessions import (
     start_mixed,
     start_randomized,
 )
-from sessions import (
-    store as session_store,
-)
 from starlette.requests import Request
 
-from questions import LIB_DIR, bank
+from questions import bank, canonical_topic
 
 router = APIRouter()
 
@@ -41,15 +32,15 @@ router = APIRouter()
 @router.post("/sessions/start", dependencies=[Depends(auth.csrf_protect_form)])
 def start_session(
     request: Request,
-    background_tasks: BackgroundTasks,
     mode: str = Form(...),
     topic: str = Form(""),
     difficulty: str = Form(""),
-    timer_minutes: int = Form(0),
+    timer_minutes: int | None = Form(None),
     session_size: str = Form(""),
     topics: list[str] = Form([]),
     difficulties: list[str] = Form([]),
-    question_count: int = Form(0),
+    topic_scope: str = Form("all"),
+    question_count: int | None = Form(None),
 ):
     """Starts a new active session and redirects into its first question.
 
@@ -61,43 +52,37 @@ def start_session(
     disabled options in its own UI - never trust client-side disabling
     alone for the actual selection logic.
 
-    difficulty ("" | "easy" | "medium" | "hard") and timer_minutes (0 means
-    "use the mode's default") are fixed/randomized/mixed's session-setup
-    panel choices - both optional, both validated again inside sessions.py
-    (an unknown difficulty string quietly yields an empty pool rather than
-    a 500; an out-of-preset timer_minutes falls back to the default) so a
-    forged form post can't do anything worse than "no questions matched" or
-    "ran with the default clock."
-
-    session_size ("" | "all") is fixed/randomized/mixed's own question-count
-    override - "" keeps the usual SESSION_SIZE cap, "all" takes every
-    question in the (optionally difficulty-filtered) pool instead of just
-    its first/a shuffled SESSION_SIZE slice. Same "unknown value -> silent
-    default" validation rule as difficulty/timer_minutes, enforced again in
-    sessions.py's _cap_session_size.
-
-    topics/difficulties/question_count are exam mode's own setup-form
-    fields - a multi-select of topics and a
-    multi-select difficulty mix (plural, distinct from fixed/randomized/
-    mixed's single-select difficulty above - the exam setup form's
-    checkboxes post repeated same-named fields, not one value) plus a
-    question-count preset. Same "validated again in sessions.py, an
-    unknown/out-of-preset value just falls back to a default" rule as
-    every other field here - ignored entirely for every mode but exam.
+    Custom timers accept whole minutes from 1 to MAX_TIMER_MINUTES.
+    Practice session_size and exam question_count accept positive counts,
+    capped to the matching pool by sessions.py. Omitted values use the
+    existing defaults; legacy practice "all" remains supported.
+    Invalid explicit values are rejected before replacing an active session.
 
     Every session is timed automatically now (see sessions.py's revision
     note) - there used to be a "timer" form checkbox here; it's
     gone because a lab session always runs its clock the moment it starts,
     the same way a real timed lab does, not something you opt into.
     """
+    topic = canonical_topic(topic)
     bank.refresh()
     if mode not in ("fixed", "randomized", "mixed", "exam"):
         raise HTTPException(status_code=400, detail=f"unknown session mode '{mode}'")
+    if timer_minutes is not None and not 1 <= timer_minutes <= MAX_TIMER_MINUTES:
+        raise HTTPException(status_code=422, detail=f"Timer must be between 1 and {MAX_TIMER_MINUTES} minutes.")
+    if mode == "exam" and question_count is not None and question_count < 1:
+        raise HTTPException(status_code=422, detail="Enter a positive whole number of questions.")
+    if mode != "exam" and session_size not in ("", "all"):
+        try:
+            if int(session_size) < 1:
+                raise ValueError
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Enter a positive whole number of questions.") from None
     difficulty = difficulty if difficulty in ("easy", "medium", "hard") else None
 
     if mode == "exam":
         if len(bank) == 0:
             raise HTTPException(status_code=404, detail="no questions discovered in the bank")
+        topics = list(dict.fromkeys(canonical_topic(value) for value in topics))
         unknown_topics = set(topics) - set(bank.topics())
         if unknown_topics:
             raise HTTPException(status_code=404, detail=f"unknown topic(s) {sorted(unknown_topics)}")
@@ -109,10 +94,17 @@ def start_session(
             timer_minutes=timer_minutes or None,
         )
     elif mode == "mixed":
+        topics = list(dict.fromkeys(canonical_topic(value) for value in topics))
+        if topic_scope == "selected" and not topics:
+            raise HTTPException(status_code=422, detail="Choose at least one topic.")
+        unknown_topics = set(topics) - set(bank.topics())
+        if unknown_topics:
+            raise HTTPException(status_code=404, detail=f"unknown topic(s) {sorted(unknown_topics)}")
         if len(bank) == 0:
             raise HTTPException(status_code=404, detail="no questions discovered in the bank")
         session = start_mixed(
             bank, difficulty=difficulty, timer_minutes=timer_minutes or None, question_count=session_size,
+            topics=topics or None,
         )
     else:
         if topic not in bank.topics():
@@ -149,13 +141,12 @@ def start_session(
         raise HTTPException(status_code=404, detail="selected topic/pool has no questions")
 
     user_id = auth.current_user_id(request.session)
-    _end_previous_session_if_any(user_id, background_tasks)
-    session_store.set_active(session, user_id)
+    session_lifecycle.replace_session(session, user_id)
     return RedirectResponse(url=f"/questions/{session.question_ids[0]}", status_code=303)
 
 
 @router.post("/sessions/start-boss", dependencies=[Depends(auth.csrf_protect_form)])
-def start_boss_session(request: Request, background_tasks: BackgroundTasks, topic: str = Form(...)):
+def start_boss_session(request: Request, topic: str = Form(...)):
     """Starts a topic's boss mini-exam - a separate route from
     /sessions/start rather than a fourth `mode` value there, since a boss
     fight has none of the regular session-setup panel's choices (no
@@ -163,6 +154,7 @@ def start_boss_session(request: Request, background_tasks: BackgroundTasks, topi
     always BOSS_TIMER_SECONDS, see start_boss's docstring) and has its own
     gate (profile_store.boss_unlocked) that the other three modes don't.
     """
+    topic = canonical_topic(topic)
     bank.refresh()
     if topic not in bank.topics():
         raise HTTPException(status_code=404, detail=f"unknown topic '{topic}'")
@@ -178,13 +170,12 @@ def start_boss_session(request: Request, background_tasks: BackgroundTasks, topi
     if not session.question_ids:
         raise HTTPException(status_code=404, detail="selected topic has no questions")
 
-    _end_previous_session_if_any(user_id, background_tasks)
-    session_store.set_active(session, user_id)
+    session_lifecycle.replace_session(session, user_id)
     return RedirectResponse(url=f"/questions/{session.question_ids[0]}", status_code=303)
 
 
 @router.post("/sessions/start-daily", dependencies=[Depends(auth.csrf_protect_form)])
-def start_daily_session(request: Request, background_tasks: BackgroundTasks):
+def start_daily_session(request: Request):
     """Starts the daily/session mixed challenge - deliberately no
     form fields at all (no topic, no difficulty, no timer override; see
     start_daily's docstring for why) and no unlock gate, unlike
@@ -201,175 +192,16 @@ def start_daily_session(request: Request, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=404, detail="no questions available")
 
     user_id = auth.current_user_id(request.session)
-    _end_previous_session_if_any(user_id, background_tasks)
-    session_store.set_active(session, user_id)
+    session_lifecycle.replace_session(session, user_id)
     return RedirectResponse(url=f"/questions/{session.question_ids[0]}", status_code=303)
 
 
-def _cleanup_finished_session(
-    session: ActiveSession, user_id: str | None, background_tasks: BackgroundTasks,
-) -> None:
-    """Shared tail of end_session/submit_exam below: a finished session's
-    questions aren't coming back, so their auto-provision cache entry,
-    cluster namespaces, and local working directories shouldn't either.
-    Grading itself is unaffected either way - this only ever runs *after*
-    grading (Check calls above, or submit_exam's batch of them) has
-    already produced whatever result it produced.
-    """
-    if not session.question_ids:
-        return
-    question_view._auto_provisioned_qids.difference_update(
-        (qid, user_id) for qid in session.question_ids
-    )
-    background_tasks.add_task(run_batch_cleanup, session.question_ids, LIB_DIR, user_id)
-    # Mirrors the cluster-side cleanup above but for each question's local
-    # working directory (question_workdir) - a plain local rmtree, fast
-    # enough to do inline rather than via background_tasks. Same "not
-    # coming back" reasoning: any question re-provisions its directory
-    # fresh (question_context's mkdir) the next time it's actually viewed
-    # again, in this session or a future one.
-    for qid in session.question_ids:
-        shutil.rmtree(question_view.question_workdir(qid), ignore_errors=True)
-
-
-def _end_previous_session_if_any(user_id: str | None, background_tasks: BackgroundTasks) -> None:
-    """Every /sessions/start* route calls this right before
-    session_store.set_active() for the new session it's about to create.
-
-    Without this, starting a new session while a previous one is still
-    tracked (navigated away without End session, or the timer's client-side
-    expiry call hasn't landed yet) just overwrites the old ActiveSession
-    object - its namespaces/releases are never coming back into view, but
-    nothing ever cleans them up, so they sit on the cluster forever. Same
-    cleanup end_session performs, just triggered by the next session start
-    instead of an explicit End session click. Deliberately placed after
-    the new session has already been validated (topic/pool checks etc.
-    above each call site) so a rejected start request never tears down a
-    still-legitimately-active previous session.
-    """
-    previous = session_store.get(user_id)
-    if previous is not None:
-        _cleanup_finished_session(previous, user_id, background_tasks)
-
-
 @router.post("/sessions/submit", dependencies=[Depends(auth.csrf_protect_header)])
-def submit_exam(request: Request, background_tasks: BackgroundTasks):
-    """The submit-and-score step that follows
-    the deferred-grading behavior: runs check.sh once per question in the
-    active exam session, server-side, all at once - nothing shown to the
-    candidate mid-run, matching how no live feedback was shown during the
-    exam either. Exam mode only; any other active session (or none at
-    all) is a 400 - there's nothing to "submit" for a live-feedback mode,
-    where every Check already produced its own final answer as it
-    happened.
-
-    Deliberately does NOT call profile_store.record_check() per question
-    (unlike the interactive /questions/{qid}/check route) - the ticket's
-    own scope is "aggregate into a score, call record_exam_attempt()",
-    not "also feed each question's per-question stats/achievements". An
-    exam attempt's per-question detail lives only in the ephemeral
-    ExamResult below (read once by GET /sessions/results), not folded into
-    the profile's durable per-question history.
-    """
-    user_id = auth.current_user_id(request.session)
-    session = session_store.get(user_id)
-    if session is None or session.mode != "exam":
-        raise HTTPException(status_code=400, detail="no active exam session to submit")
-
-    bank.refresh()
-    per_question: list[dict] = []
-    passed_count = 0
-    domain_totals: dict[str, list[int]] = {}
-    for qid in session.question_ids:
-        question = bank.get(qid)
-        result = run_check(question.check_sh, user_id=user_id) if question and question.check_sh.exists() else None
-        fully_passed = bool(result and result.ok and result.total > 0 and result.passed == result.total)
-        if fully_passed:
-            passed_count += 1
-        domain = question.domain if question else None
-        if domain:
-            counts = domain_totals.setdefault(domain, [0, 0])
-            counts[1] += 1
-            if fully_passed:
-                counts[0] += 1
-        per_question.append({"id": qid, "domain": domain, "passed": fully_passed})
-
-    total = len(session.question_ids)
-    domain_breakdown = {
-        domain: round(100 * passed / count) if count else 0
-        for domain, (passed, count) in domain_totals.items()
-    }
-    duration_sec = round(time.time() - session.started_at)
-
-    profile_store.record_exam_attempt(
-        score=passed_count, total=total, duration_sec=duration_sec,
-        domain_breakdown=domain_breakdown, user_id=user_id,
-    )
-    exam_result_store.set(
-        ExamResult(
-            score=passed_count, total=total, duration_sec=duration_sec,
-            domain_breakdown=domain_breakdown, questions=per_question,
-        ),
-        user_id,
-    )
-
-    _cleanup_finished_session(session, user_id, background_tasks)
-    session_store.clear(user_id)
-    return {"ok": True, "score": passed_count, "total": total}
+def submit_exam(request: Request, attempt_id: str | None = None):
+    result = session_lifecycle.finalize_exam(auth.current_user_id(request.session), attempt_id)
+    return {"ok": True, "score": result.score, "total": result.total}
 
 
 @router.post("/sessions/end", dependencies=[Depends(auth.csrf_protect_header)])
-def end_session(request: Request, background_tasks: BackgroundTasks):
-    """Ends the active session early - the explicit "End session" action in
-    the status-bar footer, and also what the timer's client-side expiry
-    calls automatically (app.js). Clears which question ids are "in play"
-    for navigation/progress purposes, and also schedules a best-effort
-    cluster cleanup (batch_cleanup, see lib/grading.sh) for every question
-    that was in this batch - a finished session's questions aren't coming
-    back, so their namespaces shouldn't either. Grading itself is still
-    entirely unaffected by any of this - cleanup runs as a background task
-    *after* this response is sent, so "End session" stays fast regardless
-    of cluster responsiveness, and Check/Reset for a question you revisit
-    later still just work (setup.sh auto-re-provisions on next view - see
-    services/question_view.py's question_context() auto-provision block).
-    A no-op (not an error) if nothing is active - both a manual double
-    click and an already-expired timer calling this again should be safe.
-
-    A Mixed session ending (early or via timeout) is recorded as a
-    Mock Exam attempt - score, duration, and a per-domain breakdown of this
-    specific run, used by the Mock Exam page's "Past attempts"/readiness
-    view. Fixed/Randomized sessions aren't exam simulations, so they don't
-    record an attempt here (they already feed Practice Tests' best-score
-    view through record_check's per-question data).
-    """
-    user_id = auth.current_user_id(request.session)
-    session = session_store.get(user_id)
-    if session is not None and session.mode == "mixed":
-        bank.refresh()
-        domain_totals: dict[str, list[int]] = {}
-        for qid in session.question_ids:
-            question = bank.get(qid)
-            domain = question.domain if question else None
-            if not domain:
-                continue
-            counts = domain_totals.setdefault(domain, [0, 0])
-            counts[1] += 1
-            if qid in session.passed_qids:
-                counts[0] += 1
-        domain_breakdown = {
-            domain: round(100 * passed / total) if total else 0
-            for domain, (passed, total) in domain_totals.items()
-        }
-        profile_store.record_exam_attempt(
-            score=len(session.passed_qids),
-            total=len(session.question_ids),
-            duration_sec=round(time.time() - session.started_at),
-            domain_breakdown=domain_breakdown,
-            user_id=user_id,
-        )
-
-    if session is not None:
-        _cleanup_finished_session(session, user_id, background_tasks)
-
-    session_store.clear(user_id)
-    return {"ok": True}
+def end_session(request: Request):
+    return session_lifecycle.end_attempt(auth.current_user_id(request.session))

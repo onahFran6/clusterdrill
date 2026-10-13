@@ -127,11 +127,20 @@ def test_deployment_security_context_matches_the_raw_manifest():
     chart_pod_spec = chart_deployment["spec"]["template"]["spec"]
     raw_pod_spec = raw_deployment["spec"]["template"]["spec"]
     assert chart_pod_spec["securityContext"] == raw_pod_spec["securityContext"]
+    # Recreate, not RollingUpdate (R10) - must match the raw manifest so
+    # the startup-sweep-vs-overlapping-pod race is closed on both install
+    # paths, not just one.
+    assert chart_deployment["spec"]["strategy"] == raw_deployment["spec"]["strategy"] == {"type": "Recreate"}
     chart_container = chart_pod_spec["containers"][0]
     raw_container = raw_pod_spec["containers"][0]
     assert chart_container["securityContext"] == raw_container["securityContext"]
     assert chart_container["readinessProbe"] == raw_container["readinessProbe"]
     assert chart_container["livenessProbe"] == raw_container["livenessProbe"]
+    # readinessProbe must target /readyz (R10's sweep-completion gate),
+    # livenessProbe must stay on /healthz (always-instant, no crash-loop
+    # risk) - a regression here would silently reopen R10 on either path.
+    assert chart_container["readinessProbe"]["httpGet"]["path"] == "/readyz"
+    assert chart_container["livenessProbe"]["httpGet"]["path"] == "/healthz"
     assert chart_container["resources"] == raw_container["resources"]
 
 

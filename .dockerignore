@@ -1,0 +1,20 @@
+# Keeps the build context small and, more importantly, keeps anything here
+# out of reach of a future COPY . . - today's Dockerfile only COPYs specific
+# directories (lib, questions, web, deploy/entrypoint.sh), so none of this
+# currently reaches the image either way, but that's a property of the
+# COPY list, not of this file - don't rely on this alone (I02/R15).
+.git/
+.github/
+.venv/
+web/.venv/
+node_modules/
+.my-personal-docs/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+__pycache__/
+*.pyc
+.DS_Store
+tests/e2e/
+.claude/

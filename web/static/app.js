@@ -367,6 +367,7 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
           }
           updateProgressBadges(data);
           updateNavigatorStatus(data.passed === data.total);
+          if (data.passed === data.total && data.total > 0) showNextStep();
           // HP hitting zero ends the fight immediately, mirroring
           // the timer's own auto-end-on-expiry below - "before HP or the
           // clock runs out" (the ticket's wording) treats both the same
@@ -401,6 +402,15 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
     // rendered state at page load) until the next full page navigation -
     // every other live-updated badge above already updates in place from
     // the /check response, so this one should too.
+    function showNextStep() {
+      const next = document.getElementById("next-question");
+      if (!next || next.tagName !== "A") return;
+      next.classList.remove("btn-secondary");
+      next.classList.add("btn-primary");
+      next.textContent = "Next →";
+      next.setAttribute("aria-label", "Next question");
+    }
+
     function updateNavigatorStatus(passed) {
       const current = document.querySelector(".question-navigator-item.current");
       if (!current) return;
@@ -456,7 +466,12 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
       if (!resetBtn) return;
       resetBtn.disabled = true;
       if (checkBtn) checkBtn.disabled = true;
-      setStatus("resetting your environment (this can take a few seconds)...", "pending");
+      const retryStatus = document.getElementById("provision-status");
+      const resetStatus = (message, kind) => {
+        if (retryStatus) retryStatus.textContent = message;
+        setStatus(message, kind);
+      };
+      resetStatus("resetting your environment (this can take a few seconds)...", "pending");
       if (listEl) {
         listEl.innerHTML = '<li class="criteria-empty">[&nbsp;] click <strong>Check</strong> to grade your work</li>';
       }
@@ -465,13 +480,25 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
         const res = await fetch(`/questions/${encodeURIComponent(qid)}/reset`, { method: "POST", headers: csrfHeaders() });
         const data = await res.json();
         if (!res.ok) {
-          setStatus(`reset failed: ${data.detail || res.statusText}`, "error");
+          resetStatus(`reset failed: ${data.detail || res.statusText}`, "error");
           return;
         }
         clearAttemptState();
-        setStatus("reset complete: namespace and resources rebuilt from scratch", "done");
+        resetStatus("Setup complete. Your environment is ready.", "done");
+        if (resetBtn.dataset.provisionRetry === "true") {
+          const banner = document.getElementById("provision-error");
+          banner.classList.replace("alert-warning", "alert-success");
+          banner.querySelector(".alert-prefix").textContent = "[OK]";
+          banner.setAttribute("role", "status");
+          if (body.dataset.isExam === "true") {
+            // Keep focus on the recovery message when its button disappears.
+            retryStatus.tabIndex = -1;
+            retryStatus.focus();
+            resetBtn.remove();
+          }
+        }
       } catch (err) {
-        setStatus(`request failed: ${err}`, "error");
+        resetStatus(`request failed: ${err}`, "error");
       } finally {
         resetBtn.disabled = false;
         if (checkBtn) checkBtn.disabled = false;
@@ -489,33 +516,42 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
       resetBtn.addEventListener("click", runReset);
     }
 
-    // Terminal panel toggle. Visible by default (a real grid item, see
-    // style.css's .layout.has-terminal) - this only exists for someone who
-    // wants the space back. Collapsing/expanding flips one class on
-    // .layout; style.css's .layout.terminal-collapsed rule handles both
-    // hiding the panel and giving its column back to the left column.
+    const workspace = window.clusterdrillWorkspace;
     const terminalToggle = document.getElementById("terminal-toggle");
     const layoutEl = document.querySelector(".layout");
     const terminalPanel = document.getElementById("terminal-panel");
 
-    // ttyd's own xterm.js registers a `beforeunload` "Leave site?" handler
-    // once its websocket connects - real behavior for a plain browser tab
-    // full of unsaved form text, but wrong here, and it silently blocked
-    // *every* in-app navigation (tab switches, Skip/Previous, End session)
-    // once a terminal connected. The fix lives in ttyd_manager.py:
-    // `--client-option disableLeaveAlert=true` is ttyd's own documented
-    // option for turning this off at the source.
-
-    if (terminalToggle && layoutEl && terminalPanel) {
-      terminalToggle.addEventListener("click", () => {
-        const collapsed = layoutEl.classList.toggle("terminal-collapsed");
-        const expanded = !collapsed;
-        terminalToggle.setAttribute("aria-expanded", String(expanded));
-        terminalPanel.setAttribute("aria-hidden", String(collapsed));
-        terminalToggle.textContent = expanded ? "Hide terminal" : "Show terminal";
-      });
+    function syncTerminalVisibility() {
+      if (!terminalToggle || !layoutEl || !terminalPanel) return;
+      const visible = workspace.get().terminalVisible;
+      if (!visible && terminalPanel.contains(document.activeElement)) terminalToggle.focus();
+      layoutEl.classList.toggle("terminal-collapsed", !visible);
+      terminalToggle.setAttribute("aria-expanded", String(visible));
+      terminalPanel.setAttribute("aria-hidden", String(!visible));
+      terminalPanel.inert = !visible;
+      terminalToggle.textContent = visible ? "Hide terminal" : "Show terminal";
+      terminalToggle.classList.add("label-synced");
+      // Once connected, retain the iframe and its shell until navigation.
+      const frame = document.getElementById("terminal-frame-1");
+      if (visible && frame && !frame.hasAttribute("src")) frame.src = frame.dataset.src;
     }
-
+    syncTerminalVisibility();
+    terminalToggle?.addEventListener("click", () => {
+      workspace.update({ terminalVisible: !workspace.get().terminalVisible });
+      syncTerminalVisibility();
+    });
+    document.querySelectorAll(".workspace-copy").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const command = document.getElementById(button.dataset.copyTarget)?.textContent || "";
+        try {
+          await navigator.clipboard.writeText(command);
+          button.textContent = "Copied";
+        } catch {
+          button.textContent = "Select the command";
+        }
+        window.setTimeout(() => { button.textContent = "Copy"; }, 1500);
+      });
+    });
     // KodeKloud-style terminal tabs — each tab is an independent shell
     // (separate ttyd port + tmux session on the server). Hidden iframes stay
     // mounted so switching tabs does not kill running processes.
@@ -555,9 +591,8 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
         frame.id = `terminal-frame-${tabId}`;
         frame.className = "terminal-frame";
         frame.dataset.tab = String(tabId);
-        frame.src = nodeTarget && nodeTarget !== "control-plane"
-          ? `/terminal/t/${tabId}/?node=${encodeURIComponent(nodeTarget)}`
-          : `/terminal/t/${tabId}/`;
+        const base = document.getElementById("terminal-frame-1").dataset.src.replace("/t/1/", `/t/${tabId}/`);
+        frame.src = nodeTarget && nodeTarget !== "control-plane" ? `${base}?node=${encodeURIComponent(nodeTarget)}` : base;
         frame.title = `Embedded terminal ${tabId} (ttyd)`;
         frame.setAttribute("allow", "clipboard-read; clipboard-write");
         terminalFramesEl.appendChild(frame);
@@ -593,7 +628,7 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
         btn.dataset.tab = String(tabId);
         btn.id = `terminal-tab-${tabId}`;
         btn.setAttribute("aria-controls", `terminal-frame-${tabId}`);
-        btn.textContent = nodeTarget === "control-plane" ? `Terminal ${tabId}` : `Terminal ${tabId} (${nodeTarget})`;
+        btn.textContent = nodeTarget === "control-plane" ? `Lab workspace ${tabId}` : `Node shell: ${nodeTarget}`;
         terminalTabsEl.insertBefore(btn, terminalTabAdd);
 
         ensureTerminalFrame(tabId, nodeTarget);
@@ -605,194 +640,71 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
       });
     }
 
-    // --- Resizable workspace, v3: two independent axes -------------------
-    // Terminal moved to a full-height right column, Task stacked directly
-    // above Checklist in the left column (style.css's "v3" comment on
-    // .layout has the full picture). Both drag handles use the same
-    // mechanism v1's single column-resize axis did: two explicit pixel
-    // tracks that always sum to a fixed total, read back via
-    // getComputedStyle so a `fr`-sized default resolves to real pixels
-    // before the first drag ever touches it.
-    //   - data-resize-index="0": column-width drag between the left column
-    //     and Terminal. Only rendered when a terminal exists at all.
-    //   - data-resize-index="1": row-height drag between Task and
-    //     Checklist, within the left column. Always rendered, terminal or
-    //     not - Task/Checklist stack regardless.
-    // Two independent localStorage keys (one per axis) rather than one
-    // shared shape, same reasoning v2 used: conflating them would need
-    // exactly the kind of shape-guessing this mechanism avoids by keeping
-    // each axis's array meaning fixed (always 3 tracks, always that axis).
-    const MIN_COL_PX = 220;
-    const MIN_ROW_PX = 180;
-    const COL_STORAGE_KEY = "clusterdrill-layout-columns";
-    const ROW_STORAGE_KEY = "clusterdrill-layout-rows";
-
-    function currentColumnPx() {
-      const style = window.getComputedStyle(layoutEl);
-      return style.gridTemplateColumns.split(" ").map((v) => parseFloat(v));
+    // Fractions remain meaningful after resizing or rotating the viewport.
+    // CSS alone decides whether these tracks apply to the current layout.
+    const handles = document.querySelectorAll(".resizer");
+    function updateSeparatorValues() {
+      handles.forEach((handle) => {
+        const column = handle.dataset.resizeIndex === "0";
+        const tracks = getComputedStyle(layoutEl)[column ? "gridTemplateColumns" : "gridTemplateRows"].split(" ").map(Number.parseFloat);
+        const fraction = tracks.length === 3 ? tracks[0] / (tracks[0] + tracks[2]) : 0.5;
+        handle.setAttribute("aria-valuemin", "20");
+        handle.setAttribute("aria-valuemax", "80");
+        handle.setAttribute("aria-valuenow", String(Math.round(fraction * 100)));
+      });
     }
-
-    function applyColumnPx(px) {
-      layoutEl.style.gridTemplateColumns = px.map((v) => `${v}px`).join(" ");
-      layoutEl.classList.add("js-resized");
-    }
-
-    function persistColumns(px) {
-      try {
-        localStorage.setItem(COL_STORAGE_KEY, JSON.stringify(px));
-      } catch {
-        /* localStorage unavailable (private browsing, etc.) - resizing
-           still works for this page view, it just won't persist. */
+    handles.forEach((handle) => {
+      const column = handle.dataset.resizeIndex === "0";
+      let pointer = null;
+      let lastPosition = 0;
+      function resizeBy(delta) {
+        if (!handle.getClientRects().length) return;
+        const tracks = getComputedStyle(layoutEl)[column ? "gridTemplateColumns" : "gridTemplateRows"].split(" ").map(Number.parseFloat);
+        if (tracks.length !== 3 || !tracks.every(Number.isFinite)) return;
+        const available = tracks[0] + tracks[2];
+        if (available <= 0) return;
+        const minimum = Math.min(0.5, Math.max(0.2, (column ? 220 : 100) / available));
+        const fraction = Math.min(1 - minimum, Math.max(minimum, (tracks[0] + delta) / available));
+        workspace.update({ [column ? "questionFraction" : "taskFraction"]: fraction });
+        updateSeparatorValues();
       }
-    }
-
-    function restoreColumns() {
-      let saved;
-      try {
-        saved = JSON.parse(localStorage.getItem(COL_STORAGE_KEY) || "null");
-      } catch {
-        saved = null;
+      function finish() {
+        if (pointer === null) return;
+        const captured = pointer;
+        pointer = null;
+        if (handle.hasPointerCapture(captured)) handle.releasePointerCapture(captured);
+        handle.classList.remove("resizing");
+        document.body.classList.remove("workspace-resizing");
+        document.body.style.cursor = "";
       }
-      // Always exactly 3 column tracks (left column, handle, terminal) -
-      // only ever restored when a terminal column actually exists (see the
-      // querySelector guard below), so there's nothing to disambiguate.
-      if (!Array.isArray(saved) || saved.length !== 3) return;
-      applyColumnPx(saved);
-    }
-
-    function currentRowPx() {
-      const style = window.getComputedStyle(layoutEl);
-      return style.gridTemplateRows.split(" ").map((v) => parseFloat(v));
-    }
-
-    function applyRowPx(px) {
-      layoutEl.style.gridTemplateRows = px.map((v) => `${v}px`).join(" ");
-      layoutEl.classList.add("js-resized-rows");
-    }
-
-    function persistRows(px) {
-      try {
-        localStorage.setItem(ROW_STORAGE_KEY, JSON.stringify(px));
-      } catch {
-        /* ignore, same as persistColumns */
-      }
-    }
-
-    function restoreRows() {
-      let saved;
-      try {
-        saved = JSON.parse(localStorage.getItem(ROW_STORAGE_KEY) || "null");
-      } catch {
-        saved = null;
-      }
-      // Always exactly 3 row tracks (Task, handle, Checklist).
-      if (!Array.isArray(saved) || saved.length !== 3) return;
-      applyRowPx(saved);
-    }
-
-    document.querySelectorAll(".resizer").forEach((handle) => {
-      const index = parseInt(handle.dataset.resizeIndex, 10);
-      let dragging = false;
-      let lastPos = 0;
-
-      if (index === 0) {
-        // Column resize: left column <-> terminal. Track array is always
-        // [left, handle, terminal] - indices 0 and 2.
-        function resizeColBy(deltaPx) {
-          const px = currentColumnPx();
-          if (px.length < 3) return;
-          const a = px[0] + deltaPx;
-          const b = px[2] - deltaPx;
-          if (a < MIN_COL_PX || b < MIN_COL_PX) return;
-          px[0] = a;
-          px[2] = b;
-          applyColumnPx(px);
-          persistColumns(px);
-        }
-
-        handle.addEventListener("mousedown", (e) => {
-          dragging = true;
-          lastPos = e.clientX;
-          handle.classList.add("resizing");
-          document.body.style.userSelect = "none";
-          document.body.style.cursor = "col-resize";
-        });
-        window.addEventListener("mousemove", (e) => {
-          if (!dragging) return;
-          const deltaPx = e.clientX - lastPos;
-          lastPos = e.clientX;
-          resizeColBy(deltaPx);
-        });
-        window.addEventListener("mouseup", () => {
-          if (!dragging) return;
-          dragging = false;
-          handle.classList.remove("resizing");
-          document.body.style.userSelect = "";
-          document.body.style.cursor = "";
-        });
-        handle.addEventListener("keydown", (e) => {
-          if (e.key === "ArrowLeft") {
-            resizeColBy(e.shiftKey ? -96 : -24);
-            e.preventDefault();
-          } else if (e.key === "ArrowRight") {
-            resizeColBy(e.shiftKey ? 96 : 24);
-            e.preventDefault();
-          }
-        });
-      } else if (index === 1) {
-        // Row resize: Task <-> Checklist. Track array is always
-        // [task, handle, checklist] - indices 0 and 2, same mechanism as
-        // the column axis just along Y.
-        function resizeRowBy(deltaPx) {
-          const px = currentRowPx();
-          if (px.length < 3) return;
-          const a = px[0] + deltaPx;
-          const b = px[2] - deltaPx;
-          if (a < MIN_ROW_PX || b < MIN_ROW_PX) return;
-          px[0] = a;
-          px[2] = b;
-          applyRowPx(px);
-          persistRows(px);
-        }
-
-        handle.addEventListener("mousedown", (e) => {
-          dragging = true;
-          lastPos = e.clientY;
-          handle.classList.add("resizing");
-          document.body.style.userSelect = "none";
-          document.body.style.cursor = "row-resize";
-        });
-        window.addEventListener("mousemove", (e) => {
-          if (!dragging) return;
-          const deltaPx = e.clientY - lastPos;
-          lastPos = e.clientY;
-          resizeRowBy(deltaPx);
-        });
-        window.addEventListener("mouseup", () => {
-          if (!dragging) return;
-          dragging = false;
-          handle.classList.remove("resizing");
-          document.body.style.userSelect = "";
-          document.body.style.cursor = "";
-        });
-        handle.addEventListener("keydown", (e) => {
-          if (e.key === "ArrowUp") {
-            resizeRowBy(e.shiftKey ? -96 : -24);
-            e.preventDefault();
-          } else if (e.key === "ArrowDown") {
-            resizeRowBy(e.shiftKey ? 96 : 24);
-            e.preventDefault();
-          }
-        });
-      }
+      handle.addEventListener("pointerdown", (event) => {
+        if (!event.isPrimary || event.button !== 0) return;
+        event.preventDefault();
+        pointer = event.pointerId;
+        lastPosition = column ? event.clientX : event.clientY;
+        handle.setPointerCapture(pointer);
+        handle.focus();
+        handle.classList.add("resizing");
+        document.body.classList.add("workspace-resizing");
+        document.body.style.cursor = column ? "col-resize" : "row-resize";
+      });
+      handle.addEventListener("pointermove", (event) => {
+        if (event.pointerId !== pointer) return;
+        const position = column ? event.clientX : event.clientY;
+        resizeBy(position - lastPosition);
+        lastPosition = position;
+      });
+      for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) handle.addEventListener(name, finish);
+      window.addEventListener("blur", finish);
+      window.addEventListener("resize", finish);
+      handle.addEventListener("keydown", (event) => {
+        const direction = column ? ["ArrowLeft", "ArrowRight"] : ["ArrowUp", "ArrowDown"];
+        if (!direction.includes(event.key)) return;
+        event.preventDefault();
+        resizeBy((event.shiftKey ? 96 : 24) * (event.key === direction[0] ? -1 : 1));
+      });
     });
-
-    if (layoutEl && layoutEl.querySelector('.resizer[data-resize-index="0"]')) {
-      restoreColumns();
-    }
-    if (layoutEl && layoutEl.querySelector('.resizer[data-resize-index="1"]')) {
-      restoreRows();
-    }
+    if (layoutEl) new ResizeObserver(updateSeparatorValues).observe(layoutEl);
 
     // --- Session lifecycle: End session + timer auto-end ------------------
     // "End session" clears the server-side active session (app.py's
@@ -813,7 +725,7 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
       // submitting on timeout "just works" without its own wiring.
       if (isExamSession) {
         try {
-          const res = await fetch("/sessions/submit", { method: "POST", headers: csrfHeaders() });
+          const res = await fetch(`/sessions/submit?attempt_id=${encodeURIComponent(body.dataset.attemptId || "")}`, { method: "POST", headers: csrfHeaders() });
           if (res.ok) {
             window.location.href = "/sessions/results";
             return;
@@ -1105,7 +1017,7 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
   const idleDismissBtn = document.getElementById("idle-dismiss-btn");
 
   function redirectToLogin() {
-    window.location.href = "/login?idle=1";
+    window.location.href = `/login?idle=1&next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
   }
 
   function applyStatus(data) {

@@ -13,6 +13,7 @@ import logging
 import auth
 import httpx
 import node_topology
+import sessions
 import websockets as websockets_client
 import websockets.exceptions as websockets_exceptions
 from fastapi import APIRouter, Depends, HTTPException
@@ -132,8 +133,11 @@ async def reject_unless_authorized(websocket: WebSocket) -> bool:
     return False
 
 
+@router.api_route("/terminal/q/{qid}/t/{tab_id}/{path:path}", methods=["GET"])
 @router.api_route("/terminal/t/{tab_id}/{path:path}", methods=["GET", "POST", "PUT", "OPTIONS"])
-async def terminal_proxy_http_tab(request: Request, tab_id: int, path: str):
+async def terminal_proxy_http_tab(request: Request, tab_id: int, path: str, qid: str | None = None):
+    if qid is not None:
+        question_view.get_question_or_404(qid)
     user_id = auth.current_user_id(request.session)
     node_target = _valid_node_target(request.query_params.get("node"))
     inst = _terminal_instance(tab_id, user_id, node_target)
@@ -176,17 +180,26 @@ async def terminal_proxy_http_tab(request: Request, tab_id: int, path: str):
         )
 
 
+@router.websocket("/terminal/q/{qid}/t/{tab_id}/{path:path}")
 @router.websocket("/terminal/t/{tab_id}/{path:path}")
-async def terminal_proxy_ws_tab(websocket: WebSocket, tab_id: int, path: str):
+async def terminal_proxy_ws_tab(websocket: WebSocket, tab_id: int, path: str, qid: str | None = None):
     if await reject_unless_authorized(websocket):
         return
     user_id = auth.current_user_id(websocket.session)
+    cwd = question_view._current_question_workdir
+    if qid is not None:
+        try:
+            question_view.get_question_or_404(qid)
+        except HTTPException:
+            await websocket.close(code=4404)
+            return
+        cwd = str(question_view.question_workdir(qid))
     node_target = _valid_node_target(websocket.query_params.get("node"))
     inst = ttyd_manager.ensure_tab(tab_id, user_id, node_target)
     if inst is None or not inst.is_running:
         await websocket.close(code=1013)
         return
-    ensure_session(inst, cwd=question_view._current_question_workdir)
+    ensure_session(inst, cwd=cwd)
 
     await websocket.accept(subprotocol="tty")
     ws_url = f"ws://{inst.host}:{inst.port}/{path}"
@@ -194,12 +207,20 @@ async def terminal_proxy_ws_tab(websocket: WebSocket, tab_id: int, path: str):
         async with websockets_client.connect(ws_url, subprotocols=["tty"]) as upstream:
             client_to_upstream = asyncio.create_task(_pump_client_to_upstream(websocket, upstream))
             upstream_to_client = asyncio.create_task(_pump_upstream_to_client(upstream, websocket))
+            revocation_watch = asyncio.create_task(_close_if_session_revoked(websocket))
+            exam_finalizing_watch = asyncio.create_task(_close_if_exam_finalizing(websocket, user_id))
             done, pending = await asyncio.wait(
-                [client_to_upstream, upstream_to_client],
+                [client_to_upstream, upstream_to_client, revocation_watch, exam_finalizing_watch],
                 return_when=asyncio.FIRST_COMPLETED,
             )
             for task in pending:
                 task.cancel()
+            if revocation_watch in done:
+                await websocket.close(code=4401)
+                return
+            if exam_finalizing_watch in done:
+                await websocket.close(code=4402)
+                return
     except (OSError, ConnectionRefusedError, websockets_exceptions.WebSocketException):
         logger.warning("terminal proxy tab %s: could not reach ttyd at %s", tab_id, ws_url)
     finally:
@@ -217,6 +238,51 @@ async def terminal_proxy_http(request: Request, path: str):
 @router.websocket("/terminal/{path:path}")
 async def terminal_proxy_ws(websocket: WebSocket, path: str):
     await terminal_proxy_ws_tab(websocket, 1, path)
+
+
+_REVOCATION_POLL_INTERVAL_SECONDS = 2
+
+
+async def _close_if_session_revoked(websocket: WebSocket) -> None:
+    """Runs alongside the two pump tasks below in terminal_proxy_ws_tab,
+    periodically rechecking this connection's (frozen-at-connect-time)
+    session against auth's *live*, dynamically-updated revocation state
+    (R04). A WebSocket authenticates once, at connect
+    (reject_unless_authorized), and Starlette has no mechanism to re-run
+    that per-frame the way PasswordGateMiddleware does for ordinary HTTP
+    routes - without this, an already-open terminal kept running past
+    logout/password-reset/admin-revocation until the socket happened to
+    close for an unrelated reason, no matter how fast the HTTP session
+    cookie itself was invalidated. websocket.session is a snapshot from
+    connect time, but auth.session_is_valid() compares its (fixed)
+    authed_at timestamp against auth's module-level revocation dict, which
+    *does* keep updating - so this correctly notices a revocation that
+    happened after this socket was already open.
+    """
+    while True:
+        await asyncio.sleep(_REVOCATION_POLL_INTERVAL_SECONDS)
+        if auth.password_gate_enabled() and not auth.session_is_valid(websocket.session):
+            return
+
+
+async def _close_if_exam_finalizing(websocket: WebSocket, user_id: str | None) -> None:
+    """Runs alongside _close_if_session_revoked above (R11): closes this
+    terminal the instant this user's active exam attempt starts
+    finalizing, rather than leaving it open until ttyd's own connection to
+    a now-dead tmux session errors out on its own. The actual enforcement
+    already happened synchronously, before this ever has a chance to fire:
+    finalize_exam kills this user_id's tmux server outright
+    (ttyd_manager.kill_user_tmux_sessions) before grading starts, severing
+    any command already running in it - see ADR 0010 for why that, not an
+    RBAC grant, is what actually constrains this terminal in the live
+    single-trusted-operator app. This watcher just makes the close
+    prompt and intentional (code 4402) instead of an incidental upstream
+    connection error.
+    """
+    while True:
+        await asyncio.sleep(_REVOCATION_POLL_INTERVAL_SECONDS)
+        if sessions.is_exam_finalizing(user_id):
+            return
 
 
 async def _pump_client_to_upstream(websocket: WebSocket, upstream) -> None:

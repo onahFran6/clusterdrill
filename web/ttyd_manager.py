@@ -39,6 +39,7 @@ import subprocess
 import threading
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import rbac
 import users
@@ -46,12 +47,37 @@ from kube_json import SYSTEM_NAMESPACE
 
 logger = logging.getLogger("clusterdrill.ttyd")
 
+_LOCAL_TERMINAL_BIN = Path(__file__).resolve().parents[1] / "deploy" / "bin"
+
 TTYD_HOST = "127.0.0.1"
 TTYD_BASE_PORT = 7681
 TTYD_FALLBACK_SHELL = "bash"
 MAX_TERMINAL_TABS = int(os.environ.get("CLUSTERDRILL_TERMINAL_MAX_TABS", "5"))
 STARTUP_WAIT_SECONDS = 3.0
 STARTUP_POLL_INTERVAL = 0.1
+TMUX_TIMEOUT_SECONDS = 5  # every call below is a short, one-shot tmux CLI invocation, not a long-lived stream
+
+
+def _tmux_run(args: list[str], **kwargs) -> subprocess.CompletedProcess:
+    """subprocess.run for a one-shot tmux CLI call (kill-session,
+    has-session, send-keys, set-option, ...), bounded at
+    TMUX_TIMEOUT_SECONDS (I05): none of this module's many tmux call sites
+    had a timeout before this - every one of them is a synchronous call
+    on whatever thread invoked it (some of those paths are a request
+    handler, e.g. admin_router's delete-user -> kill_user_tmux_sessions),
+    so a wedged tmux server (a stuck socket, a pathological session) could
+    hang that thread indefinitely instead of just failing this one tmux
+    command. On timeout, returns a synthetic non-zero CompletedProcess
+    (args, returncode=1) so every existing `.returncode`-checking caller
+    keeps working unchanged - callers already treat tmux failures as
+    "this one no-op quietly failed," which is also the right response to
+    a timeout specifically.
+    """
+    try:
+        return subprocess.run(args, timeout=TMUX_TIMEOUT_SECONDS, **kwargs)
+    except subprocess.TimeoutExpired:
+        logger.warning("tmux call timed out after %ss: %s", TMUX_TIMEOUT_SECONDS, args)
+        return subprocess.CompletedProcess(args, returncode=1)
 
 # Module-level (not per-TtydPool) so a bare TtydInstance(tab_id=N,
 # user_id=X) constructed without going through a pool still computes the
@@ -176,7 +202,7 @@ class TtydInstance:
             # node path: the plain control-plane case relies on exactly
             # this same-session reattach to survive app restarts, and
             # that existing behavior must not regress.
-            subprocess.run(
+            _tmux_run(
                 [tmux_bin, "-L", self.tmux_socket_name, "kill-session", "-t", self.tmux_session_name],
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             )
@@ -344,7 +370,7 @@ class TtydPool:
         if tmux_bin is None:
             return
         for user_id in list(_user_slots.keys()):
-            subprocess.run(
+            _tmux_run(
                 [tmux_bin, "-L", _tmux_socket_name(user_id), "kill-server"],
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             )
@@ -364,7 +390,7 @@ class TtydPool:
         idempotent.)"""
         tmux_bin = shutil.which("tmux")
         if tmux_bin is not None:
-            subprocess.run(
+            _tmux_run(
                 [tmux_bin, "-L", _tmux_socket_name(user_id), "kill-server"],
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             )
@@ -391,11 +417,11 @@ def _send_cd(tmux_bin: str, socket: str, session_name: str, cwd: str) -> None:
     prompt without touching tmux's own scroll-history buffer, so the
     candidate can still scroll up to their prior work if they want it.
     """
-    subprocess.run(
+    _tmux_run(
         [tmux_bin, "-L", socket, "send-keys", "-t", session_name, "C-u"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
-    subprocess.run(
+    _tmux_run(
         [tmux_bin, "-L", socket, "send-keys", "-t", session_name, f"cd {shlex.quote(cwd)} && clear", "Enter"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
@@ -434,15 +460,25 @@ def ensure_session(inst: TtydInstance, cwd: str | None) -> None:
     # with no sessions can exit again immediately. Only creating the actual
     # session first guarantees the server stays up long enough for the
     # `set-option` calls further down to actually stick.
-    exists = subprocess.run(
+    # A node tab's ttyd command is `tmux new-session -A` plus the debug
+    # command. `-A` attaches to a session that already exists and ignores
+    # that command, so creating a plain detached session here would leave
+    # the learner in the application shell instead of on the node. Sending
+    # `cd` into that pane would also type an application workspace path
+    # into the node shell. Leave creation to ttyd; the pane command turns
+    # mouse mode on once the session exists.
+    node_shell = bool(inst.node_target and inst.node_target != "control-plane" and inst.user_id)
+    exists = _tmux_run(
         [tmux_bin, "-L", socket, "has-session", "-t", inst.tmux_session_name],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     ).returncode == 0
-    if not exists:
+    if node_shell:
+        pass
+    elif not exists:
         cmd = [tmux_bin, "-L", socket, "new-session", "-d", "-s", inst.tmux_session_name]
         if cwd:
             cmd += ["-c", cwd]
-        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        _tmux_run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if cwd:
             _last_cwd_by_session[inst.tmux_session_name] = cwd
     elif cwd and _last_cwd_by_session.get(inst.tmux_session_name) != cwd:
@@ -467,7 +503,7 @@ def ensure_session(inst: TtydInstance, cwd: str | None) -> None:
     # ignored). Cheap and idempotent, so it's set on every call rather than
     # only the first - simpler than tracking "have I already done this for
     # this server" separately.
-    subprocess.run(
+    _tmux_run(
         [tmux_bin, "-L", socket, "set-option", "-g", "mouse", "on"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
@@ -483,10 +519,23 @@ def ensure_session(inst: TtydInstance, cwd: str | None) -> None:
     # scrolling up just stops with no way to reach content that's already
     # gone. Matching xterm's value here (same `-g`/idempotent reasoning as
     # `mouse on` above) closes that gap.
-    subprocess.run(
+    _tmux_run(
         [tmux_bin, "-L", socket, "set-option", "-g", "history-limit", "5000"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
+
+    # Keep tmux's status line in the same quiet navy/cyan palette as the
+    # workspace. The tmux server is long-lived and does not reload config
+    # between tabs, so apply these global styles on every terminal connect.
+    for option, style in (
+        ("status-style", "fg=#c7d2e3,bg=#151f30"),
+        ("status-left-style", "fg=#58c9df,bg=#151f30,bold"),
+        ("status-right-style", "fg=#8b9bb3,bg=#151f30"),
+    ):
+        _tmux_run(
+            [tmux_bin, "-L", socket, "set-option", "-g", option, style],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
 
 
 def read_paste_buffer(user_id: str | None) -> str:
@@ -507,7 +556,7 @@ def read_paste_buffer(user_id: str | None) -> str:
     tmux_bin = shutil.which("tmux")
     if tmux_bin is None:
         return ""
-    result = subprocess.run(
+    result = _tmux_run(
         [tmux_bin, "-L", _tmux_socket_name(user_id), "show-buffer"],
         capture_output=True, text=True,
     )
@@ -559,14 +608,24 @@ def _shell_command(tab_id: int, user_id: str | None = None, node_target: str | N
     # list endpoint), so this is a defensive fallback, not a real path.
     socket = _tmux_socket_name(user_id)
     if node_target and node_target != "control-plane" and user_id:
-        return [tmux_bin, "-L", socket, "new-session", "-A", "-s", session, *_debug_node_shell_command(node_target, user_id, tab_id)]
+        script = _debug_node_shell_command(node_target, user_id, tab_id)[2]
+        # The session does not exist yet when this command runs (see
+        # ensure_session). Set server options from inside the new pane,
+        # where the session is guaranteed to exist, before entering the node.
+        quoted_socket = shlex.quote(socket)
+        script = (
+            f"tmux -L {quoted_socket} set-option -g mouse on; "
+            f"tmux -L {quoted_socket} set-option -g history-limit 5000; "
+            f"{script}"
+        )
+        return [tmux_bin, "-L", socket, "new-session", "-A", "-s", session, "sh", "-c", script]
     return [tmux_bin, "-L", socket, "new-session", "-A", "-s", session]
 
 
 def _spawn_env(user_id: str | None = None) -> dict[str, str]:
     """user_id=None (no accounts) gets the
-    app's own inherited environment unchanged - the exact prior behavior,
-    same trust boundary as local dev/SSH-tunnel access generally. A real
+    app's own inherited environment, except for the local terminal command
+    directory when running from a source checkout. A real
     user_id gets KUBECONFIG pointed at that user's own restricted
     ServiceAccount kubeconfig (rbac.py) instead - the actual mechanism that
     stops their terminal from reaching another user's namespace. Defensive
@@ -575,6 +634,10 @@ def _spawn_env(user_id: str | None = None) -> dict[str, str]:
     a disk wipe - rbac.py's own docstring covers the normal provisioning
     path (account creation, app startup)."""
     env = dict(os.environ)
+    if (_LOCAL_TERMINAL_BIN / "k").is_file():
+        env["PATH"] = os.pathsep.join(
+            (str(_LOCAL_TERMINAL_BIN), env.get("PATH", ""))
+        )
     if users.single_user_mode():
         return env
     if not user_id:
@@ -585,9 +648,19 @@ def _spawn_env(user_id: str | None = None) -> dict[str, str]:
     if kubeconfig_path.exists():
         env["KUBECONFIG"] = str(kubeconfig_path)
     else:
+        # Fails closed (R02/C01), not insecure: `env` started as
+        # dict(os.environ), which in the real container already has
+        # KUBECONFIG pointed at the app's own unrestricted in-cluster
+        # identity (see deploy/entrypoint.sh) - silently leaving that in
+        # place here used to hand a per-user terminal the app's own
+        # kubeconfig the moment per-user provisioning failed, logged as a
+        # warning but otherwise invisible to anyone using the terminal.
+        # Popping it means a failure here genuinely blocks kubectl in that
+        # shell instead.
+        env.pop("KUBECONFIG", None)
         logger.warning(
-            "no RBAC-scoped kubeconfig available for user %s - falling back "
-            "to the app's own (unrestricted) kubeconfig for this terminal",
+            "no RBAC-scoped kubeconfig available for user %s - refusing to "
+            "fall back to the app's own kubeconfig for this terminal",
             user_id,
         )
     return env

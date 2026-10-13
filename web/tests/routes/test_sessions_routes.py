@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-import routers.sessions_router as sessions_router
+import services.session_lifecycle as session_lifecycle
 from grading_client import ResetResult
 from sessions import store as session_store
 
@@ -206,16 +206,16 @@ async def test_start_exam_unknown_difficulty_is_ignored_not_500(client, fake_ban
     assert session_store.get() is not None
 
 
-async def test_start_exam_out_of_preset_question_count_falls_back_to_default(client, fake_bank):
-    from sessions import EXAM_DEFAULT_QUESTION_COUNT
-
+async def test_start_exam_custom_count_and_timer(client, question_bank_factory, wire_fake_bank):
+    wire_fake_bank(question_bank_factory({"topic-a": 25}))
     res = await client.post(
         "/sessions/start",
-        data={"mode": "exam", "csrf_token": "x", "question_count": "7"},
+        data={"mode": "exam", "csrf_token": "x", "question_count": "7", "timer_minutes": "23"},
         follow_redirects=False,
     )
     assert res.status_code == 303
-    assert len(session_store.get().question_ids) <= EXAM_DEFAULT_QUESTION_COUNT
+    assert len(session_store.get().question_ids) == 7
+    assert session_store.get().timer_duration_seconds == 23 * 60
 
 
 # --- Boss mini-exam start -------------------------------------------
@@ -277,7 +277,7 @@ async def test_start_session_cleans_up_a_still_active_previous_session(client, f
     # process mid-session) must not leak the previous session's namespaces
     # forever - the next /sessions/start* call is the backstop.
     mock_cleanup = MagicMock(return_value=ResetResult(ok=True, output=""))
-    monkeypatch.setattr(sessions_router, "run_batch_cleanup", mock_cleanup)
+    monkeypatch.setattr(session_lifecycle, "run_batch_cleanup", mock_cleanup)
 
     first_res = await client.post("/sessions/start", data=_csrf_form(), follow_redirects=False)
     assert first_res.status_code == 303
@@ -297,7 +297,7 @@ async def test_start_boss_cleans_up_a_still_active_previous_session(client, fake
     import profile_store
     monkeypatch.setattr(profile_store, "boss_unlocked", lambda topic, user_id=None: True)
     mock_cleanup = MagicMock(return_value=ResetResult(ok=True, output=""))
-    monkeypatch.setattr(sessions_router, "run_batch_cleanup", mock_cleanup)
+    monkeypatch.setattr(session_lifecycle, "run_batch_cleanup", mock_cleanup)
 
     first_res = await client.post("/sessions/start", data=_csrf_form(), follow_redirects=False)
     assert first_res.status_code == 303
@@ -314,7 +314,7 @@ async def test_start_boss_cleans_up_a_still_active_previous_session(client, fake
 
 async def test_start_daily_cleans_up_a_still_active_previous_session(client, fake_bank, monkeypatch):
     mock_cleanup = MagicMock(return_value=ResetResult(ok=True, output=""))
-    monkeypatch.setattr(sessions_router, "run_batch_cleanup", mock_cleanup)
+    monkeypatch.setattr(session_lifecycle, "run_batch_cleanup", mock_cleanup)
 
     first_res = await client.post("/sessions/start", data=_csrf_form(), follow_redirects=False)
     assert first_res.status_code == 303
@@ -330,7 +330,7 @@ async def test_start_daily_cleans_up_a_still_active_previous_session(client, fak
 async def test_end_session_noop_when_nothing_active(client, fake_bank, monkeypatch):
     # No session started - run_batch_cleanup must never be called.
     mock_cleanup = MagicMock()
-    monkeypatch.setattr(sessions_router, "run_batch_cleanup", mock_cleanup)
+    monkeypatch.setattr(session_lifecycle, "run_batch_cleanup", mock_cleanup)
     res = await client.post("/sessions/end")
     assert res.status_code == 200
     assert res.json() == {"ok": True}
@@ -339,7 +339,7 @@ async def test_end_session_noop_when_nothing_active(client, fake_bank, monkeypat
 
 async def test_end_session_clears_active_session_and_schedules_cleanup(client, fake_bank, monkeypatch):
     mock_cleanup = MagicMock(return_value=ResetResult(ok=True, output=""))
-    monkeypatch.setattr(sessions_router, "run_batch_cleanup", mock_cleanup)
+    monkeypatch.setattr(session_lifecycle, "run_batch_cleanup", mock_cleanup)
 
     start_res = await client.post("/sessions/start", data=_csrf_form(), follow_redirects=False)
     assert start_res.status_code == 303
@@ -352,3 +352,69 @@ async def test_end_session_clears_active_session_and_schedules_cleanup(client, f
     mock_cleanup.assert_called_once()
     called_qids = mock_cleanup.call_args.args[0]
     assert called_qids == started_qids
+
+async def test_custom_practice_count_and_timer_are_honored(client, question_bank_factory, wire_fake_bank):
+    wire_fake_bank(question_bank_factory({"topic-a": 25}))
+    res = await client.post(
+        "/sessions/start",
+        data=_csrf_form(topic="topic-a") | {"session_size": "7", "timer_minutes": "23"},
+        follow_redirects=False,
+    )
+    assert res.status_code == 303
+    session = session_store.get()
+    assert len(session.question_ids) == 7
+    assert session.timer_duration_seconds == 23 * 60
+
+async def test_invalid_custom_values_preserve_existing_session(client, fake_bank):
+    started = await client.post("/sessions/start", data=_csrf_form(), follow_redirects=False)
+    assert started.status_code == 303
+    original = session_store.get()
+    for fields in (
+        {"timer_minutes": "0"}, {"timer_minutes": "241"}, {"timer_minutes": "1.5"},
+        {"session_size": "0"}, {"session_size": "-2"}, {"session_size": "2.5"},
+        {"mode": "exam", "question_count": "-1"},
+    ):
+        response = await client.post("/sessions/start", data=_csrf_form() | fields, follow_redirects=False)
+        assert response.status_code == 422
+        assert session_store.get() is original
+
+
+async def test_custom_count_caps_to_matching_pool(client, question_bank_factory, wire_fake_bank):
+    wire_fake_bank(question_bank_factory({"topic-a": ["easy", "easy", "hard"]}))
+    response = await client.post(
+        "/sessions/start",
+        data=_csrf_form() | {"session_size": "25", "difficulty": "easy", "timer_minutes": "240"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert len(session_store.get().question_ids) == 2
+    assert session_store.get().timer_duration_seconds == 240 * 60
+
+
+async def test_mixed_selected_topics_filter_pool_and_keep_settings(client, question_bank_factory, wire_fake_bank):
+    bank = question_bank_factory({"topic-a": ["easy", "hard"], "topic-b": ["hard"], "topic-c": ["hard"]})
+    wire_fake_bank(bank)
+    response = await client.post("/sessions/start", data={
+        "mode": "mixed", "topic_scope": "selected", "topics": ["topic-a", "topic-b", "topic-a"],
+        "difficulty": "hard", "session_size": "50", "timer_minutes": "23",
+    }, follow_redirects=False)
+    assert response.status_code == 303
+    session = session_store.get()
+    assert set(session.question_ids) == {
+        q.id for q in bank.questions if q.topic in {"topic-a", "topic-b"} and q.difficulty == "hard"
+    }
+    assert session.mode == "mixed"
+    assert session.timer_duration_seconds == 23 * 60
+
+
+async def test_mixed_invalid_selection_preserves_active_session(client, fake_bank):
+    await client.post("/sessions/start", data=_csrf_form(), follow_redirects=False)
+    original = session_store.get()
+    for fields, status in [
+        ({"topic_scope": "selected"}, 422),
+        ({"topics": ["topic-a", "missing"]}, 404),
+        ({"topics": ["topic-a"], "difficulty": "hard"}, 404),
+    ]:
+        response = await client.post("/sessions/start", data={"mode": "mixed", **fields}, follow_redirects=False)
+        assert response.status_code == status
+        assert session_store.get() is original

@@ -30,8 +30,9 @@
    Signature elements (still this product's clearest visual identity):
      1. The live grading checklist reads like CI/test-runner output -
         bracket markers [ ]/[✓]/[✗], monospace, staggered reveal on Check.
-     2. A tmux/wezterm-style status-bar footer (wezterm/README.md's own
-        vocabulary) - segments for prev/id/End session/next.
+     2. Question navigation is three separate controls: Previous, the
+        question id with End session under it, and Skip (or Next after a
+        passing Check). They are not one joined status strip.
      3. (v4) The Topics page performs the exam's own subject matter: a real
         `kubectl get topiclabs -o wide` prompt line with a blinking cursor,
         followed by an actual column-aligned command-output table. */
@@ -249,16 +250,18 @@ h1, h2, h3, h4, h5, h6 {
 .alert {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 10px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   font-size: 13px;
   margin-bottom: var(--space-4);
+  min-width: 0;
 }
 .alert[hidden] { display: none; }
 .alert-prefix { font-family: var(--font-mono); font-weight: 700; flex-shrink: 0; }
-.alert-body { flex: 1; }
+.alert-body { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .alert-dismiss { flex-shrink: 0; }
 
 .alert-critical { border-color: var(--fail); background: var(--fail-tint); color: var(--fail); }
@@ -402,15 +405,12 @@ h1, h2, h3, h4, h5, h6 {
    `.layout.has-terminal` block below for where the column axis is added. */
 .layout {
   display: grid;
-  grid-template-columns: 1fr;
-  /* Task gets every pixel Checklist doesn't need (1fr), Checklist sizes to
-     its own content (auto) instead of stretching to split the leftover
-     space evenly - a short "click Check to grade your work" state (the
-     common case) should read as a compact status strip, not a half-empty
-     box competing with Task for room. Resizing (app.js) still overrides
-     both with explicit pixel tracks once dragged, same as the column
-     axis - this is only the un-dragged default. */
-  grid-template-rows: 1fr 13px auto;
+  grid-template-columns: minmax(0, 1fr);
+  /* Unadjusted checklist stays compact; saved ratios apply only in the
+     wide visible-terminal workspace below. */
+  grid-template-rows: minmax(0, 1fr) 13px auto;
+  width: 100%;
+  min-width: 0;
   gap: 0;
   padding: var(--space-5) 20px;
   max-width: 1200px;
@@ -447,7 +447,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .layout.has-terminal {
   max-width: 1680px;
-  grid-template-columns: 1.4fr 13px 1fr;
+  grid-template-columns: minmax(0, var(--question-track, 0.58fr)) 13px minmax(0, var(--terminal-track, 0.42fr));
+  grid-template-rows: minmax(0, var(--task-track, 1fr)) 13px minmax(0, var(--checklist-track, auto));
 }
 
 .layout.has-terminal [data-resize-index="0"] {
@@ -455,6 +456,10 @@ h1, h2, h3, h4, h5, h6 {
   grid-row: 1 / -1;
   cursor: col-resize;
 }
+
+/* The row divider is only meaningful while the terminal is visible and
+   wide. A 40vh cap here would ignore the saved task/checklist ratio. */
+.layout.has-terminal:not(.terminal-collapsed) .checklist-panel { max-height: none; }
 
 .layout.has-terminal .terminal-panel {
   grid-column: 3;
@@ -466,31 +471,35 @@ h1, h2, h3, h4, h5, h6 {
   align-self: stretch;
 }
 
-.layout.has-terminal.terminal-collapsed {
-  grid-template-columns: 1fr;
+.layout.has-terminal.terminal-collapsed,
+.terminal-preference-hidden .layout.has-terminal {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
 }
+.terminal-preference-hidden .layout .checklist-panel { grid-row: 2; }
+.terminal-preference-hidden .layout .resizer,
+.layout:not(.has-terminal) .resizer { display: none; }
+.layout:not(.has-terminal) { grid-template-rows: auto auto; }
+.layout:not(.has-terminal) .checklist-panel { grid-row: 2; }
+.terminal-preference-hidden #terminal-panel { display: none; }
+.workspace-resizing { user-select: none; }
+.workspace-resizing iframe { pointer-events: none; }
+.resizer { touch-action: none; }
+.resizer:focus-visible { outline: 2px solid var(--signature); outline-offset: -2px; }
 
-/* "One screen" fit: with a terminal present, the whole page becomes
-   exactly one viewport tall and never scrolls itself - Task, Checklist,
-   and Terminal each scroll their own content instead (their own
-   overflow-y:auto above; the terminal's xterm.js/ttyd scrollback handles
-   itself regardless of container height). This is the actual fix for
-   "I have to scroll down to see the terminal" - a full-height right
-   column only helps if the page doesn't scroll past it in the first
-   place. Scoped to this one body-class combination (set server-side in
-   question.html, mirroring .layout's own has-terminal class) rather than
-   body generally, so every other page - topics/progress/login, none of
-   which have a terminal to fit around - keeps its ordinary scrolling
-   document flow untouched. */
+/* Wide workspaces fill the dynamic viewport with independently scrolling
+   panels. Keep page scrolling available if enlarged controls need more room.
+   Compact and short windows return to document flow below. */
 body.question-view.has-terminal-view {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  overflow: hidden;
+  height: 100dvh;
+  overflow: auto;
 }
 body.question-view.has-terminal-view .topbar,
 body.question-view.has-terminal-view #idle-warning,
-body.question-view.has-terminal-view .status-bar {
+body.question-view.has-terminal-view .question-nav {
   flex: 0 0 auto;
 }
 body.question-view.has-terminal-view .layout {
@@ -547,27 +556,29 @@ body.question-view.has-terminal-view .layout {
   display: none;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1099px), (max-height: 649px) {
   body.question-view.has-terminal-view {
     display: block;
     height: auto;
     overflow: visible;
   }
-  .layout { grid-template-columns: 1fr !important; grid-template-rows: auto auto auto !important; }
+  .question-view .layout { display: flex; flex-direction: column; gap: 16px; }
   .layout .question-panel,
   .layout .checklist-panel,
   .layout .terminal-panel { grid-column: 1 !important; grid-row: auto !important; }
   .layout .question-panel,
-  .layout .checklist-panel { overflow-y: visible !important; }
+  .layout .checklist-panel { overflow-y: visible !important; max-height: none; }
   .layout .resizer { display: none; }
-  .layout .terminal-panel { position: static; max-height: none; min-height: 320px; }
+  .layout .terminal-panel { position: static; max-height: none; min-height: 400px; height: 60vh; height: 60dvh; }
+  .question-view .terminal-frame-wrap { min-height: 0; }
+  .question-view .btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
 }
 
 /* Hub shell (sidebar + content) - a fixed 200px sidebar was never given a
    narrow-viewport treatment when it was added for v2, which would eat a
    large fraction of a real mobile screen. Collapse to a horizontal top bar
    instead of a left rail, same "don't fight the viewport" posture as the
-   question page's own 900px rule above. */
+   question page's compact rule above. */
 @media (max-width: 700px) {
   .hub-shell { flex-direction: column; }
   .sidebar {
@@ -618,7 +629,7 @@ body.question-view.has-terminal-view .layout {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   padding: var(--space-4) 20px;
-  max-width: 420px;
+  max-width: min(420px, calc(100vw - 32px));
   font-size: 13px;
 }
 .confirm-dialog::backdrop {
@@ -936,28 +947,38 @@ body.question-view.has-terminal-view .layout {
 
 .actions { display: flex; gap: 8px; }
 
-/* v5 (issue #109): sans-serif - a button label is UI chrome, not code/
-   data/terminal content, even when its text reads like a CLI verb
-   ("Fixed", "Start Exam"). */
+/* Buttons share the lab type. Primary is the solid action. Secondary is
+   a filled key, not an empty outline. */
 .btn {
-  border: 1px solid var(--border);
-  background: transparent;
+  border: 1px solid var(--border-strong);
+  background: var(--panel-raised);
   color: var(--text);
-  border-radius: var(--radius-control);
-  padding: 6px 13px;
-  font-size: 12.5px;
+  border-radius: 2px;
+  padding: 0 12px;
+  min-height: 32px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
   cursor: pointer;
   text-decoration: none;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
 }
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:active:not(:disabled) { background: var(--ink); }
 
-.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.btn-primary:hover:not(:disabled) { background: var(--accent-dim); }
-.btn-secondary { color: var(--muted); }
-.btn-secondary:hover:not(:disabled) { color: var(--text); border-color: var(--border-strong); }
-.btn-danger-ghost { color: var(--fail); border-color: var(--fail); background: transparent; }
-.btn-danger-ghost:hover { background: rgba(var(--fail-rgb), 0.12); }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: var(--accent); border-color: #4d84ef; color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #3d78ea; border-color: #6b9cf3; }
+.btn-primary:active:not(:disabled) { background: #2857c4; border-color: #2857c4; }
+.btn-secondary { background: var(--panel); color: var(--text); }
+.btn-secondary:hover:not(:disabled) { background: var(--panel-raised); }
+.btn-danger-ghost { color: var(--fail); border-color: #6e3030; background: transparent; }
+.btn-danger-ghost:hover { background: rgba(var(--fail-rgb), 0.12); border-color: var(--fail); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* #check-status is now the shared .alert component in .alert-compact
    mode (see the block above where .alert is defined) - app.js's
@@ -1141,36 +1162,51 @@ body.question-view.has-terminal-view .layout {
   font-size: 12px;
   padding: 4px 12px;
 }
-
-/* --- Status-bar footer --------------------------------------------------
-   A tmux/wezterm-style segmented bar - the same multiplexer vocabulary
-   this project's own daily toolchain uses (wezterm/README.md) - rather
-   than a plain two-button footer. Center segment carries the "End
-   session" lifecycle action; app.js also calls the same endpoint
-   automatically when the timer reaches zero. */
-
-.status-bar {
-  max-width: 1680px;
-  margin: 0 auto;
-  padding: 0 20px 24px;
-  display: flex;
-  align-items: stretch;
-  gap: 1px;
-  font-family: var(--font-mono);
+/* The preference script hides the panel before app.js can relabel the
+   button. Keep the visible label in sync without an inline script. */
+html.terminal-preference-hidden #terminal-toggle:not(.label-synced) {
+  font-size: 0;
+}
+html.terminal-preference-hidden #terminal-toggle:not(.label-synced)::after {
+  content: "Show terminal";
   font-size: 12px;
 }
 
-.status-segment {
-  background: var(--panel-raised);
-  border: 1px solid var(--border);
-  display: flex;
+/* Question footer: Previous and Skip/Next are separate buttons. The
+   question id is a label, and End session sits under it instead of inside
+   the same joined strip. */
+
+.question-nav {
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 8px 20px 24px;
+  display: grid;
+  grid-template-columns: auto auto auto;
+  grid-template-areas:
+    "id id id"
+    "prev end next";
+  justify-content: center;
   align-items: center;
-  padding: 6px 12px;
+  column-gap: 16px;
+  row-gap: 8px;
+  width: 100%;
 }
-.status-segment-nav:first-child { border-radius: var(--radius-control) 0 0 var(--radius-control); }
-.status-segment-nav:last-child { border-radius: 0 var(--radius-control) var(--radius-control) 0; }
-.status-segment-id { color: var(--muted); flex: 1; justify-content: center; }
-.status-segment-end { justify-content: center; }
+
+.question-nav-id {
+  grid-area: id;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-align: center;
+  overflow-wrap: anywhere;
+  max-width: 36rem;
+  justify-self: center;
+  min-width: 0;
+}
+.question-nav-prev { grid-area: prev; }
+.question-nav-end { grid-area: end; display: flex; justify-content: center; }
+.question-nav-next { grid-area: next; }
+.question-nav .btn { min-width: 7.5rem; text-align: center; }
 
 .btn-nav {
   min-width: 70px;
@@ -1683,7 +1719,7 @@ body.question-view.has-terminal-view .layout {
   padding: 5px 12px;
   text-decoration: none;
 }
-.filter-tab.active { color: var(--text); border-color: var(--signature); background: rgba(255, 176, 0, 0.08); }
+.filter-tab.active { color: var(--text); border-color: var(--signature); background: rgba(var(--accent-rgb), 0.08); }
 
 /* --- Question-list rows (topic-detail page) ----------------------------- */
 
@@ -1784,3 +1820,64 @@ body.question-view.has-terminal-view .layout {
 .admin-add-form label { font-size: 13px; color: var(--muted); }
 .admin-checkbox-label { display: flex; align-items: center; gap: 6px; }
 .admin-add-form button { align-self: flex-start; }
+
+/* Question workspace controls must wrap independently of task content. */
+.question-view .topbar-row,
+.question-view .topbar-badges,
+.question-view .question-meta,
+.question-view .checklist-header,
+.question-view .terminal-panel-header { flex-wrap: wrap; min-width: 0; }
+.question-view .question-title,
+.question-view .terminal-workdir-label { overflow-wrap: anywhere; }
+.question-view .panel { min-width: 0; }
+.question-view .question-nav { width: 100%; }
+.question-view .tab-content { overflow-wrap: anywhere; }
+.question-view .tab-content pre { max-width: 100%; overflow-x: auto; }
+.question-view .tab-content table { display: block; max-width: 100%; overflow-x: auto; }
+@media (max-width: 699px) {
+  .question-view .layout { padding: 12px; }
+  .question-view .topbar { padding-left: 12px; padding-right: 12px; }
+  .question-view .question-nav {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "id id"
+      "prev next"
+      "end end";
+    padding: 8px 12px 16px;
+  }
+  .question-view .question-nav-id { grid-area: id; max-width: 100%; }
+  .question-view .question-nav-prev { grid-area: prev; min-width: 0; }
+  .question-view .question-nav-next { grid-area: next; min-width: 0; }
+  .question-view .question-nav-end { grid-area: end; display: block; min-width: 0; }
+  .question-view .question-nav .btn {
+    width: 100%;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .question-view .tabs { flex-wrap: wrap; }
+  .question-view .terminal-tabs { flex-wrap: wrap; }
+}
+
+/* Active exams reserve one task row, including when the terminal is hidden.
+   These selectors outrank the collapsed two-row rule above. */
+.question-view .layout.exam-workspace,
+.terminal-preference-hidden .question-view .layout.exam-workspace.has-terminal,
+.question-view .layout.exam-workspace.has-terminal.terminal-collapsed {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.workspace-info { flex: 0 0 auto; margin: 0 20px; padding: 8px 0; min-width: 0; }
+.workspace-info summary { cursor: pointer; color: var(--signature); padding: 8px 0; }
+.workspace-info[open] { max-height: 40vh; overflow: auto; }
+.workspace-info dl { margin: 12px 0; }
+.workspace-info dt { color: var(--muted); }
+.workspace-info dd { margin: 0 0 8px; overflow-wrap: anywhere; }
+.workspace-info p { overflow-wrap: anywhere; }
+.workspace-info pre { overflow-x: auto; max-width: 100%; }
+.workspace-command { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; max-width: 100%; }
+.workspace-command pre { margin: 0; width: 100%; }
+@media (max-width: 1099px), (max-height: 649px) {
+  .workspace-info[open] { max-height: none; }
+}

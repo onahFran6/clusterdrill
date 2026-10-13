@@ -34,6 +34,16 @@ def test_fragment_metadata_is_attached(question_bank_factory):
     assert q.resource_kinds == ["Pod"]
 
 
+def test_exam_eligible_defaults_true_when_fragment_omits_it(question_bank_factory):
+    bank = question_bank_factory({"topic-a": 1})
+    assert bank.get("qT01-question").exam_eligible is True
+
+
+def test_exam_eligible_false_is_read_from_the_fragment(question_bank_factory):
+    bank = question_bank_factory({"topic-a": 1}, exam_eligible={"topic-a": False})
+    assert bank.get("qT01-question").exam_eligible is False
+
+
 def test_folder_missing_check_sh_is_skipped(tmp_path):
     questions_dir = tmp_path / "questions"
     topic_dir = questions_dir / "topic-a"
@@ -121,7 +131,7 @@ def test_bank_get_returns_none_for_unknown_id(question_bank_factory):
     assert bank.get("not-a-real-qid") is None
 
 
-def test_refresh_picks_up_new_questions(tmp_path):
+def test_refresh_force_picks_up_new_questions(tmp_path):
     questions_dir = tmp_path / "questions"
     qdir = questions_dir / "topic-a" / "qA01-first"
     qdir.mkdir(parents=True)
@@ -137,5 +147,44 @@ def test_refresh_picks_up_new_questions(tmp_path):
     (qdir2 / "check.sh").write_text("#!/usr/bin/env bash\n")
 
     assert len(bank) == 1  # stale until refresh() is called
-    bank.refresh()
+    bank.refresh(force=True)
     assert len(bank) == 2
+
+
+def test_refresh_without_force_is_throttled(tmp_path):
+    # I01: refresh() is called on nearly every page route plus /healthz
+    # (hit every ~10s by kubelet regardless of traffic) - a plain refresh()
+    # right after another real scan must not redo the full directory
+    # walk/YAML parse, or every one of those becomes a full bank re-scan.
+    # force=True (constructor, and anything that genuinely needs a
+    # guaranteed-fresh read) bypasses this.
+    questions_dir = tmp_path / "questions"
+    qdir = questions_dir / "topic-a" / "qA01-first"
+    qdir.mkdir(parents=True)
+    (qdir / "QUESTION.md").write_text("# first\n")
+    (qdir / "check.sh").write_text("#!/usr/bin/env bash\n")
+
+    bank = QuestionBank(questions_dir=questions_dir)
+    assert len(bank) == 1
+
+    qdir2 = questions_dir / "topic-a" / "qA02-second"
+    qdir2.mkdir(parents=True)
+    (qdir2 / "QUESTION.md").write_text("# second\n")
+    (qdir2 / "check.sh").write_text("#!/usr/bin/env bash\n")
+
+    bank.refresh()  # no force - too soon after __init__'s own scan
+    assert len(bank) == 1
+
+    bank.refresh(force=True)
+    assert len(bank) == 2
+
+
+def test_combined_topics_preserve_source_paths_and_metadata(question_bank_factory):
+    bank = question_bank_factory({"pod-design": 2, "pods-v2": 3, "community": 1})
+    assert bank.pool_size("pod-design") == 5
+    assert bank.topics() == ["community", "pod-design"]
+    imported = [q for q in bank.questions if q.path.parent.name == "pods-v2"]
+    assert len(imported) == 3
+    assert all(q.topic == "pod-design" and q.check_sh.exists() for q in imported)
+    assert all(q.domain == "pods-v2 domain" for q in imported)
+    assert bank.pool_size("community") == 1

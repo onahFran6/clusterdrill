@@ -2,11 +2,13 @@
 # This question needs a second namespace per §3 of this topic's build
 # notes: the "outside" test namespace is its own extra namespace, never
 # the shared `default` namespace (which would pollute it across every
-# other concurrent session/question). Per the established multi-namespace
-# pattern (see q108-28-diagnose-dns-wrong-namespace-suffix), OUTSIDE_NS
-# below is named as a suffix of $QUESTION_ID, carries no
-# clusterdrill-question label, and is deleted/recreated wholesale on every
-# run for its own idempotency.
+# other concurrent session/question). OUTSIDE_NS below is named as a
+# suffix of $QUESTION_ID and labeled clusterdrill-question=$QUESTION_ID,
+# same as the primary namespace (R06): full_reset/batch_cleanup select
+# namespaces to delete by this label, so OUTSIDE_NS is swept up and
+# cleaned at session end exactly like the primary one. It's also still
+# deleted/recreated wholesale on every run for its own idempotency on
+# repeated runs of this one question.
 set -euo pipefail
 
 QUESTION_ID="q116-13-lock-the-namespace-keep-it-working-inside${CLUSTERDRILL_NAMESPACE_SUFFIX:-}"
@@ -24,6 +26,7 @@ grant_user_namespace_access "$QUESTION_ID" "${CLUSTERDRILL_USER_ID:-}"
 kubectl delete namespace "$OUTSIDE_NS" --ignore-not-found --wait=true >/dev/null 2>&1
 kubectl create namespace "$OUTSIDE_NS" \
   --dry-run=client -o yaml | kubectl apply -f -
+kubectl label namespace "$OUTSIDE_NS" "clusterdrill-question=$QUESTION_ID" --overwrite
 apply_default_resource_limits "$OUTSIDE_NS"
 grant_user_namespace_access "$OUTSIDE_NS" "${CLUSTERDRILL_USER_ID:-}"
 

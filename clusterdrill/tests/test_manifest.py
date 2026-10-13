@@ -174,9 +174,12 @@ def test_service_selector_matches_the_deployment_pods():
     }
 
 
-def test_local_appliance_is_explicitly_single_user():
+def test_local_appliance_has_no_dead_single_user_env_var():
+    # Proposal A (C01/C02): single-user is no longer a CLUSTERDRILL_SINGLE_USER
+    # toggle - web/users.py::single_user_mode() is unconditionally True now,
+    # so this env var would be a misleading, no-op knob if present.
     docs = _load_manifest_documents()
     deployments = [doc for doc in docs if doc.get("kind") == "Deployment"]
     assert len(deployments) == 1
     env = deployments[0]["spec"]["template"]["spec"]["containers"][0].get("env", [])
-    assert {entry["name"]: entry.get("value") for entry in env}["CLUSTERDRILL_SINGLE_USER"] == "true"
+    assert "CLUSTERDRILL_SINGLE_USER" not in {entry["name"] for entry in env}

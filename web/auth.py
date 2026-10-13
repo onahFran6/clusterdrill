@@ -202,21 +202,54 @@ _LOGIN_LOCKOUT_SECONDS = 15 * 60
 _login_failures: dict[str, list[float]] = {}
 _login_lock = threading.Lock()
 
+# R01: CF-Connecting-IP/X-Forwarded-For are headers *the client itself*
+# controls unless something trusted actually strips/overwrites them before
+# this app ever sees the request - trusting them unconditionally lets a
+# direct client (e.g. hitting a NodePort straight, bypassing any tunnel)
+# rotate a fabricated header on every request and get a fresh lockout
+# bucket each time. Only consult them when the actual TCP peer
+# (request.client.host - not spoofable, it's the real socket this process
+# accepted the connection from) is one of these explicitly configured,
+# trusted proxy addresses; every other peer is keyed on its own real
+# address, headers or not. Comma-separated IPs, e.g.
+# "127.0.0.1,::1" for a loopback-only Cloudflare Tunnel/nginx sidecar, or a
+# cluster-internal Ingress controller's IP for an in-cluster proxy. Empty
+# (the default) means never trust forwarded headers - fixes closed, not
+# open, when unset.
+_TRUSTED_PROXY_IPS = frozenset(
+    ip.strip() for ip in os.environ.get("CLUSTERDRILL_TRUSTED_PROXY_IPS", "").split(",") if ip.strip()
+)
+
 
 def _client_key(request: Request) -> str:
-    """Prefer the header Cloudflare Tunnel sets for the real client IP
-    (`cf-connecting-ip`) over request.client.host, which is always the
-    tunnel daemon's own loopback address once a Cloudflare Tunnel is in
-    front of this app - without this every visitor would share one
-    lockout bucket. Falls back through the generic X-Forwarded-For header
-    for other reverse proxies, then the raw socket peer for local dev or
-    an SSH-tunnel deployment, neither of which go through a proxy at
-    all."""
+    """The real socket peer, unless it's an explicitly configured trusted
+    proxy - in which case the header *that* proxy is known to set
+    (cf-connecting-ip for Cloudflare Tunnel, x-forwarded-for generically)
+    is trusted instead. See _TRUSTED_PROXY_IPS above for why the peer check
+    comes first: these headers are attacker-controlled input from any
+    client that isn't actually going through the trusted hop."""
+    peer = request.client.host if request.client else "unknown"
+    if peer not in _TRUSTED_PROXY_IPS:
+        return peer
     return (
         request.headers.get("cf-connecting-ip")
         or request.headers.get("x-forwarded-for", "").split(",")[0].strip()
-        or (request.client.host if request.client else "unknown")
+        or peer
     )
+
+
+def _prune_login_failures_locked(now: float) -> None:
+    """Drops expired attempts from every key, and keys with none left -
+    must be called with _login_lock already held. A plain per-key prune
+    (the previous design) only ever shrank the one key being looked up,
+    letting an attacker who sends a fresh fabricated value on every request
+    grow this dict without bound; sweeping the whole thing on every access
+    keeps it bounded by actual distinct-peer traffic instead."""
+    for key in [k for k, attempts in _login_failures.items()
+                if not any(now - t < _LOGIN_WINDOW_SECONDS for t in attempts)]:
+        del _login_failures[key]
+    for key, attempts in _login_failures.items():
+        _login_failures[key] = [t for t in attempts if now - t < _LOGIN_WINDOW_SECONDS]
 
 
 def seconds_until_unlocked(request: Request) -> Optional[int]:
@@ -226,8 +259,8 @@ def seconds_until_unlocked(request: Request) -> Optional[int]:
     key = _client_key(request)
     now = time.time()
     with _login_lock:
-        attempts = [t for t in _login_failures.get(key, []) if now - t < _LOGIN_WINDOW_SECONDS]
-        _login_failures[key] = attempts
+        _prune_login_failures_locked(now)
+        attempts = _login_failures.get(key, [])
         if len(attempts) < _LOGIN_MAX_ATTEMPTS:
             return None
         oldest_counted = attempts[-_LOGIN_MAX_ATTEMPTS]
@@ -269,7 +302,8 @@ def check_lockout_and_record_attempt(request: Request) -> Optional[int]:
     key = _client_key(request)
     now = time.time()
     with _login_lock:
-        attempts = [t for t in _login_failures.get(key, []) if now - t < _LOGIN_WINDOW_SECONDS]
+        _prune_login_failures_locked(now)
+        attempts = _login_failures.get(key, [])
         if len(attempts) >= _LOGIN_MAX_ATTEMPTS:
             oldest_counted = attempts[-_LOGIN_MAX_ATTEMPTS]
             remaining = int(_LOGIN_LOCKOUT_SECONDS - (now - oldest_counted))
@@ -361,6 +395,16 @@ def attempt_login(request: Request, username: str, password: str) -> Optional["u
 
 
 def logout(request: Request) -> None:
+    # Revoke this account's sessions (R04), not just clear this one
+    # browser's cookie: without it, an already-open terminal WebSocket on a
+    # different device/tab kept running indefinitely after "logout" here -
+    # WebSockets authenticate once at connect time and were never
+    # re-checked against anything logout touched. See
+    # routers/terminal_router.py's periodic revocation check, which is what
+    # actually acts on this.
+    user_id = current_user_id(request.session)
+    if user_id is not None:
+        revoke_user_sessions(user_id)
     request.session.pop(SESSION_KEY, None)
     request.session.pop(AUTHED_AT_KEY, None)
     request.session.pop(USER_ID_KEY, None)

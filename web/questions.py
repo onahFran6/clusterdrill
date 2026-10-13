@@ -21,6 +21,7 @@ calls setup.sh/check.sh itself - callers (app.py) own subprocess execution.
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -42,6 +43,23 @@ LIB_DIR = BANK_ROOT / "lib"
 # naturally yields zero questions and doesn't need special-casing here.
 NON_TOPIC_DIRS = {"_template"}
 
+# Public topics are independent of the source folders. Keep IDs and paths
+# stable so saved progress, grading scripts, and licensing boundaries survive.
+TOPIC_ALIASES = {
+    "pods-v2": "pod-design",
+    "deployments-v2": "deployments-strategies",
+    "services-v2": "services-networking",
+    "ingress-netpol-v2": "services-networking",
+    "storage-v2": "state-persistence",
+    "container-images-v2": "container-images",
+    "jobs-cronjobs-v2": "jobs-cronjobs",
+}
+
+
+def canonical_topic(topic: str) -> str:
+    return TOPIC_ALIASES.get(topic, topic)
+
+
 # Sentinel distinguishing "QuestionBank.set_storage_profile was never
 # called" from the real value None ("active storage profile is unknown") -
 # see QuestionBank.__init__'s docstring comment.
@@ -59,6 +77,20 @@ class Question:
     points: Optional[int] = None
     min_nodes: Optional[int] = None
     storage_profile: Optional[str] = None  # None => provisioner-agnostic, any active profile OK
+    # True for every question except the handful whose grading has a
+    # side effect incompatible with exam-style deferred grading (R13):
+    # q110-45's check.sh permanently deletes its own test object once the
+    # fix is confirmed (deliberate, to observe real cascade-GC - fine for
+    # practice mode's immediate Check, not for a future retry/re-grade
+    # path), and q118-01's Job carries a 60s ttlSecondsAfterFinished that
+    # Kubernetes itself may have already garbage-collected by the time
+    # exam finalization (which can run anywhere from seconds to hours
+    # after setup, unlike practice mode's immediate Check) actually grades
+    # it - scoring a correctly-solved attempt as a failure purely from
+    # timing. Only gates start_exam's draw (sessions._exam_pool is shared
+    # with start_mixed's practice-mode draw, where both questions are
+    # unaffected - this flag is intentionally not read there).
+    exam_eligible: bool = True
 
     def is_eligible_for(self, node_count: int) -> bool:
         """Whether this question may run on a cluster of ``node_count`` nodes.
@@ -182,7 +214,7 @@ def discover_questions(questions_dir: Path = QUESTIONS_DIR) -> list[Question]:
             questions.append(
                 Question(
                     id=q_dir.name,
-                    topic=topic_dir.name,
+                    topic=canonical_topic(topic_dir.name),
                     path=q_dir,
                     domain=meta.get("domain"),
                     difficulty=meta.get("difficulty"),
@@ -190,10 +222,11 @@ def discover_questions(questions_dir: Path = QUESTIONS_DIR) -> list[Question]:
                     points=meta.get("points"),
                     min_nodes=(meta.get("requirements") or {}).get("min_nodes"),
                     storage_profile=(meta.get("requirements") or {}).get("storage_profile"),
+                    exam_eligible=meta.get("exam_eligible", True),
                 )
             )
 
-    return questions
+    return sorted(questions, key=lambda q: (q.topic, q.id))
 
 
 def count_incomplete_question_dirs(questions_dir: Path = QUESTIONS_DIR) -> int:
@@ -216,8 +249,19 @@ def count_incomplete_question_dirs(questions_dir: Path = QUESTIONS_DIR) -> int:
     return count
 
 
+#. refresh() used to re-walk and re-parse the entire bank (635+ questions'
+# worth of directory listing + domains.fragment.yaml) on literally every
+# call - and it's called on nearly every page route plus /healthz, which
+# kubelet hits every ~10s regardless of traffic (I01). Bounding real
+# re-scans to once per this interval keeps content-authoring edits visible
+# within a few seconds (the actual requirement - no deployment restart
+# needed to pick up a new question) without redoing that walk per request.
+_MIN_REFRESH_INTERVAL_SECONDS = 2.0
+
+
 class QuestionBank:
-    """In-memory, re-scanned-on-demand view of the questions/ directory.
+    """In-memory view of the questions/ directory, re-scanned at most once
+    per _MIN_REFRESH_INTERVAL_SECONDS (see refresh()).
 
     Kept intentionally simple - no session/randomization layer here, see
     sessions.py for that.
@@ -232,10 +276,20 @@ class QuestionBank:
         # keep skipping storage filtering entirely, the same way
         # _node_count's own None-means-unset sentinel already works.
         self._storage_profile: object = _UNSET
-        self.refresh()
+        self._last_refreshed_at: float = 0.0
+        self.refresh(force=True)
 
-    def refresh(self) -> None:
+    def refresh(self, *, force: bool = False) -> None:
+        """Re-walks the bank from disk, unless the last real walk happened
+        within _MIN_REFRESH_INTERVAL_SECONDS - in which case this is a
+        cheap no-op (see the module-level comment above). force=True always
+        re-walks regardless of timing; every caller that doesn't explicitly
+        need a guaranteed-fresh read should leave it False."""
+        now = time.monotonic()
+        if not force and (now - self._last_refreshed_at) < _MIN_REFRESH_INTERVAL_SECONDS:
+            return
         self._questions = discover_questions(self.questions_dir)
+        self._last_refreshed_at = now
 
     @property
     def questions(self) -> list[Question]:

@@ -11,6 +11,7 @@ same reasoning as test_auth.py's _reset_auth_module_globals fixture.
 """
 from __future__ import annotations
 
+import os
 from unittest.mock import MagicMock
 
 import pytest
@@ -26,6 +27,33 @@ def _reset_user_slots():
     ttyd_manager._user_slots.clear()
     ttyd_manager._user_slots[None] = 0
     ttyd_manager._next_user_slot = 1
+
+
+# --- _tmux_run (I05: every tmux call site now bounded by a timeout) --------
+
+def test_tmux_run_passes_timeout_through_to_subprocess_run(monkeypatch):
+    mock_run = MagicMock(return_value="sentinel")
+    monkeypatch.setattr(ttyd_manager.subprocess, "run", mock_run)
+
+    result = ttyd_manager._tmux_run(["tmux", "-L", "sock", "kill-server"], stdout=ttyd_manager.subprocess.DEVNULL)
+
+    assert result == "sentinel"
+    mock_run.assert_called_once_with(
+        ["tmux", "-L", "sock", "kill-server"],
+        timeout=ttyd_manager.TMUX_TIMEOUT_SECONDS,
+        stdout=ttyd_manager.subprocess.DEVNULL,
+    )
+
+
+def test_tmux_run_returns_a_failed_result_on_timeout_instead_of_raising(monkeypatch):
+    def raising_run(args, **kwargs):
+        raise ttyd_manager.subprocess.TimeoutExpired(args, kwargs.get("timeout"))
+
+    monkeypatch.setattr(ttyd_manager.subprocess, "run", raising_run)
+
+    result = ttyd_manager._tmux_run(["tmux", "-L", "sock", "kill-server"])
+
+    assert result.returncode == 1
 
 
 def test_ttyd_instance_default_port_offset_by_tab_id():
@@ -126,6 +154,8 @@ def test_shell_command_worker_target_wraps_kubectl_debug_node(monkeypatch):
     assert cmd[7:9] == ["sh", "-c"]
     script = cmd[9]
     assert "kubectl debug node/worker-1" in script
+    assert "set-option -g mouse on" in script
+    assert script.index("set-option -g mouse on") < script.index("kubectl debug")
     assert "--image=busybox:1.36" in script
     assert "chroot /host sh" in script
     # The debug pod's name is deterministic per (user_id, tab_id) - see
@@ -174,6 +204,7 @@ def test_start_kills_any_stale_same_named_session_before_a_worker_target(monkeyp
 
     manager.run.assert_called_once_with(
         ["/usr/bin/tmux", "-L", "clusterdrill-1", "kill-session", "-t", "clusterdrill-alice-2"],
+        timeout=ttyd_manager.TMUX_TIMEOUT_SECONDS,
         stdout=ttyd_manager.subprocess.DEVNULL, stderr=ttyd_manager.subprocess.DEVNULL,
     )
     # The kill must happen before Popen spawns ttyd, not after - a stale
@@ -234,6 +265,7 @@ def test_kill_all_tmux_sessions_calls_kill_server_per_user(monkeypatch):
     assert mock_run.call_count == 1
     mock_run.assert_called_once_with(
         ["/usr/bin/tmux", "-L", "clusterdrill-0", "kill-server"],
+        timeout=ttyd_manager.TMUX_TIMEOUT_SECONDS,
         stdout=ttyd_manager.subprocess.DEVNULL, stderr=ttyd_manager.subprocess.DEVNULL,
     )
 
@@ -352,6 +384,7 @@ def test_kill_user_tmux_sessions_only_targets_that_user(monkeypatch):
     # tab's session for her in one shot - no other user's socket is touched.
     mock_run.assert_called_once_with(
         ["/usr/bin/tmux", "-L", "clusterdrill-1", "kill-server"],
+        timeout=ttyd_manager.TMUX_TIMEOUT_SECONDS,
         stdout=ttyd_manager.subprocess.DEVNULL, stderr=ttyd_manager.subprocess.DEVNULL,
     )
 
@@ -372,25 +405,42 @@ def test_kill_user_tmux_sessions_deletes_each_tabs_debug_pod(monkeypatch):
 
 # --- _spawn_env ------------------------------
 
-def test_spawn_env_no_accounts_is_unmodified_inherited_env(monkeypatch):
+def test_spawn_env_no_accounts_includes_terminal_commands(monkeypatch):
     monkeypatch.setattr(ttyd_manager.os, "environ", {"PATH": "/usr/bin", "HOME": "/home/x"})
     env = ttyd_manager._spawn_env(None)
-    assert env == {"PATH": "/usr/bin", "HOME": "/home/x"}
+    if (ttyd_manager._LOCAL_TERMINAL_BIN / "k").is_file():
+        assert env["PATH"].split(os.pathsep)[0] == str(ttyd_manager._LOCAL_TERMINAL_BIN)
+    else:
+        assert env["PATH"] == "/usr/bin"
+    assert env["HOME"] == "/home/x"
     assert "KUBECONFIG" not in env
 
 
 def test_spawn_env_single_user_mode_never_provisions_user_rbac(monkeypatch):
-    monkeypatch.setenv("CLUSTERDRILL_SINGLE_USER", "true")
+    # single_user_mode() is now always True (Proposal A/C01) - this is the
+    # only path _spawn_env can take in the supported app, full stop.
     ensure = MagicMock()
     monkeypatch.setattr(ttyd_manager.rbac, "ensure_user_service_account", ensure)
 
     env = ttyd_manager._spawn_env("admin")
 
-    assert env["CLUSTERDRILL_SINGLE_USER"] == "true"
     ensure.assert_not_called()
+    assert "KUBECONFIG" not in env
 
+
+# Proposal A/C01: per-user RBAC-scoped kubeconfig redirection below is no
+# longer reachable through the live app (users.single_user_mode() is always
+# True, and _spawn_env returns before ever consulting it) - the capability
+# itself was removed, not merely defaulted off, after the audit found the
+# real isolation gaps in C01/C02 ran deeper than this RBAC layer. The
+# underlying ttyd_manager/rbac machinery is left in place rather than
+# deleted (useful, independently-correct infrastructure), so these three
+# tests monkeypatch single_user_mode() back to False to keep exercising
+# that logic directly, on its own terms - they are not characterizing
+# current app behavior.
 
 def test_spawn_env_real_user_points_kubeconfig_at_their_own_file(monkeypatch, tmp_path):
+    monkeypatch.setattr(ttyd_manager.users, "single_user_mode", lambda: False)
     kubeconfig = tmp_path / "alice.yaml"
     kubeconfig.write_text("fake kubeconfig")
     monkeypatch.setattr(ttyd_manager.rbac, "user_kubeconfig_path", lambda user_id: kubeconfig)
@@ -403,6 +453,7 @@ def test_spawn_env_real_user_points_kubeconfig_at_their_own_file(monkeypatch, tm
 
 
 def test_spawn_env_provisions_missing_kubeconfig_on_demand(monkeypatch, tmp_path):
+    monkeypatch.setattr(ttyd_manager.users, "single_user_mode", lambda: False)
     kubeconfig = tmp_path / "alice.yaml"  # does not exist yet
     monkeypatch.setattr(ttyd_manager.rbac, "user_kubeconfig_path", lambda user_id: kubeconfig)
 
@@ -416,7 +467,17 @@ def test_spawn_env_provisions_missing_kubeconfig_on_demand(monkeypatch, tmp_path
     assert env["KUBECONFIG"] == str(kubeconfig)
 
 
-def test_spawn_env_falls_back_to_admin_env_when_provisioning_fails(monkeypatch, tmp_path):
+def test_spawn_env_fails_closed_when_provisioning_fails(monkeypatch, tmp_path):
+    # C01: _spawn_env used to leave whatever KUBECONFIG it inherited from
+    # dict(os.environ) in place on a provisioning failure - in the real
+    # container that's the app's own unrestricted in-cluster kubeconfig
+    # (deploy/entrypoint.sh sets it before uvicorn ever starts), so a
+    # failure here silently handed a per-user terminal the app's own
+    # identity. Set KUBECONFIG in the inherited environment here to
+    # reproduce that shape, and assert it's actively cleared, not just
+    # "never set to something new."
+    monkeypatch.setattr(ttyd_manager.users, "single_user_mode", lambda: False)
+    monkeypatch.setenv("KUBECONFIG", "/home/clusterdrill/.kube/config")
     kubeconfig = tmp_path / "alice.yaml"  # never gets created
     monkeypatch.setattr(ttyd_manager.rbac, "user_kubeconfig_path", lambda user_id: kubeconfig)
     monkeypatch.setattr(ttyd_manager.rbac, "ensure_user_service_account", lambda user_id: False)
@@ -496,6 +557,33 @@ def test_ensure_session_reconnect_to_same_question_does_not_cd(monkeypatch):
     assert send_keys_calls == []
 
 
+def test_ensure_session_leaves_node_shell_creation_to_ttyd(monkeypatch):
+    monkeypatch.setattr(ttyd_manager.shutil, "which", lambda name: "/usr/bin/tmux")
+    mock_run = MagicMock(side_effect=_mock_run_has_session(exists=False))
+    monkeypatch.setattr(ttyd_manager.subprocess, "run", mock_run)
+
+    inst = ttyd_manager.TtydInstance(tab_id=2, user_id="alice", node_target="worker-1")
+    ttyd_manager.ensure_session(inst, cwd="/home/clusterdrill/practice-work/q1")
+
+    commands = [c.args[0][3] for c in mock_run.call_args_list]
+    assert "new-session" not in commands
+    assert "send-keys" not in commands
+    assert inst.tmux_session_name not in ttyd_manager._last_cwd_by_session
+
+
+def test_ensure_session_does_not_cd_an_existing_node_shell(monkeypatch):
+    monkeypatch.setattr(ttyd_manager.shutil, "which", lambda name: "/usr/bin/tmux")
+    mock_run = MagicMock(side_effect=_mock_run_has_session(exists=True))
+    monkeypatch.setattr(ttyd_manager.subprocess, "run", mock_run)
+
+    inst = ttyd_manager.TtydInstance(tab_id=2, user_id="alice", node_target="worker-1")
+    ttyd_manager._last_cwd_by_session[inst.tmux_session_name] = "/work/previous"
+    ttyd_manager.ensure_session(inst, cwd="/home/clusterdrill/practice-work/q2")
+
+    assert not any(c.args[0][3] == "send-keys" for c in mock_run.call_args_list)
+    assert ttyd_manager._last_cwd_by_session[inst.tmux_session_name] == "/work/previous"
+
+
 # --- read_paste_buffer (terminal copy-to-clipboard bridge) -------------------
 
 def test_read_paste_buffer_returns_stdout_on_success(monkeypatch):
@@ -508,6 +596,7 @@ def test_read_paste_buffer_returns_stdout_on_success(monkeypatch):
     assert text == "kubectl get pods\n"
     mock_run.assert_called_once_with(
         ["/usr/bin/tmux", "-L", "clusterdrill-1", "show-buffer"],
+        timeout=ttyd_manager.TMUX_TIMEOUT_SECONDS,
         capture_output=True, text=True,
     )
 

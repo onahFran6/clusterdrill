@@ -15,6 +15,7 @@ import users
 from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from grading_client import run_batch_cleanup
+from kube_json import StorageWriteError
 from services import question_view
 from services.question_view import base_context
 from sessions import store as session_store
@@ -79,6 +80,8 @@ def create_user_submit(
         return _render(request, error=str(exc), status_code=409)
     except ValueError as exc:
         return _render(request, error=str(exc), status_code=400)
+    except StorageWriteError as exc:
+        return _render(request, error=f"Could not save the new account: {exc}", status_code=502)
     # Provisions the ServiceAccount/kubeconfig this account's terminal will
     # authenticate as - best-effort: a failure here
     # doesn't block account creation, it just means that account's first

@@ -1,6 +1,10 @@
 # ADR 0004: Give each terminal user their own tmux server
 
-**Status:** Accepted
+**Status:** Accepted. The multi-user mode this hardened was later removed
+entirely (not just hardened further) - see
+[ADR 0008](0008-remove-multi-user-mode.md). This record is kept as-is for
+history; the fix described below is real, still-present code, just
+unreachable in the now single-user-only app.
 
 ## Context
 
@@ -40,7 +44,7 @@ consequences, both verified directly (not just reasoned about):
    `tmux attach -t clusterdrill-<other_user_id>-1` right now and land
    inside another candidate's live shell - inheriting whatever RBAC-scoped
    kubeconfig that shell's environment already has (see
-   [architecture.md's Multi-user isolation](../architecture.md#multi-user-isolation)
+   [architecture.md's Isolation history](../architecture.md#isolation-history)
    mechanism 3, which authenticates the *terminal process*, not whoever is
    attached to it). Verified directly: two sessions on one shared server,
    one attached from "inside" the other via `tmux attach`, succeeds with no
@@ -85,8 +89,8 @@ each session lives on changed.
   injection of `static/terminal-copy-bridge.js` into ttyd's own page - see
   [architecture.md's Terminal section](../architecture.md#terminal-ttyd_managerpy)
   for how the pieces fit together.
-- `docs/architecture.md`'s "Multi-user isolation" section gained a fourth
-  mechanism describing this.
+- `docs/architecture.md`'s "Isolation history" section (originally
+  "Multi-user isolation") gained a fourth mechanism describing this.
 - No change to ports, session names, or single-user/no-accounts behavior
   (`user_id=None` still gets slot 0, now expressed as socket
   `clusterdrill-0` instead of the bare default socket).

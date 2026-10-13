@@ -72,28 +72,34 @@ async def test_topic_detail_shows_gpl_badge_for_community_topic(client, question
     assert "GPL-3.0" in res.text
 
 
-async def test_practice_tests_page_200(client, fake_bank):
-    res = await client.get("/practice-tests")
-    assert res.status_code == 200
+async def test_practice_tests_redirects_to_unified_practice(client, fake_bank):
+    res = await client.get("/practice-tests", follow_redirects=False)
+    assert res.status_code == 307
+    assert res.headers["location"] == "/topics"
 
 
-async def test_practice_tests_page_shows_empty_state_for_zero_topics(client, question_bank_factory, wire_fake_bank):
+async def test_practice_library_empty_state(client, question_bank_factory, wire_fake_bank):
     wire_fake_bank(question_bank_factory({}))
-    res = await client.get("/practice-tests")
-    assert "No practice sets available yet." in res.text
-    assert res.text.count('class="kget-row"') == 0
-
-
-async def test_topics_page_kget_table_renders_via_shared_macros(client, fake_bank):
-    """Regression test for the topics.html/practice_tests.html macro
-    migration (kget_table_head/kget_row/kget_col in _macros.html) -
-    proves the call-block refactor actually renders the expected column
-    headers and per-topic rows through the real route, not just in a
-    macro-level unit test."""
     res = await client.get("/topics")
-    assert '<span class="kget-col kget-col-name" role="columnheader">Name</span>' in res.text
-    assert '<span class="kget-col kget-col-name" role="cell">' in res.text
-    assert res.text.count('class="kget-row"') == 2  # topic-a, topic-b
+    assert "No topics available yet." in res.text
+    assert 'class="topic-item"' not in res.text
+
+
+async def test_practice_library_has_one_navigation_entry_and_setup_links(client, fake_bank):
+    res = await client.get("/topics")
+    assert "Practice Tests" not in res.text
+    assert "kubectl get" not in res.text
+    assert 'aria-current="page"' in res.text
+    assert 'href="/topics/topic-a"' in res.text
+    assert 'href="/topics/topic-b"' in res.text
+    assert 'id="topic-select"' in res.text
+    assert 'value="/topics/topic-a"' in res.text
+    assert 'value="/topics/topic-b"' in res.text
+    assert "Set up practice" in res.text
+    assert 'name="topics" value="topic-a"' in res.text
+    assert 'name="topics" value="topic-b"' in res.text
+    assert 'name="topic_scope" value="selected"' in res.text
+    assert "Choose topics" in res.text
 
 
 async def test_progress_page_200(client, fake_bank):
@@ -139,3 +145,9 @@ async def test_healthz_reports_question_count(client, fake_bank):
     # excluded_question_count is always 0 here: fake_bank
     # never calls set_node_count(), so nothing is filtered out.
     assert res.json() == {"ok": True, "question_count": 4, "excluded_question_count": 0}
+
+
+async def test_legacy_topic_redirect_preserves_filters(client):
+    res = await client.get("/topics/pods-v2?difficulty=hard", follow_redirects=False)
+    assert res.status_code == 307
+    assert res.headers["location"].endswith("/topics/pod-design?difficulty=hard")

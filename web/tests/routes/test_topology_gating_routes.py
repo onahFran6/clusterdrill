@@ -70,14 +70,14 @@ async def test_topic_detail_excludes_two_node_question_row_and_count(
     assert res.status_code == 200
     assert 'href="/questions/qT01-question"' in res.text
     assert 'href="/questions/qT02-question"' not in res.text
-    assert "1 total in this topic's pool" in res.text
+    assert "of 1 questions completed" in res.text
 
     bank.set_node_count(2)
     res = await client.get("/topics/topic-a")
     assert res.status_code == 200
     assert 'href="/questions/qT01-question"' in res.text
     assert 'href="/questions/qT02-question"' in res.text
-    assert "2 total in this topic's pool" in res.text
+    assert "of 2 questions completed" in res.text
 
 
 async def test_direct_question_route_404s_when_excluded_by_node_count(

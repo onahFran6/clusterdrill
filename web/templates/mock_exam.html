@@ -2,64 +2,62 @@
 {% import "_macros.html" as m %}
 {% block title %}Mock Exam - ClusterDrill{% endblock %}
 {% block content %}
-  {{ m.kget_hero('kubectl describe examreadiness --all-domains') }}
-  <h1 class="page-title">Mock Exam</h1>
-  <p class="hub-intro">A true exam-condition simulation, drawn from whichever topics and difficulties you choose - no live feedback while it's running, free navigation between its tasks, one score at the end.</p>
+  <header class="page-heading">
+    <div>
+      <h1 class="page-title">Mock exam</h1>
+      <p class="hub-intro">No hints or live grading. Move between tasks, then submit once for your score.</p>
+    </div>
+  </header>
 
   {% if active_session and active_session.mode == 'exam' %}
     {% call m.alert('info') %}
       <span class="live-dot" aria-hidden="true"></span>
       An exam session is already running ({{ active_session.question_ids|length }} questions).
-      <a href="/questions/{{ active_session.question_ids[0] }}">Resume &rarr;</a>
+      <a href="/questions/{{ active_session.resume_qid }}">Resume &rarr;</a>
     {% endcall %}
   {% else %}
-    <section class="practice-setup">
+    <section class="practice-setup exam-setup">
       <h3 class="practice-setup-title">Exam setup</h3>
-      <form method="post" action="/sessions/start">
+      <form method="post" action="/sessions/start" id="exam-setup-form" data-available="{{ 'true' if exam_available else 'false' }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <input type="hidden" name="mode" value="exam">
 
-        <div class="practice-setup-field" style="margin-bottom: var(--space-4);">
-          <span class="practice-setup-label">Topics (default: all)</span>
+        <fieldset class="exam-option-group">
+          <legend>Topics <span class="field-help" data-selection-summary="topics" aria-live="polite">{{ exam_topics | length }} selected</span></legend>
+          <div class="exam-selection-actions"><button type="button" data-select-topics="all">Select all</button><button type="button" data-select-topics="none">Clear</button></div>
           <div class="practice-setup-checkboxes">
             {% for t in exam_topics %}
               <label class="practice-setup-chip">
                 <input type="checkbox" name="topics" value="{{ t }}" checked>
-                <span>{{ t }}</span>
+                <span>{{ t | replace('-', ' ') | title }}</span>
               </label>
             {% endfor %}
           </div>
-        </div>
+        </fieldset>
 
-        <div class="practice-setup-field" style="margin-bottom: var(--space-4);">
-          <span class="practice-setup-label">Difficulty mix (default: all)</span>
+        <fieldset class="exam-option-group">
+          <legend>Difficulty <span class="field-help" data-selection-summary="difficulties" aria-live="polite">3 selected</span></legend>
           <div class="practice-setup-checkboxes">
             {% for d in ['easy', 'medium', 'hard'] %}
               <label class="practice-setup-chip">
                 <input type="checkbox" name="difficulties" value="{{ d }}" checked>
-                <span>{{ d }}</span>
+                <span>{{ d | capitalize }}</span>
               </label>
             {% endfor %}
           </div>
-        </div>
+        </fieldset>
 
-        <div class="practice-setup-form" style="align-items: flex-end;">
+        <div class="practice-setup-form exam-timing-fields">
           <label class="practice-setup-field">
             <span class="practice-setup-label">Questions</span>
-            <select name="question_count">
-              {% for c in exam_question_count_choices %}
-                <option value="{{ c }}" {{ 'selected' if c == exam_default_question_count else '' }}>{{ c }}</option>
-              {% endfor %}
-            </select>
+            <input type="number" name="question_count" value="{{ exam_default_question_count }}" min="1" step="1" required>
+            <span class="field-help">Capped to the matching question pool.</span>
           </label>
 
           <label class="practice-setup-field">
             <span class="practice-setup-label">Timer</span>
-            <select name="timer_minutes">
-              {% for m in timer_choices_minutes %}
-                <option value="{{ m }}" {{ 'selected' if m == exam_default_timer_minutes else '' }}>{{ m }} min</option>
-              {% endfor %}
-            </select>
+            <input type="number" name="timer_minutes" value="{{ exam_default_timer_minutes }}" min="1" max="{{ max_timer_minutes }}" step="1" required>
+            <span class="field-help">Enter 1-{{ max_timer_minutes }} minutes.</span>
           </label>
 
           <div class="practice-setup-modes">
@@ -67,28 +65,30 @@
           </div>
         </div>
       </form>
+      <p id="exam-selection-help" class="field-help" role="status"></p>
       <p class="practice-setup-hint">Timer cannot be paused once started.</p>
     </section>
   {% endif %}
 
-  <section class="panel" style="margin-bottom: var(--space-5);">
-    <div class="checklist-header"><h2>Exam domain weights</h2></div>
+  <div class="insight-grid exam-insights">
+  <section class="panel content-panel">
+    <div class="content-panel-heading"><h2>Exam domain weights</h2></div>
+    <div class="meter-list">
     {% for dw in domain_weights %}
-      <div style="margin-bottom: 10px;">
-        <div style="display:flex; justify-content:space-between; font-size: 12.5px; margin-bottom: 3px;">
-          <span>{{ dw.name }}</span>{{ m.pill(dw.weight ~ '%') }}
-        </div>
-        <div class="progress-bar" style="margin-top:0;">
+      <div class="meter-row">
+        <div class="meter-heading"><span>{{ dw.name }}</span><span>{{ dw.weight }}%</span></div>
+        <div class="progress-bar">
           <div class="progress-bar-fill" style="width: {{ dw.weight }}%; background: var(--accent-2);"></div>
         </div>
       </div>
     {% endfor %}
+    </div>
   </section>
 
-  <section class="panel" style="margin-bottom: var(--space-5);">
-    <div class="checklist-header"><h2>Exam readiness</h2></div>
+  <section class="panel content-panel">
+    <div class="content-panel-heading"><h2>Exam readiness</h2></div>
     {% for r in readiness %}
-      <div style="display:flex; align-items:center; gap: 10px; margin-bottom: 8px;">
+      <div class="readiness-row">
         {% if r.pct >= 80 %}
           {{ m.question_status('correct') }}
         {% elif r.pct > 0 %}
@@ -96,24 +96,27 @@
         {% else %}
           {{ m.question_status('pending') }}
         {% endif %}
-        <span style="flex:1; font-size: 13px;">{{ r.name }}</span>
+        <span>{{ r.name }}</span>
         {{ m.pill(r.pct ~ '%') }}
       </div>
     {% endfor %}
   </section>
+  </div>
 
-  <section class="panel" style="margin-bottom: var(--space-5);">
-    <div class="checklist-header"><h2>Past attempts</h2></div>
+  <section class="panel content-panel attempts-panel">
+    <div class="content-panel-heading"><h2>Past attempts</h2></div>
     {% if exam_attempts %}
+      <div class="attempt-list">
       {% for a in exam_attempts %}
-        <div style="border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; display:flex; justify-content:space-between; align-items:center;">
+        <div class="attempt-row">
           <div>
-            <div style="font-family: var(--font-mono); font-size: 13px;">{{ a.date[:10] }}</div>
-            <div style="font-size: 11px; color: var(--muted);">{{ a.durationSec // 60 }} min</div>
+            <div class="attempt-date">{{ a.date[:10] }}</div>
+            <div class="attempt-duration">{{ a.durationSec // 60 }} min</div>
           </div>
-          <div class="stat-card-value" style="font-size: 20px;">{{ ((100 * a.score / a.total) | round | int) if a.total else 0 }}%</div>
+          <div class="attempt-score">{{ ((100 * a.score / a.total) | round | int) if a.total else 0 }}%</div>
         </div>
       {% endfor %}
+      </div>
     {% else %}
       {{ m.empty_state('No mock exam attempts yet - start one above.') }}
     {% endif %}
@@ -123,6 +126,8 @@
     Two more ways to practice beyond the full exam simulation above: each topic's <strong>boss
     mini-exam</strong> - clear a full Fixed or Randomized session on a topic to unlock its boss fight from that
     topic's page - and the <strong>daily challenge</strong>, a quick 5-question cross-topic draw with its own small
-    reward track, on the <a href="/topics">Topics</a> page.
+    reward track, on the <a href="/topics">Practice</a> page.
   </div>
 {% endblock %}
+
+{% block scripts %}<script src="/static/exam-setup.js?v=20261012a" defer></script>{% endblock %}
