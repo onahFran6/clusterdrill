@@ -14,7 +14,11 @@
        system-ui/Inter default. Loaded via CDN link tag, same no-build-step
        posture as the Mermaid <script> below. -->
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/workspace-preferences.js?v=20261011b"></script>
+  <link rel="stylesheet" href="/static/style.css?v=20261011b">
+  <link rel="stylesheet" href="/static/design.css?v=20261011b">
+  <link rel="stylesheet" href="/static/workspace.css?v=20261011c">
+  <link rel="stylesheet" href="/static/refinement.css?v=20261011a">
   <!-- Read by static/app.js's idle-lifecycle block and sent as the
        X-CSRF-Token header on its mutating fetch() calls - see auth.py's
        CSRF section. -->
@@ -22,17 +26,23 @@
   <!-- Mermaid.js from a CDN - no SPA
        framework, no build step; a <script> tag is the same "light
        vanilla JS" posture already used throughout this app, not a new
-       bundler/dependency to manage. Pinned to a specific stable major
-       version (10.x) rather than an unpinned "latest" tag so a diagram
-       that renders correctly today doesn't silently break on a future
-       breaking release. Loaded eagerly (not lazily like the ttyd iframe)
-       since it's a small, cacheable script and every question has a
-       Diagram tab whether or not it's the one currently shown. -->
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+       bundler/dependency to manage. Pinned to an exact version (10.9.8),
+       not the mutable "@10" major-version tag (I04): "@10" is a moving
+       target jsdelivr resolves to whatever the newest 10.x release is at
+       request time, so a diagram that renders correctly today could
+       silently change behavior - or break outright - the next time
+       upstream cuts a 10.x patch/minor release, with no code change on
+       this side to review or roll back. An exact version pin only ever
+       changes when this file's own diff says so. Loaded eagerly (not
+       lazily like the ttyd iframe) since it's a small, cacheable script
+       and every question has a Diagram tab whether or not it's the one
+       currently shown. -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.8/dist/mermaid.min.js"></script>
 </head>
 <body class="question-view {{ 'has-terminal-view' if terminal_available else '' }}"
       data-question-id="{{ question.id }}" data-tab="{{ tab }}"
       data-in-session="{{ 'true' if in_active_session else 'false' }}"
+      data-attempt-id="{{ attempt_id }}"
       data-is-exam="{{ 'true' if is_exam_session else 'false' }}"
       {% if timer_enabled %}data-timer-deadline="{{ timer_deadline }}"{% endif %}>
   <header class="topbar">
@@ -166,19 +176,49 @@
        server-side conditional here, so the exact same markup works whether
        or not CLUSTERDRILL_PASSWORD happens to be set for this run. -->
   {% call m.alert('warning', id='idle-warning', hidden=True, dismiss_id='idle-dismiss-btn', dismiss_label='Still here') %}
-    No activity detected - ending this session and logging out in
-    <span id="idle-countdown">--:--</span> unless you interact.
+    No browser activity - logging out and stopping embedded terminals in
+    <span id="idle-countdown">--:--</span> unless you interact. Your attempt is preserved; its timer continues.
   {% endcall %}
 
-  <!-- Resizable 3-pane workspace ("Terminal Ops" direction): each .resizer
-       is a drag handle between two grid columns. app.js reads/writes
-       .layout's grid-template-columns directly and persists the chosen
-       widths to localStorage, so a resize sticks across page loads the
-       same way the terminal show/hide toggle already does for visibility.
-       Min-widths live in style.css so no amount of dragging can crush a
-       panel to unusable. -->
-  <main class="layout {{ 'has-terminal' if terminal_available else '' }}">
-    <section class="panel question-panel">
+  {% if workspace %}
+  <details class="workspace-info">
+    <summary>Use your own terminal</summary>
+    <dl>
+      <dt>Execution environment</dt><dd>{{ workspace.location }}</dd>
+      <dt>Runtime namespace</dt><dd><code>{{ workspace.namespace }}</code></dd>
+      <dt>Canonical workspace</dt><dd><code>{{ workspace.path }}</code></dd>
+    </dl>
+    <p>Task files live in this workspace, which is separate from your laptop or a node's filesystem. Setup must succeed before seeded files are available.</p>
+    {% if workspace.files %}<p>Current workspace entries: {% for name in workspace.files %}<code>{{ name }}</code>{% if not loop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
+    {% if workspace.owner %}
+      {% if not workspace.context %}<p>Replace <code>&lt;practice-context&gt;</code> with the context for this disposable cluster in your kubeconfig. These commands do not change your current context.</p>{% endif %}
+      <p>From a terminal with cluster access, target this question explicitly:</p>
+      <div class="workspace-command">
+        <pre><code id="workspace-kubectl">{{ workspace.kubectl_command }}</code></pre>
+        <button type="button" class="btn btn-secondary workspace-copy" data-copy-target="workspace-kubectl">Copy</button>
+      </div>
+      {% if workspace.shell_command %}
+        <p>For file-based tasks, open this exact workspace in your own terminal:</p>
+        <div class="workspace-command">
+          <pre><code id="workspace-shell">{{ workspace.shell_command }}</code></pre>
+          <button type="button" class="btn btn-secondary workspace-copy" data-copy-target="workspace-shell">Copy</button>
+        </div>
+        <p>This owner-only command enters the application container with its cluster privileges. It requires API access and permission to exec into this pod. It also works from a management or node shell with that access.</p>
+      {% else %}
+        <p>A pod entry command is unavailable for this deployment. For a development server, use a shell on the application host and the workspace path above.</p>
+      {% endif %}
+    {% else %}
+      <p>Ask your operator for an account-appropriate connection method. An admin exec shell is not a restricted learner shell.</p>
+    {% endif %}
+    <p>Use the task's specified location for node-specific work. If you edit files in a native node shell, return file-based submissions to the canonical workspace before grading; matching path names on different machines do not share files.</p>
+    <p>Reset rebuilds this question's environment. Ending or replacing the attempt removes its workspace and lab resources. Pod replacement or application restart does not preserve the attempt.</p>
+    <p>Browser inactivity can log you out and stop embedded terminals; your attempt remains and its timer continues. Sign in again to resume or see exam results. External SSH and Kubernetes credentials are not revoked by browser logout.</p>
+  </details>
+  {% endif %}
+
+  <!-- Workspace fractions and visibility are browser display preferences. -->
+  <main class="layout {{ 'exam-workspace' if is_exam_session else 'practice-workspace' }} {{ 'has-terminal' if terminal_available else '' }}">
+    <section id="question-panel" class="panel question-panel" tabindex="-1">
       <div class="question-meta">
         <span class="question-title">{{ question.id }}</span>
         {% if question.domain %}{{ m.pill(question.domain) }}{% endif %}
@@ -192,20 +232,13 @@
              question expects may be missing/half-built - surfaced instead of
              only logging server-side, per issue #95. Reset re-runs setup.sh. -->
         {% call m.alert('warning', id='provision-error') %}
-          Setup didn't finish for this question ({{ provision_error }}) - Check may fail until you click <strong>Reset</strong> below to retry.
+          <span id="provision-status" role="status" aria-live="polite">Setup didn't finish for this question ({{ provision_error }}). Use Retry setup here to try again.</span>
+          {% if can_reset %}<button id="reset-btn" type="button" class="btn btn-secondary" data-provision-retry="true">Retry setup</button>{% endif %}
         {% endcall %}
       {% endif %}
 
-      <!-- Task/Hint/Solution/Diagram switch client-side only (app.js) - all
-           four panels below render server-side up front (same "hidden
-           content stays mounted" pattern as the terminal sub-tabs further
-           down), JS just toggles which one is visible. This used to be a
-           plain <a href> full-page nav; fixed because that blew away the
-           live terminal iframe (a fresh ttyd connection every switch) and
-           the just-run grading checklist (pure client-side JS state) on
-           every single tab click. The href/data-tab attributes stay so a
-           direct link or a no-JS fallback still lands on the right tab via
-           the server-side {{ tab }} value below. -->
+      <!-- Practice reference tabs switch client-side without reconnecting the
+           terminal. During an exam, only Task is included in the response. -->
       <nav class="tabs" id="content-tabs">
         <a class="tab {{ 'active' if tab == 'task' else '' }}" data-tab="task" href="/questions/{{ question.id }}?tab=task">Task</a>
         {% if not is_exam_session %}
@@ -219,6 +252,7 @@
         <div class="tab-panel {{ 'active' if tab == 'task' else '' }}" data-tab-panel="task">
           {{ task_html | safe }}
         </div>
+        {% if not is_exam_session %}
         <div class="tab-panel {{ 'active' if tab == 'hint' else '' }}" data-tab-panel="hint">
           {% if hint_html %}
             {{ hint_html | safe }}
@@ -298,74 +332,41 @@
             <p><em>{{ diagram_fallback }}</em></p>
           {% endif %}
         </div>
+        {% endif %}
       </div>
     </section>
 
+    {% if not is_exam_session %}
     <div class="resizer" data-resize-index="1" role="separator" aria-orientation="horizontal" aria-label="Resize task and checklist panels" tabindex="0"></div>
-
     <section class="panel checklist-panel">
       <div class="checklist-header">
         <h2>Grading checklist</h2>
         <div class="actions">
-          {% if can_reset and (not is_exam_session or provision_error) %}
+          {% if can_reset and not provision_error %}
             <button id="reset-btn" type="button" class="btn btn-secondary">Reset</button>
           {% endif %}
-          {% if not is_exam_session %}
-            <button id="check-btn" type="button" class="btn btn-primary">Check</button>
-          {% endif %}
+          <button id="check-btn" type="button" class="btn btn-primary">Check</button>
         </div>
       </div>
-
-      {% if is_exam_session %}
-        <!-- Deferred grading: a real exam gives no
-             interim feedback at all - no Check button, no live checklist,
-             not even a hidden/disabled one (see app.js's isQuestionPage
-             gate for why the rest of the page - terminal, timer - stays
-             fully functional regardless). Every question is graded at
-             once on submit instead, not one at a time here. -->
-        {% call m.alert('info') %}
-          No live feedback during an exam - every question is graded at once when you submit.
-        {% endcall %}
-      {% else %}
-        <div id="check-status" class="alert alert-compact alert-idle" role="status" aria-live="polite"></div>
-
-        <!-- Signature element: a live terminal-readout checklist, not a
-             generic checkbox list - bracket markers ([ ] / [✓] / [✗]) in
-             Plex Mono, styled like CI/test-runner output (pytest/kubectl
-             get pods' STATUS column), because that's the actual vocabulary
-             of the audience this tool is for. app.js's renderCriteria()
-             renders each row with a small staggered reveal on Check
-             (disabled under prefers-reduced-motion, see style.css).
-             aria-live of its own (issue #116) - previously only
-             #check-status's one-line summary was announced, not the
-             individual per-criterion rows underneath it. -->
-        <ul id="criteria-list" class="criteria-list" aria-live="polite">
-          <li class="criteria-empty">[&nbsp;] click <strong>Check</strong> to grade your work</li>
-        </ul>
-
-        <div id="score-line" class="score-line"></div>
-      {% endif %}
+      <div id="check-status" class="alert alert-compact alert-idle" role="status" aria-live="polite"></div>
+      <ul id="criteria-list" class="criteria-list" aria-live="polite">
+        <li class="criteria-empty">[&nbsp;] click <strong>Check</strong> to grade your work</li>
+      </ul>
+      <div id="score-line" class="score-line"></div>
     </section>
+    {% endif %}
 
     {% if terminal_available %}
       <div class="resizer" data-resize-index="0" role="separator" aria-orientation="vertical" aria-label="Resize workspace and terminal panels" tabindex="0"></div>
 
-      <!-- A real grid column beside Task/Checklist,
-           visible by default (see style.css's .layout.has-terminal) -
-           no click required to see it. The toggle button still lets you
-           collapse it back to the wider two-column layout if you want the
-           space, but the default is "on". Loaded eagerly (src set here
-           directly, not a lazy data-src swap) since "visible by default"
-           means paying for the ttyd handshake up front is the whole
-           point - a candidate opens a question expecting a terminal, not
-           an extra click to get one. -->
-      <section id="terminal-panel" class="terminal-panel" aria-hidden="false">
+      <!-- The first frame connects only when the terminal is visible. -->
+      <section id="terminal-panel" class="terminal-panel" aria-hidden="false" tabindex="-1">
         <div class="terminal-panel-header">
           <div id="terminal-tabs" class="terminal-tabs" role="tablist" aria-label="Terminal tabs"
                data-max-tabs="{{ terminal_max_tabs }}">
             <button type="button" role="tab" class="terminal-tab active" data-tab="1"
                     aria-selected="true" aria-controls="terminal-frame-1" id="terminal-tab-1">
-              Terminal 1
+              Lab workspace 1
             </button>
             <button type="button" id="terminal-tab-add" class="terminal-tab-add"
                     aria-label="New terminal tab" title="New terminal">+</button>
@@ -381,7 +382,7 @@
               <select id="terminal-node-picker" class="terminal-node-picker"
                       aria-label="Node for the next new terminal tab"
                       title="Which node the next + tab connects to">
-                <option value="control-plane" selected>Control-plane</option>
+                <option value="control-plane" selected>Lab workspace</option>
                 {% for node in worker_nodes %}
                   <option value="{{ node }}">Worker: {{ node }}</option>
                 {% endfor %}
@@ -397,7 +398,7 @@
             id="terminal-frame-1"
             class="terminal-frame active"
             data-tab="1"
-            src="{{ terminal_url }}"
+            data-src="{{ terminal_url }}"
             title="Embedded terminal 1 (ttyd)"
             allow="clipboard-read; clipboard-write">
           </iframe>
@@ -406,30 +407,25 @@
     {% endif %}
   </main>
 
-  <!-- Status-bar footer: a tmux/wezterm-style segmented bar (prev · current
-       question · End session · next) instead of a plain two-button footer -
-       the same multiplexer vocabulary this project's own daily toolchain
-       already uses (wezterm/README.md), and a natural home for the
-       explicit "end the session" lifecycle action a real timed lab needs. -->
-  <footer class="status-bar">
-    <div class="status-segment status-segment-nav">
+  <footer class="question-nav">
+    <div class="question-nav-id">{{ question.id }}</div>
+    <div class="question-nav-prev">
       {% if prev_id %}
-        <a class="btn btn-nav" href="/questions/{{ prev_id }}">&larr; prev</a>
+        <a class="btn btn-secondary" href="/questions/{{ prev_id }}">&larr; Previous</a>
       {% else %}
-        <span class="btn btn-nav btn-disabled">&larr; prev</span>
+        <span class="btn btn-secondary btn-disabled">&larr; Previous</span>
       {% endif %}
     </div>
-    <div class="status-segment status-segment-id">{{ question.id }}</div>
-    <div class="status-segment status-segment-end">
-      {% if in_active_session %}
+    {% if in_active_session %}
+      <div class="question-nav-end">
         <button id="end-session-btn" type="button" class="btn btn-danger-ghost">{{ 'Submit Exam' if is_exam_session else 'End session' }}</button>
-      {% endif %}
-    </div>
-    <div class="status-segment status-segment-nav">
+      </div>
+    {% endif %}
+    <div class="question-nav-next">
       {% if next_id %}
-        <a class="btn btn-nav" href="/questions/{{ next_id }}">skip &rarr;</a>
+        <a id="next-question" class="btn {{ 'btn-primary' if advance_ready else 'btn-secondary' }}" href="/questions/{{ next_id }}" aria-label="{{ 'Next question' if advance_ready else 'Skip question' }}">{{ 'Next' if advance_ready else 'Skip' }} &rarr;</a>
       {% else %}
-        <span class="btn btn-nav btn-disabled">skip &rarr;</span>
+        <span id="next-question" class="btn btn-secondary btn-disabled" aria-label="{{ 'Next question' if advance_ready else 'Skip question' }}">{{ 'Next' if advance_ready else 'Skip' }} &rarr;</span>
       {% endif %}
     </div>
   </footer>
@@ -440,6 +436,7 @@
        pass - see app.js's comment at that block for why this can no longer
        be an inline <script>). -->
   <script src="/static/diagram.js"></script>
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=20261008a"></script>
+  <script src="/static/task-reference.js?v=20261011a" defer></script>
 </body>
 </html>

@@ -7,12 +7,14 @@ from __future__ import annotations
 
 import profile_store
 import pytest
-from kube_json import decode_payload
+from kube_json import KubectlGetResult, StorageWriteError, decode_payload
 
 
 class FakeCluster:
     def __init__(self):
         self.objects: dict[tuple[str, str], dict] = {}
+        self.fail_next_get = False
+        self.fail_next_apply = False
 
     def get_json(self, *args: str):
         # A get looks like ("configmap", name, "-n", ns) - only the kind and
@@ -20,11 +22,24 @@ class FakeCluster:
         kind, name = args[0], args[1]
         return self.objects.get((kind, name))
 
+    def get_json_safe(self, *args: str) -> KubectlGetResult:
+        if self.fail_next_get:
+            self.fail_next_get = False
+            return KubectlGetResult(data=None, error="simulated read failure")
+        return KubectlGetResult(data=self.get_json(*args))
+
     def apply_json(self, obj: dict) -> bool:
+        if self.fail_next_apply:
+            self.fail_next_apply = False
+            return False
         kind = obj["kind"].lower()
         name = obj["metadata"]["name"]
         self.objects[(kind, name)] = obj
         return True
+
+    def apply_json_or_raise(self, obj: dict, *, what: str) -> None:
+        if not self.apply_json(obj):
+            raise StorageWriteError(f"failed to persist {what}")
 
     def delete(self, *args: str) -> bool:
         # An exact ("configmap", name, "-n", ns) delete, or a label-selector
@@ -48,8 +63,8 @@ class FakeCluster:
 @pytest.fixture
 def cluster(monkeypatch):
     fake = FakeCluster()
-    monkeypatch.setattr(profile_store, "kubectl_get_json", fake.get_json)
-    monkeypatch.setattr(profile_store, "kubectl_apply_json", fake.apply_json)
+    monkeypatch.setattr(profile_store, "kubectl_get_json_safe", fake.get_json_safe)
+    monkeypatch.setattr(profile_store, "kubectl_apply_json_or_raise", fake.apply_json_or_raise)
     monkeypatch.setattr(profile_store, "kubectl_delete", fake.delete)
     return fake
 

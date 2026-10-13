@@ -9,6 +9,19 @@ metadata:
     app.kubernetes.io/component: web
 spec:
   replicas: 1
+  # Recreate, not the apps/v1 default RollingUpdate (R10): at replicas: 1,
+  # RollingUpdate's default maxSurge: 25% rounds up to 1, so a redeploy
+  # briefly runs the old and new pod side by side. The new pod's startup
+  # cluster sweep (app.py's _startup_cluster_sweep) assumes anything it
+  # finds was orphaned by a now-dead process - with RollingUpdate that
+  # assumption is false for the surge window, and the sweep can delete a
+  # namespace a still-live old pod's active session is using. Recreate
+  # fully terminates the old pod before the new one starts, so every
+  # sweep genuinely only ever sees state left by a dead process. Trade-off:
+  # a brief full outage on every upgrade/restart, acceptable for a
+  # single-operator local appliance (not a highly-available service).
+  strategy:
+    type: Recreate
   # Only name+instance in the selector - immutable after creation, so
   # nothing that legitimately changes release to release (version) may be
   # in it. Matches the raw manifest's own selector exactly - see
@@ -44,6 +57,16 @@ spec:
           capabilities:
             drop: ["ALL"]
         env:
+        - name: CLUSTERDRILL_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: CLUSTERDRILL_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CLUSTERDRILL_CONTAINER
+          value: web
         - name: CLUSTERDRILL_PASSWORD
           valueFrom:
             secretKeyRef:
@@ -62,9 +85,17 @@ spec:
           limits:
             cpu: 1000m
             memory: 512Mi
+        # /readyz (not /healthz) is deliberate (R10): it 503s until the
+        # startup cluster sweep finishes, keeping this pod out of Service
+        # rotation until any state left by the pod it replaced has
+        # actually been swept - not just scheduled. livenessProbe below
+        # must stay on /healthz, which is always instant: gating liveness
+        # on the sweep too would crash-loop the container while cleanup
+        # is still running (the whole reason that sweep is fire-and-forget
+        # in the first place - see app.py's lifespan()).
         readinessProbe:
           httpGet:
-            path: /healthz
+            path: /readyz
             port: http
           initialDelaySeconds: 5
           timeoutSeconds: 5

@@ -2,17 +2,22 @@
 {% import "_macros.html" as m %}
 {% block title %}{{ topic }} - ClusterDrill{% endblock %}
 {% block content %}
-  <p class="hub-intro"><a href="/topics" style="color: var(--muted);">&larr; Topics</a></p>
-  <h2>
-    {{ topic }}
-    {% if topic == "community" %}
-      {{ m.pill('GPL-3.0', 'community', 'Ported from GPL-3.0 sources - see questions/community/README.md') }}
-    {% endif %}
-  </h2>
-  <p class="hub-intro">
-    {{ counts.correct }} correct out of {{ counts.all }} seen so far
-    ({{ pool_size }} total in this topic's pool).
-  </p>
+  <header class="page-heading topic-detail-heading">
+    <div>
+      <a class="back-link" href="/topics">&larr; All topics</a>
+      <h1 class="page-title">
+        {{ topic | replace("-", " ") | title }}
+        {% if topic == "community" %}
+          {{ m.pill('GPL-3.0', 'community', 'Ported from GPL-3.0 sources - see questions/community/README.md') }}
+        {% endif %}
+      </h1>
+      <p class="hub-intro">Choose a session or revisit individual questions.</p>
+    </div>
+    <div class="topic-heading-progress">
+      <strong>{{ counts.correct }} / {{ pool_size }}</strong>
+      <span>{{ counts.correct }} of {{ pool_size }} questions completed</span>
+    </div>
+  </header>
 
   <section class="practice-setup">
     <h3 class="practice-setup-title">Start practice</h3>
@@ -20,46 +25,50 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="topic" value="{{ topic }}">
 
-      <label class="practice-setup-field">
-        <span class="practice-setup-label">Difficulty</span>
-        <select name="difficulty">
-          <option value="" {{ 'selected' if selected_difficulty == 'all' else '' }}>All ({{ difficulty_counts.all }})</option>
-          <option value="easy" {{ 'selected' if selected_difficulty == 'easy' else '' }} {{ 'disabled' if difficulty_counts.easy == 0 else '' }}>Easy only ({{ difficulty_counts.easy }})</option>
-          <option value="medium" {{ 'selected' if selected_difficulty == 'medium' else '' }} {{ 'disabled' if difficulty_counts.medium == 0 else '' }}>Medium only ({{ difficulty_counts.medium }})</option>
-          <option value="hard" {{ 'selected' if selected_difficulty == 'hard' else '' }} {{ 'disabled' if difficulty_counts.hard == 0 else '' }}>Hard only ({{ difficulty_counts.hard }})</option>
-        </select>
-      </label>
-
-      <label class="practice-setup-field">
-        <span class="practice-setup-label">Timer</span>
-        <select name="timer_minutes">
-          {% for m in timer_choices_minutes %}
-            <option value="{{ m }}" {{ 'selected' if m == topic_timer_minutes else '' }}>{{ m }} min</option>
+      <fieldset class="difficulty-options">
+        <legend>Difficulty</legend>
+        <div class="difficulty-choices">
+          {% for level in ['all', 'easy', 'medium', 'hard'] %}
+            <label class="difficulty-choice">
+              <input type="radio" name="difficulty" value="{{ '' if level == 'all' else level }}" data-mixed-count="{{ mixed_difficulty_counts[level] }}"
+                {{ 'checked' if selected_difficulty == level else '' }}
+                {{ 'disabled' if difficulty_counts[level] == 0 else '' }}>
+              <span>{{ level | capitalize }} <small>{{ difficulty_counts[level] }}</small></span>
+            </label>
           {% endfor %}
-        </select>
-      </label>
+        </div>
+      </fieldset>
 
-      <label class="practice-setup-field">
-        <span class="practice-setup-label">Questions</span>
-        <select name="session_size">
-          <option value="">Default ({{ session_size }})</option>
-          <option value="all">All in pool</option>
-        </select>
-      </label>
+      <div class="practice-setup-field">
+        <label class="practice-setup-label" for="practice-timer">Time limit <span class="field-unit">minutes</span></label>
+        <input id="practice-timer" type="number" name="timer_minutes" value="{{ topic_timer_minutes }}" min="1" max="{{ max_timer_minutes }}" step="1" required aria-describedby="practice-timer-help">
+        <span class="field-help" id="practice-timer-help">Enter 1-{{ max_timer_minutes }} minutes.</span>
+        <div class="input-shortcuts" aria-label="Time shortcuts">
+          {% for minutes in [15, 30, 60] %}<button type="button" data-input-target="timer_minutes" data-input-value="{{ minutes }}">{{ minutes }} min</button>{% endfor %}
+        </div>
+      </div>
+
+      <div class="practice-setup-field">
+        <label class="practice-setup-label" for="practice-count">Questions <span class="field-unit" data-count-ceiling>up to {{ pool_size }}</span></label>
+        <input id="practice-count" type="number" name="session_size" value="{{ session_size }}" min="1" step="1" required aria-describedby="practice-count-help">
+        <span class="field-help" id="practice-count-help">Limited to questions matching this topic and difficulty.</span>
+        <div class="input-shortcuts" aria-label="Question count shortcuts">
+          {% for count in [5, 10, 15] %}{% if count <= pool_size %}<button type="button" data-input-target="session_size" data-input-value="{{ count }}">{{ count }}</button>{% endif %}{% endfor %}
+          <button type="button" data-input-target="session_size" data-input-value="{{ pool_size }}" data-count-all>All {{ pool_size }}</button>
+        </div>
+      </div>
 
       <div class="practice-setup-modes">
-        <button type="submit" name="mode" value="fixed" class="btn btn-primary">Fixed</button>
+        <button type="submit" name="mode" value="fixed" class="btn btn-primary">Start practice</button>
         <button type="submit" name="mode" value="randomized" class="btn btn-mode"
-          {{ 'disabled' if not randomized_available else '' }}>Randomized</button>
+          {{ 'disabled' if not randomized_available else '' }}>Shuffle questions</button>
         <button type="submit" name="mode" value="mixed" class="btn btn-mode"
-          {{ 'disabled' if not mixed_available else '' }}>Mixed</button>
+          {{ 'disabled' if not mixed_available else '' }}>Mix all topics</button>
       </div>
     </form>
     <p class="practice-setup-hint">
-      Fixed and Randomized draw from <strong>{{ topic }}</strong>'s pool.
-      Mixed draws across every topic's pool instead, at the same difficulty, timer, and question count chosen above.
-      "All in pool" lifts the {{ session_size }}-question default and takes every question matching the difficulty
-      filter above.
+      Start practice follows the topic's question order. Shuffle changes the order;
+      Mix draws from all topics. Your timer starts only when you begin.
     </p>
   </section>
 
@@ -88,7 +97,7 @@
     {% endif %}
   </section>
 
-  <div class="filter-group">
+  <div class="filter-group" role="group" aria-label="Filter by status">
     <span class="filter-group-label">Status</span>
     <div class="filter-tabs">
       <a class="filter-tab {{ 'active' if filter == 'all' else '' }}" href="/topics/{{ topic }}?filter=all&difficulty={{ selected_difficulty }}">All ({{ counts.all }})</a>
@@ -98,7 +107,7 @@
     </div>
   </div>
 
-  <div class="filter-group">
+  <div class="filter-group" role="group" aria-label="Filter by difficulty">
     <span class="filter-group-label">Difficulty</span>
     <div class="filter-tabs">
       <a class="filter-tab {{ 'active' if selected_difficulty == 'all' else '' }}" href="/topics/{{ topic }}?filter={{ filter }}&difficulty=all">All ({{ difficulty_counts.all }})</a>

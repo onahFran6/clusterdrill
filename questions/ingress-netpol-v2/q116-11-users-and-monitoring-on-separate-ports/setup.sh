@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# This question needs a second namespace (the monitoring team's own). Per
-# the established pattern for multi-namespace questions in this bank (see
-# q108-28-diagnose-dns-wrong-namespace-suffix), MONITORING_NS below is
-# named as a suffix of $QUESTION_ID, but neither the namespace nor the pod
-# inside it carries the clusterdrill-question label (full_reset never
-# sweeps other namespaces). setup.sh is instead responsible for its own
-# idempotency by deleting and recreating MONITORING_NS wholesale on every
-# run.
+# This question needs a second namespace (the monitoring team's own).
+# MONITORING_NS below is named as a suffix of $QUESTION_ID and labeled
+# clusterdrill-question=$QUESTION_ID, same as the primary namespace (R06):
+# full_reset/batch_cleanup select namespaces to delete by this label, so
+# MONITORING_NS is swept up and cleaned at session end exactly like the
+# primary one. setup.sh is still responsible for its own idempotency on
+# repeated runs of this one question: deleting and recreating
+# MONITORING_NS wholesale on every run.
 set -euo pipefail
 
 QUESTION_ID="q116-11-users-and-monitoring-on-separate-ports${CLUSTERDRILL_NAMESPACE_SUFFIX:-}"
@@ -24,6 +24,7 @@ grant_user_namespace_access "$QUESTION_ID" "${CLUSTERDRILL_USER_ID:-}"
 kubectl delete namespace "$MONITORING_NS" --ignore-not-found --wait=true >/dev/null 2>&1
 kubectl create namespace "$MONITORING_NS" \
   --dry-run=client -o yaml | kubectl apply -f -
+kubectl label namespace "$MONITORING_NS" "clusterdrill-question=$QUESTION_ID" --overwrite
 apply_default_resource_limits "$MONITORING_NS"
 grant_user_namespace_access "$MONITORING_NS" "${CLUSTERDRILL_USER_ID:-}"
 

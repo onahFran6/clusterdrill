@@ -1,0 +1,26 @@
+/* Token overrides on top of the Terminal Ops system in style.css.
+   Headings stay IBM Plex Mono. Panels stay hairline and square.
+   Blue is the action color; it is not a tint washed over every label. */
+:root {
+  --ink: #080d15;
+  --panel: #0e1623;
+  --panel-raised: #151f30;
+  --sidebar: #0a101a;
+  --text: #e6eaf2;
+  --muted: #8b9bb3;
+  --border: #243044;
+  --border-strong: #3b4d66;
+  --accent: #326ce5;
+  --accent-dim: #2857c4;
+  --accent-rgb: 50, 108, 229;
+  --accent-2: #58c9df;
+  --accent-2-rgb: 88, 201, 223;
+  --signature: #326ce5;
+  --on-accent: #fff;
+  --radius: 2px;
+  --radius-control: 2px;
+  --font-display: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+html { scrollbar-color: var(--border-strong) var(--ink); scrollbar-width: thin; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

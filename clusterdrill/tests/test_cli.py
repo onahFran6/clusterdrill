@@ -1072,14 +1072,27 @@ def test_local_install_requires_running_profile(monkeypatch, tmp_path):
         cli.local_install(_install_args())
 
 
-def test_local_install_generates_password_when_none_exists(monkeypatch, tmp_path, capsys):
+def test_local_install_defaults_to_no_password_gate(monkeypatch, tmp_path, capsys):
+    # No --password, no --no-password, no pre-existing password or
+    # accounts: the default posture for a single-trusted-operator local
+    # appliance is no login screen at all, not a secret you have to go
+    # find in this command's own output before you can log in.
     _patch_install(monkeypatch, tmp_path)
-    monkeypatch.setattr(cli.secrets, "token_urlsafe", lambda n: "generated-secret")
 
     assert cli.local_install(_install_args()) == 0
 
     out = capsys.readouterr().out
-    assert "Local login password: generated-secret" in out
+    assert "Password gate: disabled" in out
+    assert "Local login password:" not in out
+
+
+def test_local_install_uses_explicit_password_on_a_true_first_install(monkeypatch, tmp_path, capsys):
+    _patch_install(monkeypatch, tmp_path)
+
+    assert cli.local_install(_install_args(password="my-chosen-password")) == 0
+
+    out = capsys.readouterr().out
+    assert "Local login password: my-chosen-password" in out
 
 
 def test_local_install_reuses_existing_password_when_not_specified(monkeypatch, tmp_path, capsys):
@@ -1147,14 +1160,16 @@ def test_local_install_does_not_print_a_misleading_password_when_accounts_surviv
 
 
 def test_local_install_prints_the_real_password_on_a_true_first_install(monkeypatch, tmp_path, capsys):
-    # No login Secret AND no account Secrets yet - a genuine first install,
-    # where ensure_bootstrap_admin() will actually seed the printed value.
-    # Guards against a naive "no login secret -> never trust it" fix that
-    # would regress the ordinary first-install path this test covers.
+    # No login Secret AND no account Secrets yet - a genuine first install
+    # with an explicitly requested password, where ensure_bootstrap_admin()
+    # will actually seed the printed value. Guards against a naive "no
+    # login secret -> never trust it" fix that would regress the ordinary
+    # first-install-with-a-password path this test covers (a plain default
+    # first install takes the no-password-gate path instead - see
+    # test_local_install_defaults_to_no_password_gate).
     _patch_install(monkeypatch, tmp_path, has_existing_accounts=False)
-    monkeypatch.setattr(cli.secrets, "token_urlsafe", lambda n: "generated-secret")
 
-    assert cli.local_install(_install_args()) == 0
+    assert cli.local_install(_install_args(password="generated-secret")) == 0
 
     out = capsys.readouterr().out
     assert "Local login password: generated-secret" in out

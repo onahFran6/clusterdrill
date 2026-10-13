@@ -174,6 +174,22 @@ def test_logout_clears_all_session_keys(gate_on):
     assert auth.CSRF_SESSION_KEY not in request.session
 
 
+def test_logout_revokes_this_accounts_other_live_sessions(gate_on):
+    # R04: logout used to only ever clear *this* browser's cookie - a
+    # terminal WebSocket already open on a different device/tab (or a
+    # second still-valid session dict with the same user_id) kept working
+    # until it closed for an unrelated reason. logout() must actually
+    # revoke the account, the same way admin_router's password-reset
+    # already does.
+    request = FakeRequest()
+    auth.attempt_login(request, "alice", ALICE_PASSWORD)
+    other_device_session = dict(request.session)
+
+    auth.logout(request)
+
+    assert auth.session_is_valid(other_device_session) is False
+
+
 # --- current_user_id / current_username / require_admin ---------------------
 
 def test_current_user_id_and_username_from_session(gate_on):
@@ -252,16 +268,37 @@ def test_lockout_is_keyed_per_client_not_global():
     assert auth.seconds_until_unlocked(victim) is None
 
 
-def test_client_key_prefers_cf_connecting_ip_header():
+def test_client_key_ignores_forwarded_header_from_an_untrusted_peer(monkeypatch):
+    # R01: a direct client hitting this app without going through any
+    # configured trusted proxy must not be able to pick its own lockout
+    # bucket by sending whatever cf-connecting-ip/x-forwarded-for value it
+    # likes - the real socket peer is the only thing it can't fake.
+    monkeypatch.setattr(auth, "_TRUSTED_PROXY_IPS", frozenset())
     request = FakeRequest(
-        headers={"cf-connecting-ip": "192.0.2.9"}, client_host="127.0.0.1"
+        headers={"cf-connecting-ip": "192.0.2.9"}, client_host="203.0.113.5"
     )
-    assert auth._client_key(request) == "192.0.2.9"
+    assert auth._client_key(request) == "203.0.113.5"
 
 
-def test_client_key_falls_back_to_socket_peer():
+def test_client_key_trusts_forwarded_header_only_from_a_configured_proxy_peer(monkeypatch):
+    monkeypatch.setattr(auth, "_TRUSTED_PROXY_IPS", frozenset({"127.0.0.1"}))
+    trusted = FakeRequest(headers={"cf-connecting-ip": "192.0.2.9"}, client_host="127.0.0.1")
+    assert auth._client_key(trusted) == "192.0.2.9"
+
+    untrusted = FakeRequest(headers={"cf-connecting-ip": "192.0.2.9"}, client_host="203.0.113.5")
+    assert auth._client_key(untrusted) == "203.0.113.5"
+
+
+def test_client_key_falls_back_to_socket_peer_with_no_headers(monkeypatch):
+    monkeypatch.setattr(auth, "_TRUSTED_PROXY_IPS", frozenset({"192.0.2.10"}))
     request = FakeRequest(headers={}, client_host="192.0.2.10")
     assert auth._client_key(request) == "192.0.2.10"
+
+
+def test_trusted_proxy_ips_defaults_to_empty():
+    # Fails closed, not open: unset CLUSTERDRILL_TRUSTED_PROXY_IPS means
+    # forwarded headers are never trusted, from any peer.
+    assert auth._TRUSTED_PROXY_IPS == frozenset()
 
 
 # --- check_lockout_and_record_attempt (atomic check+record) ------------------

@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # This question needs a second namespace (another team's - its
-# NetworkPolicy must never be edited by the candidate). Per the
-# established pattern for multi-namespace questions in this bank (see
-# q108-28-diagnose-dns-wrong-namespace-suffix), DATA_NS below is named as
-# a suffix of $QUESTION_ID, carries no clusterdrill-question label (neither
-# do the objects inside it), and is deleted/recreated wholesale on every
-# run for its own idempotency.
+# NetworkPolicy must never be edited by the candidate). DATA_NS below is
+# named as a suffix of $QUESTION_ID and labeled
+# clusterdrill-question=$QUESTION_ID, same as the primary namespace (R06):
+# full_reset/batch_cleanup select namespaces to delete by this label, so
+# DATA_NS is swept up and cleaned at session end exactly like the primary
+# one. It's also still deleted/recreated wholesale on every run for its
+# own idempotency on repeated runs of this one question. (Unrelated to the
+# team=carina label mentioned below on $QUESTION_ID itself - that's a
+# different label this question's fault #4 is about, not this one.)
 set -euo pipefail
 
 QUESTION_ID="q116-20-end-to-end-four-faults-one-request${CLUSTERDRILL_NAMESPACE_SUFFIX:-}"
@@ -24,6 +27,7 @@ grant_user_namespace_access "$QUESTION_ID" "${CLUSTERDRILL_USER_ID:-}"
 kubectl delete namespace "$DATA_NS" --ignore-not-found --wait=true >/dev/null 2>&1
 kubectl create namespace "$DATA_NS" \
   --dry-run=client -o yaml | kubectl apply -f -
+kubectl label namespace "$DATA_NS" "clusterdrill-question=$QUESTION_ID" --overwrite
 apply_default_resource_limits "$DATA_NS"
 grant_user_namespace_access "$DATA_NS" "${CLUSTERDRILL_USER_ID:-}"
 

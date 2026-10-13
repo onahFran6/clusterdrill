@@ -7,6 +7,12 @@ viewer was shown (and could copy-paste) a namespace name that setup.sh never
 actually created for them. substitute_namespace()/render_markdown() close
 that gap at render time, using grading_client.namespaced_id() as the single
 source of truth both sides already agree on.
+
+namespaced_id() itself never suffixes while users.single_user_mode() is True
+(R08/Proposal A: there is structurally only ever one operator), so the
+"for a real user" tests below monkeypatch single_user_mode() back to False
+to pin down the underlying suffix mechanism's own correctness, same pattern
+as test_grading_client.py.
 """
 from __future__ import annotations
 
@@ -14,6 +20,7 @@ import node_topology
 import profile_store
 import pytest
 import services.question_view as question_view
+import users
 from services.question_view import render_markdown, split_hint, substitute_namespace
 from sessions import store as session_store
 
@@ -41,7 +48,13 @@ def test_substitute_namespace_is_a_noop_with_no_accounts():
     assert substitute_namespace(text, "q101-01-example", None) == text
 
 
-def test_substitute_namespace_rewrites_every_occurrence_for_a_real_user():
+def test_substitute_namespace_is_a_noop_in_single_user_mode_even_for_a_real_user():
+    text = "**Namespace:** `q101-01-example`. Run kubectl get pods -n q101-01-example."
+    assert substitute_namespace(text, "q101-01-example", "alice") == text
+
+
+def test_substitute_namespace_rewrites_every_occurrence_for_a_real_user(monkeypatch):
+    monkeypatch.setattr(users, "single_user_mode", lambda: False)
     text = "**Namespace:** `q101-01-example`. Run kubectl get pods -n q101-01-example."
     rewritten = substitute_namespace(text, "q101-01-example", "alice")
     assert rewritten == (
@@ -49,19 +62,24 @@ def test_substitute_namespace_rewrites_every_occurrence_for_a_real_user():
     )
 
 
-def test_substitute_namespace_does_not_touch_a_different_id_sharing_a_prefix():
+def test_substitute_namespace_does_not_touch_a_different_id_sharing_a_prefix(monkeypatch):
     # q101-01-example must not match inside the unrelated q101-01-example-2's text.
+    # Monkeypatched to False so this actually exercises the boundary regex -
+    # single_user_mode()'s own no-op already makes this trivially true otherwise.
+    monkeypatch.setattr(users, "single_user_mode", lambda: False)
     text = "See q101-01-example-2 for a related case."
     assert substitute_namespace(text, "q101-01-example", "alice") == text
 
 
-def test_substitute_namespace_does_not_touch_a_filesystem_path_segment():
+def test_substitute_namespace_does_not_touch_a_filesystem_path_segment(monkeypatch):
     # A bare qid immediately followed by "/" is always a path (e.g. the
     # question's own chart directory), never a namespace reference - the
     # physical directory is never namespace-suffixed on disk, so rewriting
     # it here would point a copy-pasted command at a path that doesn't
     # exist. The bare "-n <qid>" namespace argument on the same line must
-    # still be rewritten.
+    # still be rewritten. Monkeypatched to False to actually exercise the
+    # rewrite - single_user_mode()'s own no-op applies here too.
+    monkeypatch.setattr(users, "single_user_mode", lambda: False)
     text = "helm install app $HOME/practice-work/q101-01-example/chart -n q101-01-example --wait"
     rewritten = substitute_namespace(text, "q101-01-example", "alice")
     assert rewritten == (
@@ -69,7 +87,8 @@ def test_substitute_namespace_does_not_touch_a_filesystem_path_segment():
     )
 
 
-def test_render_markdown_substitutes_before_rendering():
+def test_render_markdown_substitutes_before_rendering(monkeypatch):
+    monkeypatch.setattr(users, "single_user_mode", lambda: False)
     html = render_markdown("Namespace: `q101-01-example`", qid="q101-01-example", user_id="alice")
     assert "q101-01-example-alice" in html
     assert "q101-01-example<" not in html  # bare id no longer stands alone
@@ -82,7 +101,8 @@ def test_render_markdown_is_unchanged_when_qid_is_omitted():
     assert "q101-01-example" in html
 
 
-def test_split_hint_substitutes_in_both_the_task_and_the_hint():
+def test_split_hint_substitutes_in_both_the_task_and_the_hint(monkeypatch):
+    monkeypatch.setattr(users, "single_user_mode", lambda: False)
     question_md = (
         "Namespace: `q101-01-example`\n\n"
         "## Hint\n\nSearch for q101-01-example in the docs.\n"
@@ -95,6 +115,7 @@ def test_split_hint_substitutes_in_both_the_task_and_the_hint():
 def test_question_context_renders_the_suffixed_namespace_for_a_real_user(
     question_bank_factory, monkeypatch,
 ):
+    monkeypatch.setattr(users, "single_user_mode", lambda: False)
     bank = question_bank_factory({"topic-a": 1})
     question = bank.questions[0]
     qid = question.id
@@ -113,6 +134,22 @@ def test_question_context_renders_the_suffixed_namespace_for_a_real_user(
     assert f"{qid}-alice" in ctx["task_html"]
     assert f"{qid}-alice" in ctx["hint_html"]
     assert f"{qid}-alice" in ctx["answer_html"]
+
+
+def test_question_context_keeps_the_bare_namespace_in_single_user_mode_even_for_a_real_user(
+    question_bank_factory, monkeypatch,
+):
+    bank = question_bank_factory({"topic-a": 1})
+    question = bank.questions[0]
+    qid = question.id
+    (question.path / "QUESTION.md").write_text(f"# {qid}\n\n**Namespace:** `{qid}`\n")
+    (question.path / "ANSWER.md").write_text(f"```sh\nkubectl apply -n {qid} -f manifest.yaml\n```\n")
+    monkeypatch.setattr(question_view, "bank", bank)
+    monkeypatch.setattr(question_view, "WORK_DIR_ROOT", question.path.parent)
+
+    ctx = question_view.question_context(qid, user_id="alice")
+
+    assert f"-n {qid}" in ctx["answer_html"]
 
 
 def test_question_context_keeps_the_bare_namespace_with_no_accounts(

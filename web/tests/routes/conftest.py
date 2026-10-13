@@ -30,6 +30,7 @@ import routers.health as health
 import routers.pages as pages
 import routers.sessions_router as sessions_router
 import services.question_view as question_view
+import services.session_lifecycle as session_lifecycle
 import users
 from app import app
 from sessions import exam_result_store
@@ -83,7 +84,7 @@ def wire_fake_bank(monkeypatch):
     attribute, matching whichever modules currently import it."""
 
     def _wire(bank):
-        for module in (pages, sessions_router, health, question_view):
+        for module in (pages, sessions_router, health, question_view, session_lifecycle):
             monkeypatch.setattr(module, "bank", bank)
         return bank
 

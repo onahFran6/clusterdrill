@@ -1,15 +1,28 @@
-# Compatible-release pins (~=X.Y): allow patch/bugfix bumps, block
+# Compatible-release pins (~=X.Y.Z): allow patch/bugfix bumps, block
 # accidental minor/major breaks - this is the project's deliberate
 # dependency policy, not a placeholder for a lockfile tool; see
 # CONTRIBUTING.md's "Dependency pinning and upgrade policy" section. Pins
 # below reflect the versions this app was last verified against - bump
 # deliberately, not via an unpinned `pip install -r requirements.txt`.
-fastapi~=0.121
-uvicorn[standard]~=0.38
-jinja2~=3.1
-markdown~=3.10
-pyyaml~=6.0
+#
+# Three components, not two (I02/R15): `~=X.Y` (e.g. `~=0.121`) is NOT
+# "any 0.121.Z" - PEP 440 reads a 2-part compatible-release spec as
+# ">=X.Y, ==X.*", i.e. any later 0.x release at all. That's exactly how
+# this file silently drifted from fastapi 0.121 to 0.141.1 (confirmed via
+# `pip freeze` against the actually-installed, already-test-passing venv)
+# without anyone deliberately bumping it. `~=X.Y.Z` is what actually
+# expresses "patch-only". websockets has no third version component of its
+# own (only ever X.Y releases) - `~=17.1.0` still works here: PEP 440
+# treats a missing trailing component as .0 for comparison, so it accepts
+# exactly 17.1 (or a hypothetical 17.1.x) and excludes 17.2, which is the
+# intended "no accidental minor bump" behavior for a library that has no
+# true patch level to allow.
+fastapi~=0.141.1
+uvicorn[standard]~=0.52.4
+jinja2~=3.1.6
+markdown~=3.10.3
+pyyaml~=6.0.3
 python-multipart~=0.0.32
-itsdangerous~=2.2
-httpx~=0.28
-websockets~=17.0
+itsdangerous~=2.2.0
+httpx~=0.28.1
+websockets~=17.1.0

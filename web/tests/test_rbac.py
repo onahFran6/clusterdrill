@@ -225,7 +225,20 @@ def test_delete_user_service_account_missing_kubeconfig_is_a_noop(cluster):
 
 # --- kubeconfig fallback when no CA data is present ------------------------
 
-def test_kubeconfig_falls_back_to_insecure_skip_tls_verify_without_ca_data(cluster, monkeypatch):
+def test_kubeconfig_provisioning_fails_closed_without_ca_data_by_default(cluster, monkeypatch):
+    # R02: no CA data and no explicit CLUSTERDRILL_ALLOW_INSECURE_KUBECONFIG
+    # opt-in means refuse to write an unverified kubeconfig at all, not
+    # silently downgrade to insecure-skip-tls-verify.
+    monkeypatch.delenv("CLUSTERDRILL_ALLOW_INSECURE_KUBECONFIG", raising=False)
+    _mock_cluster_info(monkeypatch, ca_data=None)
+    _mock_token(monkeypatch)
+
+    assert rbac.ensure_user_service_account("alice") is False
+    assert not rbac.user_kubeconfig_path("alice").exists()
+
+
+def test_kubeconfig_falls_back_to_insecure_skip_tls_verify_with_explicit_opt_in(cluster, monkeypatch):
+    monkeypatch.setenv("CLUSTERDRILL_ALLOW_INSECURE_KUBECONFIG", "true")
     _mock_cluster_info(monkeypatch, ca_data=None)
     _mock_token(monkeypatch)
     rbac.ensure_user_service_account("alice")

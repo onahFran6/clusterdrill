@@ -3,18 +3,16 @@
 # and seeds broken/partial resources.
 #
 # This question needs TWO extra namespaces (a frontend client and a backend
-# it talks to over Service DNS). full_reset (lib/grading.sh) only knows how
-# to delete the exact $QUESTION_ID namespace by name and any CLUSTER-SCOPED
-# object labeled clusterdrill-question=$QUESTION_ID - it does not delete
-# other namespaces, even labeled ones. So - matching the established pattern
-# for multi-namespace questions in this bank (see
-# q110-30-crd-crossnamespace-count-and-cleanup) - FRONTEND_NS/BACKEND_NS
-# below are named as suffixes of $QUESTION_ID, but neither the namespaces
-# nor the objects inside them carry the clusterdrill-question label (doing
-# so would make verify-question.sh's leak check fail forever, since nothing
-# ever deletes them). setup.sh is instead responsible for its own
-# idempotency by deleting and recreating both namespaces wholesale on every
-# run, which is also this question's actual cleanup path.
+# it talks to over Service DNS). FRONTEND_NS/BACKEND_NS below are named as
+# suffixes of $QUESTION_ID and labeled clusterdrill-question=$QUESTION_ID,
+# same as the primary namespace (R06): full_reset/batch_cleanup
+# (lib/grading.sh) select namespaces to delete by this label, not by
+# $QUESTION_ID's exact name, so both secondary namespaces are swept up and
+# cleaned at session end exactly like the primary one - verify-question.sh's
+# leak check (which also matches on this label) now actually catches a
+# leak here instead of being structurally blind to one. setup.sh is still
+# responsible for its own idempotency on repeated runs of this one
+# question: deleting and recreating both namespaces wholesale on every run.
 
 set -euo pipefail
 
@@ -31,19 +29,22 @@ kubectl label namespace "$QUESTION_ID" "clusterdrill-question=$QUESTION_ID" --ov
 apply_default_resource_limits "$QUESTION_ID"
 grant_user_namespace_access "$QUESTION_ID" "${CLUSTERDRILL_USER_ID:-}"
 
-# The two working namespaces have no framework-level cleanup path (full_reset
-# only knows the primary $QUESTION_ID namespace by exact name), so always
-# start by removing any leftover copy from a previous run before recreating.
+# Always start by removing any leftover copy from a previous run of this
+# one question before recreating - idempotency setup.sh is still
+# responsible for on repeated runs, independent of R06's framework-level
+# cleanup via label below.
 kubectl delete namespace "$FRONTEND_NS" --ignore-not-found --wait=true >/dev/null 2>&1
 kubectl delete namespace "$BACKEND_NS" --ignore-not-found --wait=true >/dev/null 2>&1
 
 kubectl create namespace "$FRONTEND_NS" \
   --dry-run=client -o yaml | kubectl apply -f -
+kubectl label namespace "$FRONTEND_NS" "clusterdrill-question=$QUESTION_ID" --overwrite
 apply_default_resource_limits "$FRONTEND_NS"
 grant_user_namespace_access "$FRONTEND_NS" "${CLUSTERDRILL_USER_ID:-}"
 
 kubectl create namespace "$BACKEND_NS" \
   --dry-run=client -o yaml | kubectl apply -f -
+kubectl label namespace "$BACKEND_NS" "clusterdrill-question=$QUESTION_ID" --overwrite
 apply_default_resource_limits "$BACKEND_NS"
 grant_user_namespace_access "$BACKEND_NS" "${CLUSTERDRILL_USER_ID:-}"
 

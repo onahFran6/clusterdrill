@@ -191,14 +191,10 @@ def test_start_fixed_no_timer_minutes_keeps_the_mode_default(question_bank_facto
     assert session.timer_duration_seconds == TOPIC_TIMER_SECONDS
 
 
-def test_start_fixed_out_of_preset_timer_minutes_falls_back_to_default(question_bank_factory):
-    from sessions import TOPIC_TIMER_SECONDS
-
+def test_start_fixed_custom_nonpreset_timer_is_honored(question_bank_factory):
     bank = question_bank_factory({"topic-a": 3})
-    # 7 isn't one of TIMER_CHOICES_MINUTES - a forged/stray form value must
-    # never buy an arbitrary clock length, only ever "use the default".
     session = start_fixed(bank, "topic-a", timer_minutes=7)
-    assert session.timer_duration_seconds == TOPIC_TIMER_SECONDS
+    assert session.timer_duration_seconds == 7 * 60
 
 
 def test_start_mixed_custom_timer_minutes_overrides_the_default(question_bank_factory):
@@ -303,6 +299,24 @@ def test_start_exam_empty_topics_list_is_treated_as_all(question_bank_factory):
     assert chosen_topics == {"alpha-topic", "beta-topic"}
 
 
+def test_start_exam_excludes_exam_ineligible_questions(question_bank_factory):
+    bank = question_bank_factory(
+        {"topic-a": 10}, exam_eligible={"topic-a": [False] * 3 + [True] * 7},
+    )
+    session = start_exam(bank, question_count=20)
+    ineligible_ids = {q.id for q in bank.questions if not q.exam_eligible}
+    assert ineligible_ids and not ineligible_ids & set(session.question_ids)
+
+
+def test_start_mixed_is_unaffected_by_exam_eligible(question_bank_factory):
+    # R13's flag only gates start_exam's draw - _exam_pool itself is
+    # shared with start_mixed's practice-mode draw, where an
+    # exam-ineligible question's grading side effect is harmless.
+    bank = question_bank_factory({"topic-a": 3}, exam_eligible={"topic-a": False})
+    session = start_mixed(bank, question_count=3)
+    assert set(session.question_ids) == {q.id for q in bank.questions}
+
+
 def test_start_exam_difficulty_mix_filters_to_the_selected_set(question_bank_factory):
     bank = question_bank_factory({"topic-a": ["easy", "medium", "hard"] * 5})
     session = start_exam(bank, difficulties=["easy", "hard"], question_count=20)
@@ -324,10 +338,10 @@ def test_start_exam_question_count_choices_are_all_honored(question_bank_factory
         assert len(session.question_ids) == count
 
 
-def test_start_exam_out_of_preset_question_count_falls_back_to_default(question_bank_factory):
+def test_start_exam_custom_nonpreset_question_count_is_honored(question_bank_factory):
     bank = question_bank_factory({"topic-a": 25})
-    session = start_exam(bank, question_count=7)  # not one of EXAM_QUESTION_COUNT_CHOICES
-    assert len(session.question_ids) == EXAM_DEFAULT_QUESTION_COUNT
+    session = start_exam(bank, question_count=7)
+    assert len(session.question_ids) == 7
 
 
 def test_start_exam_short_pool_returns_whole_pool(question_bank_factory):
@@ -342,21 +356,20 @@ def test_start_exam_custom_timer_minutes_overrides_the_default(question_bank_fac
     assert session.timer_duration_seconds == 30 * 60
 
 
-def test_start_exam_out_of_preset_timer_falls_back_to_the_computed_default(question_bank_factory):
+def test_start_exam_custom_nonpreset_timer_is_honored(question_bank_factory):
     bank = question_bank_factory({"topic-a": 20})
-    # 7 isn't one of TIMER_CHOICES_MINUTES.
     session = start_exam(bank, question_count=15, timer_minutes=7)
-    assert session.timer_duration_seconds == 120 * 60
+    assert session.timer_duration_seconds == 7 * 60
 
 
-def test_start_exam_default_timer_targets_about_8_minutes_per_question(question_bank_factory):
+def test_start_exam_default_timer_targets_about_7_minutes_per_question(question_bank_factory):
     from sessions import default_exam_timer_minutes
 
-    # 8 min/question -> 40/80/120/160; nearest TIMER_CHOICES_MINUTES preset
+    # 7 min/question -> 35/70/105/140; nearest TIMER_CHOICES_MINUTES preset
     # ([15, 30, 45, 60, 90, 120]) to each.
-    assert default_exam_timer_minutes(5) == 45
-    assert default_exam_timer_minutes(10) == 90
-    assert default_exam_timer_minutes(15) == 120
+    assert default_exam_timer_minutes(5) == 30
+    assert default_exam_timer_minutes(10) == 60
+    assert default_exam_timer_minutes(15) == 90
     assert default_exam_timer_minutes(20) == 120
     for count in EXAM_QUESTION_COUNT_CHOICES:
         assert default_exam_timer_minutes(count) in TIMER_CHOICES_MINUTES

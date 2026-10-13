@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import logging
 import os
 import re
 import secrets
@@ -33,12 +34,16 @@ from typing import Optional
 
 from kube_json import (
     SYSTEM_NAMESPACE,
+    StorageWriteError,
     decode_payload,
     kubectl_apply_json,
+    kubectl_apply_json_or_raise,
     kubectl_delete,
     kubectl_get_json,
     secret_payload,
 )
+
+logger = logging.getLogger("clusterdrill.users")
 
 _USER_LABELS = {"clusterdrill-kind": "user"}
 _USER_LABEL_SELECTOR = "clusterdrill-kind=user"
@@ -66,14 +71,24 @@ _lock = threading.RLock()
 
 
 def single_user_mode() -> bool:
-    """Whether this deployment permits only its bootstrap administrator.
+    """Always True (Proposal A / C01+C02): this deployment permits only its
+    bootstrap administrator, full stop - not a toggle via
+    CLUSTERDRILL_SINGLE_USER (removed as a supported capability, see
+    README/docs/architecture.md).
 
     The local appliance deliberately runs cluster-scoped CKAD exercises.
     Kubernetes RBAC cannot safely delegate ClusterRoleBinding creation among
     mutually untrusted users, so shared deployments must isolate each learner
-    in a separate cluster. The local appliance allows one trusted operator.
+    in a separate cluster - this app's own per-user RBAC/namespace isolation
+    was never that, no matter how much it was hardened (confirmed: a
+    learner's terminal could still reach the application's own kubeconfig
+    and filesystem by sharing its OS user, and could still create Pods in
+    the application's own namespace; see C01/C02 in the security audit).
+    The supported shape is one trusted operator per dedicated disposable
+    cluster - this function stays (rather than deleting every call site
+    that already branches on it) as the one place that says so.
     """
-    return os.environ.get("CLUSTERDRILL_SINGLE_USER", "").lower() in {"1", "true", "yes"}
+    return True
 
 
 class UsernameTakenError(ValueError):
@@ -195,7 +210,11 @@ def create_user(username: str, password: str, is_admin: bool = False) -> User:
             "createdAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
         obj = secret_payload(_user_object_name(user_id), spec, labels=_USER_LABELS)
-        kubectl_apply_json(obj)
+        # Raises instead of returning a User built from a Secret that never
+        # actually reached the cluster (R09) - the caller must not tell an
+        # admin an account was created when list_users() won't show it on
+        # the very next read.
+        kubectl_apply_json_or_raise(obj, what=f"user {user_id}")
         return _to_user(obj)
 
 
@@ -273,4 +292,12 @@ def ensure_bootstrap_admin() -> None:
     with _lock:
         if list_users():
             return
-        create_user("admin", seed_password, is_admin=True)
+        try:
+            create_user("admin", seed_password, is_admin=True)
+        except StorageWriteError:
+            # Best-effort like every other startup provisioning call in
+            # app.py's lifespan (a cluster that isn't reachable yet must not
+            # block startup) - list_users() will still be empty next boot,
+            # so this self-heals on the next restart instead of silently
+            # pretending the admin account exists (R09).
+            logger.exception("failed to create bootstrap admin account")

@@ -2,12 +2,15 @@
 {% import "_macros.html" as m %}
 {% block title %}Exam Results - ClusterDrill{% endblock %}
 {% block content %}
-  {{ m.kget_hero('kubectl get examresult -o wide') }}
-  <h1 class="page-title">Exam Results</h1>
+  <header class="page-heading">
+    <div>
+      <h1 class="page-title">Exam results</h1>
   <p class="hub-intro">
     The post-exam review a real exam never gives you - what you got right and wrong, just now.
     This attempt is also recorded on the <a href="/mock-exam">Mock Exam</a> page's Past attempts panel.
   </p>
+    </div>
+  </header>
 
   {% call m.alert('success' if passed_exam else 'warning') %}
     {% if passed_exam %}
@@ -32,30 +35,37 @@
     </div>
   </div>
 
-  <section class="panel" style="margin-bottom: var(--space-5);">
-    <div class="checklist-header"><h2>Per-domain breakdown</h2></div>
+  <div class="insight-grid results-insights">
+  <section class="panel content-panel">
+    <div class="content-panel-heading"><h2>By domain</h2></div>
+    <div class="meter-list">
     {% for dw in domain_rows %}
-      <div style="margin-bottom: 10px;">
-        <div style="display:flex; justify-content:space-between; font-size: 12.5px; margin-bottom: 3px;">
-          <span>{{ dw.name }}</span>{{ m.pill(dw.pct ~ '%') }}
-        </div>
-        <div class="progress-bar" style="margin-top:0;">
+      <div class="meter-row">
+        <div class="meter-heading"><span>{{ dw.name }}</span><span>{{ dw.pct }}%</span></div>
+        <div class="progress-bar">
           <div class="progress-bar-fill" style="width: {{ dw.pct }}%; background: var(--accent-2);"></div>
         </div>
       </div>
     {% endfor %}
+    </div>
   </section>
 
-  <section class="panel" style="margin-bottom: var(--space-5);">
-    <div class="checklist-header"><h2>Per-question results</h2></div>
+  <section class="panel content-panel">
+    <div class="content-panel-heading"><h2>By question</h2></div>
+    <div class="result-question-list">
     {% for q in questions %}
-      <a href="/questions/{{ q.id }}" style="display:flex; align-items:center; gap: 10px; padding: 6px 0; text-decoration:none; color:inherit;">
+      <a class="result-question-row" href="/questions/{{ q.id }}">
         {{ m.question_status('correct' if q.passed else 'incorrect') }}
-        <span style="flex:1; font-size: 13px; font-family: var(--font-mono);">{{ loop.index }}. {{ q.id }}</span>
+        <span class="question-row-text">{{ loop.index }}. {{ q.id }}</span>
         {% if q.domain %}{{ m.pill(q.domain) }}{% endif %}
       </a>
     {% endfor %}
+    </div>
   </section>
+  </div>
 
-  <a class="btn btn-primary" href="/mock-exam">Back to Mock Exam</a>
+  <div class="result-actions">
+    <a class="btn btn-primary" href="/mock-exam">Review mock exam</a>
+    <a class="btn btn-secondary" href="/topics">Continue practice</a>
+  </div>
 {% endblock %}

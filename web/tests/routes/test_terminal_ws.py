@@ -22,11 +22,18 @@ block it" signal.
 """
 from __future__ import annotations
 
+import asyncio
 import inspect
+import time
+from types import SimpleNamespace
 
+import auth
 import pytest
+import routers.terminal_router as terminal_router
 import ttyd_manager
 from app import app
+from sessions import ActiveSession
+from sessions import store as session_store
 from starlette.routing import WebSocketRoute
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
@@ -115,6 +122,109 @@ def test_missing_origin_is_rejected(tc):
         with tc.websocket_connect(WS_PATH):
             pass
     assert exc_info.value.code == 4403
+
+
+# --- _close_if_session_revoked (R04: terminal revocation mid-connection) ---
+# Exercises the background watcher directly rather than a full WS/ttyd
+# round-trip (never reaches a real ttyd in this suite - see module
+# docstring) - this is the actual new logic, so it gets a real test instead
+# of only being implicitly covered by the connect-time auth check above.
+
+@pytest.fixture(autouse=True)
+def _reset_revocation_state():
+    auth._revoked_before = 0.0
+    auth._revoked_before_by_user.clear()
+    yield
+    auth._revoked_before = 0.0
+    auth._revoked_before_by_user.clear()
+
+
+async def _wait_or_timeout(coro, timeout):
+    try:
+        await asyncio.wait_for(coro, timeout=timeout)
+        return True
+    except asyncio.TimeoutError:
+        return False
+
+
+def test_close_if_session_revoked_returns_once_this_users_session_is_revoked(monkeypatch):
+    monkeypatch.setattr(terminal_router, "_REVOCATION_POLL_INTERVAL_SECONDS", 0.01)
+    monkeypatch.setattr(auth, "password_gate_enabled", lambda: True)
+    user_id = "terminal-ws-revocation-test-user"
+    fake_ws = SimpleNamespace(session={
+        auth.SESSION_KEY: True,
+        auth.AUTHED_AT_KEY: time.time(),
+        auth.USER_ID_KEY: user_id,
+    })
+
+    async def scenario():
+        watcher = asyncio.create_task(terminal_router._close_if_session_revoked(fake_ws))
+        await asyncio.sleep(0.03)
+        assert not watcher.done(), "must not return while the session is still valid"
+        auth.revoke_user_sessions(user_id)
+        finished = await _wait_or_timeout(watcher, timeout=1.0)
+        assert finished, "must return promptly once this account's session is revoked"
+
+    asyncio.run(scenario())
+
+
+def test_close_if_session_revoked_is_a_noop_when_the_password_gate_is_off(monkeypatch):
+    # No accounts/no password gate - a terminal connection has nothing to
+    # revoke it, matching every other per-account mechanism's own no-op
+    # behavior in that mode.
+    monkeypatch.setattr(terminal_router, "_REVOCATION_POLL_INTERVAL_SECONDS", 0.01)
+    monkeypatch.setattr(auth, "password_gate_enabled", lambda: False)
+    fake_ws = SimpleNamespace(session={})
+
+    async def scenario():
+        watcher = asyncio.create_task(terminal_router._close_if_session_revoked(fake_ws))
+        finished = await _wait_or_timeout(watcher, timeout=0.1)
+        assert not finished
+        watcher.cancel()
+
+    asyncio.run(scenario())
+
+
+# --- _close_if_exam_finalizing (R11: terminal close at exam finalization) ---
+
+@pytest.fixture(autouse=True)
+def _reset_session_store():
+    session_store.clear_all()
+    yield
+    session_store.clear_all()
+
+
+def test_close_if_exam_finalizing_returns_once_finalization_starts(monkeypatch):
+    monkeypatch.setattr(terminal_router, "_REVOCATION_POLL_INTERVAL_SECONDS", 0.01)
+    user_id = "terminal-ws-exam-finalizing-test-user"
+    session = ActiveSession(mode="exam", topic=None, question_ids=["qT01-question"])
+    session_store.set_active(session, user_id)
+    fake_ws = SimpleNamespace(session={})
+
+    async def scenario():
+        watcher = asyncio.create_task(terminal_router._close_if_exam_finalizing(fake_ws, user_id))
+        await asyncio.sleep(0.03)
+        assert not watcher.done(), "must not return before finalization has started"
+        session.finalization_started_at = time.time()
+        finished = await _wait_or_timeout(watcher, timeout=1.0)
+        assert finished, "must return promptly once this attempt starts finalizing"
+
+    asyncio.run(scenario())
+
+
+def test_close_if_exam_finalizing_is_a_noop_for_a_non_exam_session(monkeypatch):
+    monkeypatch.setattr(terminal_router, "_REVOCATION_POLL_INTERVAL_SECONDS", 0.01)
+    user_id = "terminal-ws-non-exam-test-user"
+    session_store.set_active(ActiveSession(mode="fixed", topic="topic-a", question_ids=["qT01-question"]), user_id)
+    fake_ws = SimpleNamespace(session={})
+
+    async def scenario():
+        watcher = asyncio.create_task(terminal_router._close_if_exam_finalizing(fake_ws, user_id))
+        finished = await _wait_or_timeout(watcher, timeout=0.1)
+        assert not finished
+        watcher.cancel()
+
+    asyncio.run(scenario())
 
 
 def test_matching_origin_is_not_rejected_by_origin_check(tc):

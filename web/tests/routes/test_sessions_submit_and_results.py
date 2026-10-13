@@ -15,21 +15,28 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import profile_store
-import routers.sessions_router as sessions_router
+import services.session_lifecycle as session_lifecycle
 from grading_client import ResetResult
 from sessions import ActiveSession, exam_result_store
 from sessions import store as session_store
 
 
 def _set_check_sh(question, passed: int, total: int) -> None:
-    question.path.joinpath("check.sh").write_text(
-        f"#!/usr/bin/env bash\necho 'SCORE: {passed}/{total}'\n"
-    )
+    # One CRITERION line per unit of `total`, first `passed` of them PASS -
+    # grading_client.parse_check_output now cross-checks the SCORE line
+    # against actual parsed CRITERION lines (R12), so a bare SCORE with no
+    # matching criteria would be (correctly) rejected as inconsistent.
+    lines = ["#!/usr/bin/env bash"]
+    for i in range(total):
+        result = "PASS" if i < passed else "FAIL"
+        lines.append(f"echo 'CRITERION: c{i} = {result}'")
+    lines.append(f"echo 'SCORE: {passed}/{total}'")
+    question.path.joinpath("check.sh").write_text("\n".join(lines) + "\n")
 
 
 def _mock_cleanup(monkeypatch):
     monkeypatch.setattr(
-        sessions_router, "run_batch_cleanup", MagicMock(return_value=ResetResult(ok=True, output="")),
+        session_lifecycle, "run_batch_cleanup", MagicMock(return_value=ResetResult(ok=True, output="")),
     )
 
 
@@ -136,7 +143,7 @@ async def test_submit_exam_schedules_cleanup_for_every_question(
     qids = [q.id for q in bank.questions]
     session_store.set_active(ActiveSession(mode="exam", topic=None, question_ids=qids))
     mock_cleanup = MagicMock(return_value=ResetResult(ok=True, output=""))
-    monkeypatch.setattr(sessions_router, "run_batch_cleanup", mock_cleanup)
+    monkeypatch.setattr(session_lifecycle, "run_batch_cleanup", mock_cleanup)
     _mock_record_exam_attempt(monkeypatch)
 
     await client.post("/sessions/submit")

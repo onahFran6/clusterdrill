@@ -1,0 +1,129 @@
+{
+  "architecture": {
+    "title": "q118-17-timestamped-backups-no-overlap: CronJob, PersistentVolumeClaim, Deployment, Job",
+    "description": "Resources involved: CronJob, PersistentVolumeClaim, Deployment, Job",
+    "nodes": [
+      {
+        "id": "CronJob",
+        "label": "CronJob",
+        "type": "controller"
+      },
+      {
+        "id": "Job",
+        "label": "Job",
+        "type": "controller"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "CronJob",
+        "to": "Job",
+        "label": "schedules",
+        "animated": true,
+        "command": "kubectl create cronjob ... --schedule=... (fires on each tick)"
+      },
+      {
+        "from": "Deployment",
+        "to": "PersistentVolumeClaim",
+        "label": "mounts",
+        "animated": true,
+        "command": "pod template spec.volumes.persistentVolumeClaim.claimName"
+      }
+    ]
+  },
+  "sequence": {
+    "title": "q118-17-timestamped-backups-no-overlap: CronJob, PersistentVolumeClaim, Deployment, Job",
+    "description": "Resources involved: CronJob, PersistentVolumeClaim, Deployment, Job",
+    "actors": [
+      {
+        "id": "kubectl",
+        "label": "kubectl",
+        "type": "external"
+      },
+      {
+        "id": "API Server",
+        "label": "API Server",
+        "type": "external"
+      },
+      {
+        "id": "CronJob",
+        "label": "CronJob",
+        "type": "controller"
+      },
+      {
+        "id": "Job",
+        "label": "Job",
+        "type": "controller"
+      },
+      {
+        "id": "CronJob controller",
+        "label": "CronJob controller",
+        "type": "controller"
+      },
+      {
+        "id": "Deployment",
+        "label": "Deployment",
+        "type": "controller"
+      },
+      {
+        "id": "PersistentVolumeClaim",
+        "label": "PersistentVolumeClaim",
+        "type": "storage"
+      },
+      {
+        "id": "kubelet",
+        "label": "kubelet",
+        "type": "external"
+      }
+    ],
+    "steps": [
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "kubectl create cronjob ... --schedule=... (fires on each tick)"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "CronJob controller",
+        "to": "API Server",
+        "label": "watches CronJob objects"
+      },
+      {
+        "from": "CronJob controller",
+        "to": "API Server",
+        "label": "schedules Job (kubectl create cronjob ... --schedule=... (fires on each tick))"
+      },
+      {
+        "from": "kubectl",
+        "to": "API Server",
+        "label": "creates Deployment"
+      },
+      {
+        "from": "API Server",
+        "to": "kubectl",
+        "label": "201 Created",
+        "dashed": true
+      },
+      {
+        "from": "kubelet",
+        "to": "PersistentVolumeClaim",
+        "label": "mounts Deployment (pod template spec.volumes.persistentVolumeClaim.claimName)"
+      }
+    ]
+  }
+}

@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # This question needs a second namespace (where the broken policy was
-# mistakenly created). Per the established pattern for multi-namespace
-# questions in this bank (see q108-28-diagnose-dns-wrong-namespace-suffix),
-# WRONG_NS below is named as a suffix of $QUESTION_ID, carries no
-# clusterdrill-question label (neither does the NetworkPolicy inside it),
-# and is deleted/recreated wholesale on every run for its own idempotency.
+# mistakenly created). WRONG_NS below is named as a suffix of
+# $QUESTION_ID and labeled clusterdrill-question=$QUESTION_ID, same as the
+# primary namespace (R06): full_reset/batch_cleanup select namespaces to
+# delete by this label, so WRONG_NS is swept up and cleaned at session end
+# exactly like the primary one. It's also still deleted/recreated
+# wholesale on every run for its own idempotency on repeated runs of this
+# one question.
 set -euo pipefail
 
 QUESTION_ID="q116-17-the-policy-that-protects-nothing${CLUSTERDRILL_NAMESPACE_SUFFIX:-}"
@@ -22,6 +24,7 @@ grant_user_namespace_access "$QUESTION_ID" "${CLUSTERDRILL_USER_ID:-}"
 kubectl delete namespace "$WRONG_NS" --ignore-not-found --wait=true >/dev/null 2>&1
 kubectl create namespace "$WRONG_NS" \
   --dry-run=client -o yaml | kubectl apply -f -
+kubectl label namespace "$WRONG_NS" "clusterdrill-question=$QUESTION_ID" --overwrite
 apply_default_resource_limits "$WRONG_NS"
 grant_user_namespace_access "$WRONG_NS" "${CLUSTERDRILL_USER_ID:-}"
 

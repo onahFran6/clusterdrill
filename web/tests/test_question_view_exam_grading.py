@@ -94,3 +94,19 @@ def test_non_exam_session_still_renders_the_real_answer_text(one_question_bank):
     _start_session("fixed", qid)
     ctx = question_view.question_context(qid, tab="solution")
     assert SECRET_ANSWER_TEXT in ctx["answer_html"]
+
+
+def test_exam_does_not_load_reference_diagrams(one_question_bank, monkeypatch):
+    _start_session("exam", one_question_bank)
+
+    def unexpected_reference_load(*args, **kwargs):
+        pytest.fail("Exam rendering must not load reference diagrams or discovery paths")
+
+    for name in ("read_diagram_mmd", "read_diagram_json", "build_discovery_path_html"):
+        monkeypatch.setattr(question_view, name, unexpected_reference_load)
+    context = question_view.question_context(one_question_bank, tab="diagram")
+    assert context["tab"] == "task"
+    assert context["hint_html"] == ""
+    assert context["answer_html"] == ""
+    assert context["diagram_arch"] is None
+    assert context["diagram_seq"] is None

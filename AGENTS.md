@@ -49,7 +49,11 @@ an actual CKAD exam session (see `CONTRIBUTING.md`). Source new questions from t
 
 - Question changes: `lib/verify-question.sh <question>`
 - Web-app changes: `web/.venv/bin/pytest web/tests`
-- Python: `ruff check .` and `yamllint .` (see `pyproject.toml` for scope/exclusions)
+- Python: `ruff check .` (see `pyproject.toml` for scope/exclusions) and
+  `yamllint -c .yamllint.yml clusterdrill/manifests/*.yaml .github/ISSUE_TEMPLATE/*.yml`
+  (the same narrow, CI-enforced file list - plain `yamllint .` also scans
+  `node_modules`, Helm templates, and deliberately-broken question
+  fixtures, and fails on all three)
 - JS/Markdown: `npm run lint:js` and `npm run lint:md`
 
 Fill out `.github/PULL_REQUEST_TEMPLATE.md` for real, including the licensing-boundary checklist -

@@ -1,0 +1,60 @@
+<section id="selected-topics-setup" class="selected-topics-setup" aria-label="Practice selected topics" hidden>
+  <form class="practice-setup-form" method="post" action="/sessions/start" data-selected-topics>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="mode" value="mixed">
+    <input type="hidden" name="topic_scope" value="selected">
+    <fieldset class="topic-options">
+      <legend>Topics</legend>
+      <p class="field-help">Choose one or more topics to mix in your session.</p>
+      <div class="topic-selection-actions">
+        <button type="button" class="btn btn-secondary" data-select-topics="all">Select all</button>
+        <button type="button" class="btn btn-secondary" data-select-topics="none">Clear</button>
+      </div>
+      <div class="topic-choices">
+        {% for t in topics %}
+          <label class="topic-choice">
+            <input type="checkbox" name="topics" value="{{ t.name }}" data-counts='{{ dict(t.difficulty_counts, all=t.pool_size) | tojson }}'>
+            <span>{{ t.name | replace('-', ' ') | title }}{% if t.name == 'community' %} (GPL-3.0){% endif %}</span>
+            <small>{{ t.pool_size }}</small>
+          </label>
+        {% endfor %}
+      </div>
+      <p class="field-help" id="selected-topics-summary" role="status" aria-live="polite">Choose at least one topic.</p>
+    </fieldset>
+    <fieldset class="difficulty-options">
+      <legend>Difficulty</legend>
+      <div class="difficulty-choices">
+        {% for level in ['all', 'easy', 'medium', 'hard'] %}
+          <label class="difficulty-choice">
+            <input type="radio" name="difficulty" value="{{ '' if level == 'all' else level }}" {{ 'checked' if level == 'all' else '' }}>
+            <span>{{ level | capitalize }} <small>0</small></span>
+          </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <div class="practice-setup-field">
+      <label class="practice-setup-label" for="mixed-practice-timer">Time limit <span class="field-unit">minutes</span></label>
+      <input id="mixed-practice-timer" type="number" name="timer_minutes" value="{{ topic_timer_minutes }}" min="1" max="{{ max_timer_minutes }}" step="1" required aria-describedby="mixed-practice-timer-help">
+      <span class="field-help" id="mixed-practice-timer-help">Enter 1-{{ max_timer_minutes }} minutes.</span>
+      <div class="input-shortcuts" aria-label="Time shortcuts">
+        {% for minutes in [15, 30, 60] %}<button type="button" data-input-target="timer_minutes" data-input-value="{{ minutes }}">{{ minutes }} min</button>{% endfor %}
+      </div>
+    </div>
+
+    <div class="practice-setup-field">
+      <label class="practice-setup-label" for="mixed-practice-count">Questions <span class="field-unit" data-count-ceiling>up to 0</span></label>
+      <input id="mixed-practice-count" type="number" name="session_size" value="{{ session_size }}" min="1" step="1" required aria-describedby="mixed-practice-count-help">
+      <span class="field-help" id="mixed-practice-count-help">Limited to questions matching your selected topics and difficulty.</span>
+      <div class="input-shortcuts" aria-label="Question count shortcuts">
+        {% for count in [5, 10, 15] %}<button type="button" data-input-target="session_size" data-input-value="{{ count }}">{{ count }}</button>{% endfor %}
+        <button type="button" data-input-target="session_size" data-input-value="0" data-count-all>All 0</button>
+      </div>
+    </div>
+
+    <div class="practice-setup-modes">
+      <button type="submit" class="btn btn-primary" disabled>Start mixed practice</button>
+    </div>
+  </form>
+  <p class="practice-setup-hint">Questions are shuffled from your selected topics. Your timer starts when you begin.</p>
+</section>

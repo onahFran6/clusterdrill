@@ -23,6 +23,15 @@ image:
 auth:
   existingSecretName: ""
 
+service:
+  # ClusterIP by default (R03) - reach it with `kubectl port-forward` or
+  # your own SSH tunnel, matching the raw-manifest install path and the
+  # CLI's own default posture. This chart does not configure TLS
+  # termination or Secure cookies for you - set NodePort only on a network
+  # you already trust, and see README's Security limits section before
+  # exposing it any more broadly than that.
+  type: ClusterIP
+
 # A fixed 10001:10001 non-root user/group and a read-only root
 # filesystem, matching the raw manifest exactly - not configurable, for
 # the same reason RBAC isn't: this chart installs one specific,
